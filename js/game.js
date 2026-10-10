@@ -92,10 +92,32 @@ function nearestEnemy(P) {
   return best;
 }
 
+// ---------------- FINISHING RULES ----------------
+// Each demon only falls the way it fell in the story (see SECRETS.md, kept out of the repo).
+// fin(b, grp, P): may this hit take the demon below 10%?  dawn(b, grp, P): extra seconds of dawn for this hit.
+const FIN = {
+  temoni: { fin: (b, g) => g.form === '水面斬り' },
+  susamaru: { fin: (b, g, P) => P && P.key === 'nezuko' },
+  kyogai: { fin: (b, g) => g.form === '水流飛沫・乱' },
+  rui: { fin: (b, g, P) => P && P.key === 'giyu' && P.buffs.nagi > 0 },
+  enmu: { fin: (b, g) => g.form === '碧羅の天' },
+  akaza: { dawn: (b, g, P) => P && P.key === 'rengoku' && g.form === '煉獄' ? 15 : 0 },
+  daki: { fin: (b, g, P) => P && (P.key === 'inosuke' || P.key === 'zenitsu') },
+  gyutaro: { fin: (b, g, P) => P && P.key === 'tanjiro' },
+  gyokko: { fin: (b, g, P) => P && P.key === 'muichiro' && P.buffs.invis > 0 },
+  hantengu: { small: (b, g, P) => P && P.key === 'tanjiro' },
+  doma: { fin: (b, g, P) => P && P.key === 'kanao' && (b.poisonTotal || 0) >= 30 },
+  akaza2: { fin: (b, g, P) => !b.revived || (P && P.key === 'tanjiro' && g.theme === 'sun') },
+  kokushibo: { fin: (b, g, P) => P && (P.key === 'gyomei' || P.key === 'sanemi') && b.hitBy && b.hitBy.muichiro },
+  muzan: { dawn: (b, g, P) => P && P.key === 'tanjiro' && g.kind === 'combo13' ? 4 : 0 },
+};
+const finLocked = (b) => { const r = FIN[b.key]; return !!(r && r.fin && !b.finOpen && !G.S.training); };
+function finFloor(b) { return b.maxhp * 0.1; }
+
 // ---------------- DAMAGE: PLAYER -> DEMON ----------------
 function newGrp(P, dmg, c, extra) {
   const f = c && c.f || {};
-  return Object.assign({ hit: new Set(), dmg, P, theme: c ? c.th : 'normal', poison: f.poison, mercy: f.mercy, heavy: dmg >= 60, burn: f.burn }, extra || {});
+  return Object.assign({ hit: new Set(), dmg, P, form: f.name || null, kind: c ? (c.from13 ? 'combo13' : c.kind) : null, theme: c ? c.th : 'normal', poison: f.poison, mercy: f.mercy, heavy: dmg >= 60, burn: f.burn }, extra || {});
 }
 function strike(grp, x, y, r) {
   const zc = G.cz || 0, d3 = D3();
@@ -112,12 +134,18 @@ function strike(grp, x, y, r) {
 }
 function damageEnemy(b, grp, hx, hy) {
   const P = grp.P, cz0 = G.cz; G.cz = b.z || 0;
+  const rule = FIN[b.key], finOk = !finLocked(b) || rule.fin(b, grp, P); // judged before buffs are consumed
   let d = grp.dmg * rnd(0.9, 1.1), crit = false;
   if (P && P.buffs.sense && Math.random() < 0.4) { d *= 1.8; crit = true; }
   if (P && P.buffs.invis) { d *= 2; crit = true; P.buffs.invis = 0; }
   if (grp.mercy && b.hp < b.maxhp * 0.3) { d *= 3; crit = true; }
   if (b.pending) d = 0;
-  b.hp -= d; b.flash = 4; b.hurt = 10; b.noRegen = 180; // no regeneration for 3s after a hit
+  const hp0 = b.hp;
+  if (P) (b.hitBy || (b.hitBy = {}))[P.key] = 1;
+  if (grp.poison) b.poisonTotal = (b.poisonTotal || 0) + grp.poison;
+  if (rule && rule.dawn && G.dawnMax && !grp.dawnDone) { const sec = rule.dawn(b, grp, P); if (sec) { grp.dawnDone = 1; G.dawn += sec * 60; } }
+  b.hp -= d; b.flash = 4; b.hurt = 10;
+  if (!finOk && b.hp < finFloor(b)) { b.hp = Math.max(b.hp, Math.min(hp0, finFloor(b))); if (!b.finShown) { b.finShown = 1; banner('頸が斬れない…！', 'Không chém đứt được cổ…!', 110); } } b.noRegen = 180; // no regeneration for 3s after a hit
   if (grp.poison) { b.poison = Math.min(40, b.poison + grp.poison); addText(hx, hy - 30, '毒 Độc', '#c080ff', 18); Audio.sfx.poison(); }
   if (grp.burn) b.burn = 300;
   if (G.dawnMax) G.dawn += d * 0.6;
@@ -134,6 +162,8 @@ function damageEnemy(b, grp, hx, hy) {
 }
 function hitSmall(b, grp, x, y) {
   const d = grp.dmg * 2.5; G.cz = b.small.z || 0;
+  const rule = FIN[b.key], ok = !(rule && rule.small) || b.finOpen || rule.small(b, grp, grp.P);
+  if (!ok && b.small.hp - d <= 0) { b.small.hp = 1; if (!b.finShown) { b.finShown = 1; banner('頸が斬れない…！', 'Không chém đứt được cổ…!', 110); } Audio.sfx.hit(); return; }
   b.small.hp -= d; b.hp -= d;
   addText(b.small.x, b.small.y - 40, Math.round(d) + '!!', '#ff6080', 30);
   particles('demon', b.small.x, b.small.y - 14, 20, 7);
@@ -619,7 +649,7 @@ const KINDS = {
         P.spin = 0;
         if (c.i >= c.list.length) { c.dur = c.t; c.noGrav = false; G.flashScreen = { c: '#ffd060', t: 0, life: 24 }; G.shake = 24; Audio.sfx.gong(); return; }
         const f = c.list[c.i++];
-        c.sub = { kind: f.kind, f, th: 'sun', t: 0, dur: 20, data: {} };
+        c.sub = { kind: f.kind, f, th: 'sun', t: 0, dur: 20, data: {}, from13: 1 };
         KINDS[f.kind].start(P, c.sub);
         c.sub.dur = Math.min(c.sub.dur, 30);
         G.callouts.push({ jp: f.name, kata: '', sub: '日の呼吸', t: 0, dur: 40, small: 1, theme: 'sun', x: P.x });
@@ -788,8 +818,10 @@ function updateBoss(b) {
   else b.hp = Math.min(b.maxhp, b.hp + d.regen * poisonF * (b.regenBurst > 0 ? 6 : 1));
   if (b.regenBurst > 0 && b.noRegen > 0) b.hp = Math.min(b.maxhp, b.hp + d.regen * 4); // dawn-stage forced regeneration still works
   if (b.regenBurst > 0) b.regenBurst--;
-  if (b.poison > 0) { b.hp -= b.poison * 0.035; b.poison = Math.max(0, b.poison - 0.008); if (G.t % 12 === 0) G.parts.push({ x: b.x + rnd(-20, 20), y: b.y - rnd(40, b.hh), vx: 0, vy: -1, life: 30, max: 30, s: 4, c: '#b070ff', k: 'drop', g: -0.02 }); if (b.hp <= 0) checkBossDeath(b); }
-  if (b.burn > 0) { b.burn--; b.hp -= 0.25; if (G.t % 4 === 0) particles('blood', b.x + rnd(-25, 25), b.y - rnd(20, b.hh), 1, 2, { g: -0.1 }); if (b.hp <= 0) checkBossDeath(b); }
+  if (finLocked(b) || (FIN[b.key] && FIN[b.key].small && !b.finOpen)) { if (b.hp <= finFloor(b) + 1 || (b.small && b.small.hp <= 1)) { b.finT = (b.finT || 0) + 1; if (b.finT > 5400) b.finOpen = true; } } // 90s stuck: any blow may finish
+  const floorHp = finLocked(b) ? finFloor(b) : 0;
+  if (b.poison > 0) { b.hp -= b.poison * 0.035; b.poison = Math.max(0, b.poison - 0.008); if (G.t % 12 === 0) G.parts.push({ x: b.x + rnd(-20, 20), y: b.y - rnd(40, b.hh), vx: 0, vy: -1, life: 30, max: 30, s: 4, c: '#b070ff', k: 'drop', g: -0.02 }); if (floorHp) b.hp = Math.max(b.hp, Math.min(floorHp, b.hp + b.poison * 0.035)); if (b.hp <= 0) checkBossDeath(b); }
+  if (b.burn > 0) { b.burn--; b.hp -= 0.25; if (floorHp && b.hp < floorHp) b.hp = Math.min(floorHp, b.hp + 0.25); if (G.t % 4 === 0) particles('blood', b.x + rnd(-25, 25), b.y - rnd(20, b.hh), 1, 2, { g: -0.1 }); if (b.hp <= 0) checkBossDeath(b); }
   if (b.flash > 0) b.flash--; if (b.hurt > 0) b.hurt--; if (b.buffT > 0) b.buffT--;
   if (b.small && b.small.hp > 0) { const s = b.small; s.x += s.vx; if (s.x < AL + 20 || s.x > AR - 20 || Math.random() < 0.01) s.vx *= -1; if (Math.abs(s.x - P.x) < 120) s.vx = Math.sign(s.x - P.x) * 4.5; s.x = clamp(s.x, AL, AR);
     if (D3()) { if (Math.random() < 0.02) s.vz = rnd(-3, 3); if (Math.abs(s.x - P.x) < 160 && Math.abs((s.z || 0) - P.z) < 120) s.vz = Math.sign((s.z || 0) - P.z || 1) * 3.5; const zr = zRange(); s.z = clamp((s.z || 0) + (s.vz || 0), zr[0], zr[1]); } }
