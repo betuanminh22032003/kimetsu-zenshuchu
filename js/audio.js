@@ -86,7 +86,8 @@ const Audio = (() => {
     if (!ac || musTimer) return;
     let next = ac.currentTime + 0.1;
     musTimer = setInterval(() => {
-      if (!musicOn) return;
+      syncCustom();
+      if (!musicOn || custom[musMode]) { next = Math.max(next, ac.currentTime + 0.05); return; }
       const bpm = musMode === 'battle' ? 138 : musMode === 'boss' ? 156 : 84;
       const step = 60 / bpm / 2;
       while (next < ac.currentTime + 0.3) {
@@ -105,8 +106,34 @@ const Audio = (() => {
       }
     }, 60);
   }
-  function setMusic(mode) { musMode = mode; }
-  function stopMusic() { clearInterval(musTimer); musTimer = null; }
+  function setMusic(mode) { musMode = mode; syncCustom(); }
+  function stopMusic() { clearInterval(musTimer); musTimer = null; for (const k in custom) custom[k].el.pause(); }
+
+  // ---- "Your music": tracks the player picks from THEIR OWN computer, per mood (calm / battle / boss).
+  // Stored only in this browser (IndexedDB) — never uploaded, never part of the game files.
+  const custom = {};
+  const DB = () => new Promise((res, rej) => { const r = indexedDB.open('kny_music', 1); r.onupgradeneeded = () => r.result.createObjectStore('t'); r.onsuccess = () => res(r.result); r.onerror = rej; });
+  function attach(slot, blob, name) {
+    if (custom[slot]) { custom[slot].el.pause(); URL.revokeObjectURL(custom[slot].el.src); }
+    const el = new window.Audio(URL.createObjectURL(blob)); el.loop = true; el.volume = 0.55;
+    custom[slot] = { el, name };
+  }
+  function syncCustom() {
+    for (const k in custom) { const c = custom[k], on = musicOn && k === musMode && musTimer; if (on && c.el.paused) c.el.play().catch(() => {}); if (!on && !c.el.paused) c.el.pause(); }
+  }
+  async function setTrack(slot, file) {
+    try { const db = await DB(); db.transaction('t', 'readwrite').objectStore('t').put({ blob: file, name: file.name }, slot); } catch (e) { }
+    attach(slot, file, file.name); syncCustom();
+  }
+  async function clearTrack(slot) {
+    if (custom[slot]) { custom[slot].el.pause(); URL.revokeObjectURL(custom[slot].el.src); delete custom[slot]; }
+    try { const db = await DB(); db.transaction('t', 'readwrite').objectStore('t').delete(slot); } catch (e) { }
+  }
+  (async () => { try { const db = await DB(); for (const slot of ['calm', 'battle', 'boss']) { const rq = db.transaction('t').objectStore('t').get(slot); rq.onsuccess = () => { if (rq.result) attach(slot, rq.result.blob, rq.result.name); }; } } catch (e) { } })();
+  function pickTrack(slot) {
+    const inp = document.createElement('input'); inp.type = 'file'; inp.accept = 'audio/*';
+    inp.onchange = () => { if (inp.files[0]) setTrack(slot, inp.files[0]); }; inp.click();
+  }
 
   // ---- Japanese voice
   function say(text, pitch, rate) {
@@ -120,8 +147,8 @@ const Audio = (() => {
     } catch (e) { }
   }
   return {
-    init, sfx, say, hasJa, startMusic, stopMusic, setMusic,
+    init, sfx, say, hasJa, startMusic, stopMusic, setMusic, pickTrack, clearTrack, trackName: (slot) => custom[slot] ? custom[slot].name : null,
     get voiceOn() { return voiceOn; }, set voiceOn(v) { voiceOn = v; if (!v && window.speechSynthesis) speechSynthesis.cancel(); },
-    get musicOn() { return musicOn; }, set musicOn(v) { musicOn = v; },
+    get musicOn() { return musicOn; }, set musicOn(v) { musicOn = v; syncCustom(); },
   };
 })();

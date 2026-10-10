@@ -760,22 +760,23 @@ function renderSettings() {
     ['音楽', 'Nhạc nền taiko / koto', Audio.musicOn],
     ['全ステージ解放', 'Mở khóa tất cả ải', progress >= STAGES.length - 1],
     ['進行リセット', 'Xóa tiến trình', null],
+    ...MUSIC_SLOTS.map(([slot, jp, vn]) => [jp, vn + ' — ' + (Audio.trackName(slot) || 'nhạc mặc định'), 'pick']),
   ];
-  panel(W / 2 - 420, 110, 840, 340, { pattern: P_ASANOHA(), patAlpha: 0.05 });
+  panel(W / 2 - 420, 96, 840, 470, { pattern: P_ASANOHA(), patAlpha: 0.05 });
   items.forEach(([jp, vn, v], i) => {
-    const y = 136 + i * 76, sel = i === setIdx;
+    const y = 104 + i * 64, sel = i === setIdx;
     if (clickIn(W / 2 - 400, y, 800, 64)) { if (setIdx === i) Input.pressed.Enter = true; setIdx = i; }
     if (sel) ink(W / 2 - 410, y + 4, 790, 60, 'rgba(179,18,46,.85)', 1, i);
     bi(jp, vn, W / 2 - 370, y + 34, { size: 22, vcol: sel ? '#ffe0b0' : COL.dim, vsize: 13, gap: 20 });
-    const lab = v === null ? ['実行', 'Thực hiện'] : v ? ['有効', 'BẬT'] : ['無効', 'TẮT'];
+    const lab = v === 'pick' ? ['選ぶ', 'Chọn file'] : v === null ? ['実行', 'Thực hiện'] : v ? ['有効', 'BẬT'] : ['無効', 'TẮT'];
     ctx.fillStyle = v === true ? 'rgba(60,160,90,.9)' : 'rgba(255,255,255,.08)'; roundRect(ctx, W / 2 + 230, y + 16, 150, 36, 18); ctx.fill(); ctx.strokeStyle = COL.gold; ctx.lineWidth = 1; ctx.stroke();
     T(lab[0] + ' · ' + lab[1], W / 2 + 305, y + 40, { size: 15, col: '#fff', align: 'center', font: JPF, weight: 600 });
   });
   const ja = Audio.hasJa();
-  panel(W / 2 - 420, 470, 840, 110, { accent: ja ? '#5c5' : '#e93' });
-  bi(ja ? '日本語の音声が見つかりました' : '日本語の音声がありません', ja ? '✓ Máy đã có giọng tiếng Nhật.' : 'Windows Settings → Time & Language → Language → thêm 日本語 (kèm Speech).', W / 2 - 390, 510, { size: 18, vsize: 14, gap: 22, vcol: ja ? '#9e9' : '#fc8' });
-  T('Mẹo: dùng Microsoft Edge để có giọng "Nanami (Natural)" tự nhiên nhất.', W / 2 - 390, 560, { size: 13, col: COL.dim });
-  hints([['W/S', '選択', 'Chọn'], ['Enter', '切替', 'Đổi'], ['Esc', '戻る', 'Quay lại']], W / 2, H - 30, 'center');
+  panel(W / 2 - 420, 578, 840, 92, { accent: ja ? '#5c5' : '#e93' });
+  T(ja ? '✓ Máy đã có giọng tiếng Nhật.' : 'Chưa có giọng Nhật: Windows Settings → Time & Language → Language → thêm 日本語 (kèm Speech).', W / 2 - 390, 608, { size: 14, col: ja ? '#9e9' : '#fc8' });
+  T('Nhạc của bạn: chọn file nhạc trên máy (vd. OST bạn đã mua) — chỉ lưu trong trình duyệt này, không tải lên đâu cả. Delete = bỏ.', W / 2 - 390, 636, { size: 12, col: COL.dim });
+  hints([['W/S', '選択', 'Chọn'], ['Enter', '切替', 'Đổi'], ['Del', '削除', 'Bỏ nhạc'], ['Esc', '戻る', 'Quay lại']], W / 2, H - 30, 'center');
   if (pressed('KeyW', 'ArrowUp')) setIdx = (setIdx + items.length - 1) % items.length;
   if (pressed('KeyS', 'ArrowDown')) setIdx = (setIdx + 1) % items.length;
   if (pressed('Enter', 'KeyJ')) {
@@ -783,10 +784,13 @@ function renderSettings() {
     if (setIdx === 1) Audio.musicOn = !Audio.musicOn;
     if (setIdx === 2) progress = STAGES.length - 1;
     if (setIdx === 3) { progress = 0; selIdx = 0; }
+    if (setIdx >= 4) { Audio.init(); Audio.pickTrack(MUSIC_SLOTS[setIdx - 4][0]); }
     saveSettings(); saveProgress(); Audio.sfx.select();
   }
+  if (pressed('Delete', 'Backspace') && setIdx >= 4) { Audio.clearTrack(MUSIC_SLOTS[setIdx - 4][0]); Audio.sfx.select(); }
   if (pressed('Escape')) mode = 'title';
 }
+const MUSIC_SLOTS = [['calm', '音楽・平時', 'Nhạc menu & hội thoại'], ['battle', '音楽・戦闘', 'Nhạc trận thường'], ['boss', '音楽・上弦', 'Nhạc trận Thượng Huyền / Muzan']];
 let clearT = 0;
 function renderClear() {
   clearT++;
