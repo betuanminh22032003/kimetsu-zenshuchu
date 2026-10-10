@@ -145,6 +145,21 @@ function damageEnemy(b, grp, hx, hy) {
   if (P && P.buffs.sense && Math.random() < 0.4) { d *= 1.8; crit = true; }
   if (P && P.buffs.invis) { d *= 2; crit = true; P.buffs.invis = 0; }
   if (grp.mercy && b.hp < b.maxhp * 0.3) { d *= 3; crit = true; }
+  if (P && P.counter > 0) { d *= 2; crit = true; P.counter = 0; }                       // after a parry: guaranteed crit
+  const isNormal = grp.kind === 'normal' || !grp.form, boss = !b.def.minion && !b.def.training;
+  // demons read a slash-only string: 6 plain slashes in a row and they start deflecting plain slashes
+  if (boss && isNormal && b.guardT > 0 && !(b.stunT > 0)) {
+    b.guardT = Math.max(b.guardT, 40); G.cz = b.z || 0; particles('normal', hx, hy, 8, 6, { k: 'spark' }); addText(hx, hy - 20, '弾 · Đỡ', '#c8d8ff', 18); Audio.sfx.hit();
+    d *= 0.15; b.hp -= d; if (!finOk && b.hp < finFloor(b)) b.hp = Math.min(b.hp + d, Math.max(b.hp, finFloor(b))); G.combo = Math.max(0, (G.combo || 0) - 2); if (b.hp <= 0) checkBossDeath(b); G.cz = cz0; return;
+  }
+  if (boss) { if (isNormal) { b.normalRun = (b.normalRun || 0) + 1; if (b.normalRun >= 6 && !(b.stunT > 0)) { b.guardT = 150; b.normalRun = 0; addText(b.x, b.y - b.hh - 30, '見切られた！ Bị đọc đòn!', '#ff9aa8', 20); b.cd = Math.min(b.cd, 12); } } else b.normalRun = 0; }
+  // combo chain: every landed hit within 2s extends it; switching technique adds a bonus step
+  const mv = grp.form || 'normal';
+  G.combo = (G.comboT > 0 ? G.combo || 0 : 0) + (G.lastMove && G.lastMove !== mv ? 2 : 1); G.comboT = 120; G.lastMove = mv; G.comboMax = Math.max(G.comboMax || 0, G.combo);
+  d *= 1 + Math.min(G.combo, 50) * 0.01;
+  if (b.stunT > 0) { d *= 1.5; crit = true; }
+  // posture: techniques break a demon's stance far faster than plain slashes
+  if (boss && !(b.stunT > 0)) { b.post = (b.post || 0) + d * (isNormal ? 0.18 : 0.75); b.postT = 120; if (b.post >= postMax(b)) stagger(b); }
   if (b.pending) d = 0;
   const hp0 = b.hp;
   if (P) (b.hitBy || (b.hitBy = {}))[P.key] = 1;
@@ -165,6 +180,13 @@ function damageEnemy(b, grp, hx, hy) {
   grp.heavy ? Audio.sfx.bigHit() : Audio.sfx.hit();
   if (b.hp <= 0) checkBossDeath(b);
   G.cz = cz0;
+}
+const postMax = b => Math.max(120, b.maxhp * 0.11);
+function stagger(b) {
+  b.post = 0; b.stunT = 180; b.guardT = 0; b.state = 'move'; b.mv = null; b.st = 0; b.cd = Math.max(b.cd, 60);
+  G.cz = b.z || 0; addText(b.x, b.y - b.hh - 40, '隙！ CHOÁNG!', '#ffe070', 30); particles('normal', b.x, b.y - b.hh, 24, 7, { k: 'spark' });
+  G.hitstop = Math.max(G.hitstop, 8); G.shake = Math.max(G.shake, 14); Audio.sfx.gong();
+  G.haz = G.haz.filter(h => h.src !== b.x || !(h.delay > 0)); // a broken stance cancels the attack it was winding up
 }
 function hitSmall(b, grp, x, y) {
   const d = grp.dmg * 2.5; G.cz = b.small.z || 0;
@@ -216,15 +238,29 @@ function killBoss(b) {
 
 // ---------------- DAMAGE: DEMON -> PLAYER ----------------
 function playerVulnerable(P) {
-  if (P.down || P.inv > 0 || P.dashT > 0) return false;
+  if (P.down || P.inv > 0) return false;
+  if (P.parryT > 0) { parried(P); return false; }
+  if (P.dashT > 0) { if (!P.dodged && P.dashAge <= 9) perfectDodge(P); return false; }
   if (P.buffs.evade) return false;
   if (P.cast && (P.cast.inv || (P.cast.sub && P.cast.sub.inv))) return false;
   return true;
+}
+function parried(P) { // 受け流し: deflect, steal posture from the nearest demon, next hit is a guaranteed crit
+  P.parryT = 0; P.inv = Math.max(P.inv, 24); P.counter = 120; P.br = Math.min(P.maxbr, P.br + 12);
+  G.cz = P.z || 0; fxRing(P.x, P.y - 80, 70, curStyle(P).theme, 14); particles('normal', P.x + P.face * 30, P.y - 90, 18, 7, { k: 'spark' }); addText(P.x, P.y - 170, '受け流し！ ĐỠ!', '#ffffff', 26);
+  G.hitstop = Math.max(G.hitstop, 7); G.shake = Math.max(G.shake, 8); Audio.sfx.chain();
+  const e = nearestEnemy(P); if (e && !e.def.minion && Math.abs(e.x - P.x) < 320) { e.post = (e.post || 0) + postMax(e) * 0.4; e.postT = 120; if (e.post >= postMax(e)) stagger(e); }
+}
+function perfectDodge(P) { // 見切り: slow motion, breath refill, next technique at half cost
+  P.dodged = true; P.inv = Math.max(P.inv, 30); P.halfCost = 180; P.br = Math.min(P.maxbr, P.br + 25);
+  G.slow = 0.3; G.slowT = 55; G.cz = P.z || 0; addText(P.x, P.y - 170, '見切り！ NÉ HOÀN HẢO', '#9fe8ff', 24); Audio.sfx.wind();
+  const e = nearestEnemy(P); if (e && !e.def.minion) { e.post = (e.post || 0) + postMax(e) * 0.15; e.postT = 120; }
 }
 function hurtPlayer(P, dmg, sx, opts) {
   if (!playerVulnerable(P)) return false;
   if (P.buffs.guard) dmg *= 0.3;
   G.cz = P.z || 0;
+  G.combo = 0; G.comboT = 0;
   P.hp -= dmg; P.inv = 45; P.hurtT = 16; P.cast = null; P.swing = undefined; P.spin = 0;
   P.vx = Math.sign(P.x - sx || 1) * 6; P.vy = -5;
   if (opts && opts.poison) P.poison = 360;
@@ -688,8 +724,9 @@ function beginNormal(P, combo) {
 }
 function tryCast(P) {
   const st = curStyle(P), f = curForm(P);
-  if (P.br < f.cost) { addText(P.x, P.y - 170, '呼吸が足りない！ Hết hơi!', '#9cf', 18); Audio.sfx.select(); return; }
-  P.br -= f.cost;
+  const cost = P.halfCost > 0 ? Math.ceil(f.cost / 2) : f.cost;
+  if (P.br < cost) { addText(P.x, P.y - 170, '呼吸が足りない！ Hết hơi!', '#9cf', 18); Audio.sfx.select(); return; }
+  P.br -= cost; if (P.halfCost > 0) P.halfCost = 0;
   if (f.hpCost) P.hp = Math.max(1, P.hp - f.hpCost);
   callout(P, f, st);
   if (f.big) { G.cutin = { P, f, st, t: 0, dur: 58 }; Audio.sfx.cutin(); }
@@ -742,6 +779,10 @@ function updatePlayer(P) {
   P.qcast = false;
   if (P.inv > 0) P.inv--;
   if (P.dashCd > 0) P.dashCd--;
+  if (P.parryT > 0 && --P.parryT === 0) P.swing = undefined; if (P.parryCd > 0) P.parryCd--; if (P.counter > 0) P.counter--; if (P.halfCost > 0) P.halfCost--;
+  if (P.dashT > 0) P.dashAge = (P.dashAge || 0) + 1;
+  if (G.comboT > 0 && --G.comboT === 0) G.combo = 0;
+  if (pressed('KeyG') && P.parryCd <= 0 && !P.down && P.hurtT <= 0) { P.parryT = 12; P.parryCd = 40; P.cast = null; P.swing = -0.4; Audio.sfx.swing(); }
   for (const k in P.buffs) if (P.buffs[k] > 0) P.buffs[k]--;
   P.ghosts.forEach(g => g.life--); P.ghosts = P.ghosts.filter(g => g.life > 0);
   if (P.poison > 0) { P.poison--; if (G.t % 10 === 0) { P.hp -= 1.2; if (P.hp <= 1) P.hp = 1; } }
@@ -776,7 +817,7 @@ function updatePlayer(P) {
     if (mv || mz) P.walk += 0.32; else P.walk = 0;
   }
   if ((D3() ? pressed('Space') : pressed('KeyW', 'Space', 'ArrowUp')) && P.ground) { P.vy = -15.5; }
-  if (pressed('ShiftLeft', 'ShiftRight', 'KeyI') && P.dashCd <= 0) { const l = Math.hypot(mv, mz); P.dashDir = l ? [mv / l, mz / l] : [P.face, 0]; P.dashT = 11; P.dashCd = 34; P.inv = Math.max(P.inv, 13); if (mv) P.face = mv; Audio.sfx.wind(); }
+  if (pressed('ShiftLeft', 'ShiftRight', 'KeyI') && P.dashCd <= 0) { const l = Math.hypot(mv, mz); P.dashDir = l ? [mv / l, mz / l] : [P.face, 0]; P.dashAge = 0; P.dodged = false; P.dashT = 11; P.dashCd = 34; P.inv = Math.max(P.inv, 13); if (mv) P.face = mv; Audio.sfx.wind(); }
   if (P.bufK > 0) { P.bufK = 0; tryCast(P); }
   else if (P.bufJ > 0 || held('KeyJ')) { P.bufJ = 0; beginNormal(P, 0); }
   P.br = Math.min(P.maxbr, P.br + 0.09);
@@ -818,6 +859,9 @@ function updateBoss(b) {
     return;
   }
   if (b.fleeing) { b.x += 14 * b.face; b.walk += 0.5; return; }
+  if (b.guardT > 0) b.guardT--;
+  if (b.postT > 0) b.postT--; else if (b.post > 0) b.post = Math.max(0, b.post - postMax(b) * 0.004);
+  if (b.stunT > 0) { b.stunT--; b.swing = 1.5; b.walk = 0; if (b.flash > 0) b.flash--; if (b.hurt > 0) b.hurt--; if (G.t % 8 === 0) { G.cz = b.z || 0; particles('thunder', b.x + rnd(-20, 20), b.y - b.hh - 10, 1, 1, { k: 'spark', g: -0.02 }); } return; }
   // regen, poison, burn
   const poisonF = Math.max(0, 1 - b.poison / 20);
   if (b.noRegen > 0) b.noRegen--;

@@ -37,8 +37,8 @@ cv.addEventListener('mousedown', e => {
 });
 addEventListener('mouseup', e => { if (e.button === 0) Input.keys.KeyJ = false; });
 cv.addEventListener('contextmenu', e => e.preventDefault());
-// ---- gamepad (standard mapping): stick/D-pad move · A jump · X slash · Y form · B dash · LB/RB choose form · LT palette · RT focus · Back switch · Start pause
-const PAD_MAP = [[0, ['Space', 'Enter']], [1, ['ShiftLeft']], [2, ['KeyJ']], [3, ['KeyK']], [4, ['KeyQ']], [5, ['KeyE']], [6, ['KeyF']], [7, ['KeyL']], [8, ['Tab']], [9, ['Escape']], [12, ['KeyW']], [13, ['KeyS']], [14, ['KeyA']], [15, ['KeyD']]];
+// ---- gamepad (standard mapping): stick/D-pad move · A jump · X slash · Y form · B dash · LB/RB choose form · LT palette · RT focus · L3/R3 parry · Back switch · Start pause
+const PAD_MAP = [[10, ['KeyG']], [11, ['KeyG']], [0, ['Space', 'Enter']], [1, ['ShiftLeft']], [2, ['KeyJ']], [3, ['KeyK']], [4, ['KeyQ']], [5, ['KeyE']], [6, ['KeyF']], [7, ['KeyL']], [8, ['Tab']], [9, ['Escape']], [12, ['KeyW']], [13, ['KeyS']], [14, ['KeyA']], [15, ['KeyD']]];
 const padHeld = {};
 function pollPad() {
   const pads = navigator.getGamepads ? navigator.getGamepads() : []; const gp = pads && [...pads].find(p => p && p.connected); if (!gp) return;
@@ -478,7 +478,12 @@ function drawHUD() {
     if (!twin) T(b.def.title + '  ·  ' + (TITLE_VN[b.def.title] || ''), x + pw - 16, y + 28, { size: 13, col: '#e6b6be', align: 'right', font: JPF });
     const v = b.hp / b.maxhp;
     gauge(x + 72, y + 40, pw - 92, 16, v, trailOf(b, 'hp', v), b.pending ? '#ffa0c0' : '#ff3a4e', b.pending ? '#ff70a0' : '#8a0618', { notch: b.def.p2 ? 0.5 : 0 });
-    if (b.poison > 0) { ctx.fillStyle = 'rgba(180,100,255,.8)'; ctx.fillRect(x + 72, y + 59, (pw - 92) * clamp(b.poison / 40, 0, 1), 3); T('毒 · Độc', x + pw - 16, y + 66, { size: 10, col: '#d0a0ff', align: 'right', font: JPF }); }
+    { const pv = clamp((b.post || 0) / postMax(b), 0, 1), gw = pw - 92; // posture (体勢): full = stunned
+      ctx.fillStyle = 'rgba(0,0,0,.55)'; ctx.fillRect(x + 72, y + 60, gw, 4);
+      ctx.fillStyle = b.stunT > 0 ? '#fff6a0' : pv > 0.75 ? '#ffb040' : '#e8c060'; ctx.fillRect(x + 72, y + 60, gw * (b.stunT > 0 ? b.stunT / 180 : pv), 4);
+      if (b.stunT > 0) T('隙！ Choáng — dồn đòn!', x + 72 + gw, y + 54, { size: 12, font: JPF, col: '#fff6a0', align: 'right', stroke: 3 });
+      else if (b.guardT > 0) T('防 · Đang đỡ đòn chém thường — dùng thức!', x + 72 + gw, y + 54, { size: 12, font: JPF, col: '#a8c8ff', align: 'right', stroke: 3 }); }
+    if (b.poison > 0) { ctx.fillStyle = 'rgba(180,100,255,.8)'; ctx.fillRect(x + 72, y + 65, (pw - 92) * clamp(b.poison / 40, 0, 1), 2); T('毒 · Độc', x + pw - 16, y + 66, { size: 10, col: '#d0a0ff', align: 'right', font: JPF }); }
     if (b.small && b.small.hp > 0) { panel(x + 72, y + h + 6, 250, 28, { r: 6, border: 'rgba(255,90,110,.7)' }); T('本体「恨」 · Bản thể  ' + Math.ceil(b.small.hp), x + 86, y + h + 25, { size: 13, col: '#ff8a9a', font: JPF }); }
   });
   // ---- dawn meter
@@ -493,6 +498,17 @@ function drawHUD() {
     T(Math.max(0, Math.ceil((G.dawnMax - G.dawn) / 60)) + 's', x + w + 12, y + 11, { size: 15, col: '#ffd890', weight: 700, stroke: 3 });
   }
   keycap('Esc', 16, 32, { size: 10 }); T('操作 · Hướng dẫn', 50, 29, { size: 11, col: COL.dim, font: JPF, stroke: 2 });
+  // ---- combo counter
+  if ((G.combo || 0) >= 3 && G.comboT > 0) {
+    const a = Math.min(1, G.comboT / 30), pop = 1 + Math.max(0, (G.comboT - 110) / 10) * 0.25;
+    ctx.save(); ctx.globalAlpha = a; ctx.translate(W - 40, 210); ctx.scale(pop, pop);
+    T(String(G.combo), 0, 0, { size: 54, font: DISP, col: G.combo >= 30 ? '#ffd040' : G.combo >= 15 ? '#ff9a50' : '#fff', align: 'right', stroke: 5, glow: G.combo >= 15 ? '#ff6020' : null, glowB: 14 });
+    T('連撃 · Combo  +' + Math.min(G.combo, 50) + '%', 0, 24, { size: 13, font: JPF, col: COL.gold2, align: 'right', stroke: 3 });
+    ctx.restore();
+  }
+  { const P0 = activeP(); // reaction-skill states
+    if (P0.counter > 0) T('反撃 · Đòn kế tiếp chí mạng', W - 40, 262, { size: 13, font: JPF, col: '#fff', align: 'right', stroke: 3 });
+    if (P0.halfCost > 0) T('見切り · Thức kế tiếp tốn nửa hơi', W - 40, 282, { size: 13, font: JPF, col: '#9fe8ff', align: 'right', stroke: 3 }); }
 
   // ---- player panel
   const P = activeP(), st = curStyle(P), th = THEMES[st.theme];
@@ -567,7 +583,7 @@ function drawPause() {
   const rows = [
     ['W A S D', '移動', 'Di chuyển 8 hướng'], ['Space', 'ジャンプ', 'Nhảy'], ['Shift', '回避', 'Lướt né theo hướng đi'],
     ['J / Chuột trái', '斬撃', 'Chém — GIỮ để tự ra combo liên hoàn'], ['1…0 - = [ ]', '技を放つ', 'Tung thẳng thức số đó (khỏi chọn)'], ['K / Chuột phải', '技', 'Tung thức đang chọn (Q/E/lăn chuột)'],
-    ['R', '呼吸切替', 'Đổi hơi thở (Tanjiro: Nước ↔ Hinokami)'], ['L (giữ)', '全集中', 'Hồi thanh hơi thở nhanh'], ['Tab / C', '交代', 'Đổi nhân vật (hoặc bấm chân dung)'], ['Tay cầm', 'ゲームパッド', 'Cần: đi · A nhảy · X chém · Y thức · B lướt'],
+    ['R', '呼吸切替', 'Đổi hơi thở (Tanjiro: Nước ↔ Hinokami)'], ['L (giữ)', '全集中', 'Hồi thanh hơi thở nhanh'], ['Tab / C', '交代', 'Đổi nhân vật (hoặc bấm chân dung)'], ['G', '受け流し', 'Đỡ đòn đúng lúc → boss mất thế, đòn sau chí mạng'],
   ];
   rows.forEach(([k, jp, vn], i) => {
     const y = 204 + i * 39;
