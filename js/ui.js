@@ -583,7 +583,7 @@ function drawPause() {
   const rows = [
     ['W A S D', '移動', 'Di chuyển 8 hướng'], ['Space', 'ジャンプ', 'Nhảy'], ['Shift', '回避', 'Lướt né theo hướng đi'],
     ['J / Chuột trái', '斬撃', 'Chém — GIỮ để tự ra combo liên hoàn'], ['1…0 - = [ ]', '技を放つ', 'Tung thẳng thức số đó (khỏi chọn)'], ['K / Chuột phải', '技', 'Tung thức đang chọn (Q/E/lăn chuột)'],
-    ['R', '呼吸切替', 'Đổi hơi thở (Tanjiro: Nước ↔ Hinokami)'], ['L (giữ)', '全集中', 'Hồi thanh hơi thở nhanh'], ['Tab / C', '交代', 'Đổi nhân vật (hoặc bấm chân dung)'], ['G', '受け流し', 'Đỡ đòn đúng lúc → boss mất thế, đòn sau chí mạng'],
+    ['R', '呼吸切替', 'Đổi hơi thở (Tanjiro: Nước ↔ Hinokami)'], ['L (giữ)', '全集中', 'Hồi thanh hơi thở nhanh'], ['Tab / C', '交代', 'Đổi nhân vật (hoặc bấm chân dung)'], ['G', '弾き', 'Chém bật đạn về phía quỷ / gạt đòn → đòn sau chí mạng'],
   ];
   rows.forEach(([k, jp, vn], i) => {
     const y = 204 + i * 39;

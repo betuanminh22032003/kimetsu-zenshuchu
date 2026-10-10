@@ -22,11 +22,11 @@ const held = (...ks) => ks.some(k => Input.keys[k]);
 
 let G = null;
 let AL = 40, AR = W - 40; // arena bounds (x). The 3D arena is ~2.5x wider than the screen; the camera follows.
-const ARENA3D = [-1000, 2280];
+const ARENA3D = [-2200, 3480];
 // ---- 3D arena depth: every entity has z (game px, + = toward the camera). Only active with the 3D renderer.
 const DZ = 50;
 const D3 = () => typeof R3D !== 'undefined' && R3D.ok && !(G && G.S && G.S.flat);
-const zRange = () => (G && G.S && G.S.bg === 'train') ? [-95, 95] : [-300, 300];
+const zRange = () => (G && G.S && G.S.bg === 'train') ? [-95, 95] : [-300, 1100]; // wide plaza toward the camera
 // arrays that stamp new entries with the depth of whoever is acting (G.cz), so FX/particles/hazards land at the right z
 class ZArr extends Array { push(...a) { const z = G ? G.cz || 0 : 0; for (const it of a) if (it && typeof it === 'object' && it.z === undefined) it.z = z; return super.push(...a); } }
 const zarr = () => new ZArr();
@@ -244,6 +244,14 @@ function playerVulnerable(P) {
   if (P.buffs.evade) return false;
   if (P.cast && (P.cast.inv || (P.cast.sub && P.cast.sub.inv))) return false;
   return true;
+}
+function deflect(P, p) { // send an enemy projectile back at the nearest demon
+  const e = nearestEnemy(P), tx = e ? e.x : P.x + P.face * 600, ty = e ? e.y - e.hh * 0.55 : p.y, tz = e ? e.z || 0 : p.z || 0;
+  const dx = tx - p.x, dy = ty - p.y, dz = tz - (p.z || 0), L = Math.hypot(dx, dy, dz) || 1, sp = Math.max(16, Math.hypot(p.vx, p.vy) * 1.4);
+  p.vx = dx / L * sp; p.vy = dy / L * sp; p.vz = dz / L * sp; p.reflected = true; p.homing = 0; p.fall = 0; p.bounce = 0; p.life = 140; p.sleep = 0;
+  p.grp = newGrp(P, Math.max(22, (p.dmg || 10) * 2.2), { th: curStyle(P).theme, kind: 'deflect', f: { name: '弾き返し' } }, { heavy: true });
+  G.cz = p.z || 0; particles('normal', p.x, p.y, 12, 6, { k: 'spark' }); Audio.sfx.hit();
+  if (!P.deflected) { P.deflected = 1; addText(P.x, P.y - 170, '弾き返し！ ĐÁNH BẬT!', '#fff2a0', 24); P.br = Math.min(P.maxbr, P.br + 8); G.hitstop = Math.max(G.hitstop, 4); }
 }
 function parried(P) { // 受け流し: deflect, steal posture from the nearest demon, next hit is a guaranteed crit
   P.parryT = 0; P.inv = Math.max(P.inv, 24); P.counter = 120; P.br = Math.min(P.maxbr, P.br + 12);
@@ -782,7 +790,11 @@ function updatePlayer(P) {
   if (P.parryT > 0 && --P.parryT === 0) P.swing = undefined; if (P.parryCd > 0) P.parryCd--; if (P.counter > 0) P.counter--; if (P.halfCost > 0) P.halfCost--;
   if (P.dashT > 0) P.dashAge = (P.dashAge || 0) + 1;
   if (G.comboT > 0 && --G.comboT === 0) G.combo = 0;
-  if (pressed('KeyG') && P.parryCd <= 0 && !P.down && P.hurtT <= 0) { P.parryT = 12; P.parryCd = 40; P.cast = null; P.swing = -0.4; Audio.sfx.swing(); }
+  if (pressed('KeyG') && P.parryCd <= 0 && !P.down && P.hurtT <= 0) { // 弾き: a quick deflecting slash — bats projectiles back, parries blows
+    P.parryT = 16; P.parryCd = 32; P.cast = null; P.swing = -1.6; P.deflected = 0; aimAt(P);
+    fxSlash(P, 95, -1.7, 1.1, 18, curStyle(P).theme, { sweep: 5, fade: 9, alpha: 0.9 }); Audio.sfx.swing();
+  }
+  if (P.parryT > 0) P.swing = lerp(1.1, -1.6, P.parryT / 16);
   for (const k in P.buffs) if (P.buffs[k] > 0) P.buffs[k]--;
   P.ghosts.forEach(g => g.life--); P.ghosts = P.ghosts.filter(g => g.life > 0);
   if (P.poison > 0) { P.poison--; if (G.t % 10 === 0) { P.hp -= 1.2; if (P.hp <= 1) P.hp = 1; } }
@@ -902,8 +914,10 @@ function updateBoss(b) {
   } else if (b.state === 'tele') {
     b.st++;
     b.swing = lerp(0.9, -2.0, b.st / b.atk.tele);
+    const nh = G.haz.length;
     if (b.st === 1) onTele(b, b.atk, P);
     if (b.st >= b.atk.tele) { execAttack(b, b.atk, P); b.state = 'recover'; b.st = 0; }
+    for (let i = nh; i < G.haz.length; i++) { const h = G.haz[i]; h.bk = b.key; h.bx = b.x; h.bz = b.z || 0; } // who cast it (the 3D look is per demon)
   } else if (b.state === 'recover') {
     b.st++;
     b.swing = lerp(-2.0, 1.2, Math.min(1, b.st / 6));
@@ -1072,6 +1086,12 @@ function updateHazards() {
     G.cz = p.z || 0;
     if (p.delay > 0) { p.delay--; continue; }
     p.t++;
+    if (p.reflected) { // batted back: flies at the demons and hurts them
+      p.x += p.vx; p.y += p.vy; p.z += p.vz || 0; p.life--; G.cz = p.z;
+      strike(p.grp, p.x, p.y, Math.max(26, p.r)); if (p.grp.hit.size) p.life = 0;
+      if (p.x < AL - 300 || p.x > AR + 300) p.life = 0; continue;
+    }
+    if (P.parryT > 0 && p.shape !== 'moonbeam' && Math.hypot(p.x - P.x, p.y - (P.y - 80), d3 ? ((p.z || 0) - pz) * 0.8 : 0) < 175) { deflect(P, p); continue; }
     if (d3) { if (p.homing) p.vz = lerp(p.vz || 0, (pz - p.z) * 0.06, Math.min(1, p.homing * 2)); p.z += p.vz || 0; }
     if (p.homing) { const a = Math.atan2(pc[1] - p.y, pc[0] - p.x); const sp = Math.hypot(p.vx, p.vy); const cur = Math.atan2(p.vy, p.vx); let da = a - cur; while (da > Math.PI) da -= TAU; while (da < -Math.PI) da += TAU; const na = cur + clamp(da, -p.homing, p.homing); p.vx = Math.cos(na) * sp; p.vy = Math.sin(na) * sp; }
     if (p.bounce) { p.vy += 0.35; if (p.y > GY - p.r) { p.y = GY - p.r; p.vy *= -0.8; } }

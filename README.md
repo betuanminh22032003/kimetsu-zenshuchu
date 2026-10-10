@@ -8,7 +8,7 @@ Giao diện song ngữ 日本語 / Tiếng Việt. Font thư pháp (Yuji Syuku, 
 - **Đấu trường 3D, di chuyển 8 hướng**: W/A/S/D đi mọi hướng trên mặt đất, quỷ đuổi theo cả chiều sâu; đòn chém tự xoay & áp sát quỷ gần nhất, né vạch chém bằng cách bước sang ngang hoặc lướt (Shift) theo hướng đang đi.
 - **Camera 3D điện ảnh**: góc cao bám theo trận đấu, tự kéo gần/xa theo khoảng cách hai bên (cả ngang lẫn sâu), xoay vòng khi tung tuyệt chiêu, quay quanh quỷ khi kết liễu. Hậu kỳ: bloom, khử răng cưa FXAA, chỉnh màu điện ảnh, vignette, film grain, bóng đổ mềm.
 - **Map 3D hoàn toàn** (không còn ảnh nền 2D): bầu trời shader có sao lấp lánh, dải ngân hà, trăng có quầng, mây trôi, bình minh thật (ải Akaza / Muzan); địa hình đồi núi xa có sương phủ; rừng thông, cedar, cây tử đằng rủ hoa, cỏ lay theo gió, dương xỉ, đá; sương mù chuyển động, đom đóm, cánh hoa / tuyết / tro / tàn lửa rơi; suối nước nóng có mặt nước phản chiếu; nhà gỗ – mái ngói – mái tranh, nhà gạch phố Taisho, tháp Ryounkaku, đèn khí, cột điện dây võng, lồng đèn giấy; tàu Vô Hạn lao trong đêm (cây, cột điện vụt qua, khói đầu máy), đoàn tàu trật bánh, Vô Hạn Thành nhiều tầng lộn ngược, phòng băng của Douma.
-- Chiêu thức 3D: vệt chém có sóng nước / lửa / sét bằng shader, **rồng 3D** (生生流転, 日暈の龍, 火雷神, rắn), **hổ lửa** 炎虎, hạt hiệu ứng GPU; đạn, vùng đòn và vạch cảnh báo của quỷ đều là vật thể 3D.
+- Chiêu thức 3D: vệt chém có sóng nước / lửa / sét bằng shader, **rồng 3D** (生生流転, 日暈の龍, 火雷神, rắn), **hổ lửa** 炎虎, hạt hiệu ứng GPU; đạn, vùng đòn và vạch cảnh báo của quỷ đều là vật thể 3D — mỗi con quỷ có huyết thuật riêng: tơ thép của Rui, đai lụa của Daki, xúc tu gai của Muzan, trăng khuyết của Kokushibo, gai băng & hoa sen băng của Douma, rồng gỗ & sét của Hantengu, cầu nước của Gyokko, bão liềm máu của Gyutaro, sóng xung kích của Akaza; khi quỷ gồng chiêu, ấn chú huyết quỷ thuật hiện dưới chân.
 - **Toàn bộ nhân vật & quỷ là 3D**, dựng bằng code (kiểu figure Nendoroid: toon shading, viền mực, mặt anime có biểu cảm), quay mặt theo hướng chạy / hướng địch. Không tải file model nào — 0 KB.
 - `?2dchars` để xem lại nhân vật 2D. Có model **VRM** riêng thì game ưu tiên dùng (xem [assets/README.md](assets/README.md)); thư viện VRM chỉ tải khi có file .vrm, asset nặng được phục vụ qua CDN jsDelivr.
 - Tự hạ chất lượng (tắt bóng → tắt bloom/cỏ/sương) nếu máy chạy chậm. `?no3d` để về bản 2D cổ điển (đi trái/phải).
@@ -24,6 +24,7 @@ Giao diện song ngữ 日本語 / Tiếng Việt. Font thư pháp (Yuji Syuku, 
 | Q / E / lăn chuột | Chọn thức |
 | R | Đổi hơi thở (Tanjiro: 水の呼吸 ↔ ヒノカミ神楽) |
 | Giữ L | 全集中 — hồi thanh 呼吸 nhanh |
+| G | 弾き — chém bật: đánh bật đạn của quỷ ngược lại vào quỷ, hoặc gạt đòn cận chiến |
 | 1…0 / Tab | Đổi nhân vật trong đội |
 | Esc | Tạm dừng (M: về chọn ải) |
 

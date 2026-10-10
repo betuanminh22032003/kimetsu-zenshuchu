@@ -535,101 +535,331 @@ const R3D = (() => {
     if (g.userData.wave) { const pos = g.userData.wave.geometry.attributes.position; for (let i = 0; i < pos.count; i++) pos.setZ(i, Math.sin(pos.getX(i) * 12 + (p.t || 0) * 0.5) * 0.04); pos.needsUpdate = true; }
     if (p.shape === 'moonbeam') g.position.y = 0;
   }
-  // hazards
-  const HAZ_THEME = { thread: 'normal', moon: 'moon', whip: 'blood', obi: 'love', claw: 'stone', arrow: 'demon', frost: 'mist', storm: 'water' };
-  function hazCol(h) { const a = h.a || {}; return a.ice ? '#cfefff' : a.moon ? '#d0b0ff' : a.water ? '#60b0ff' : a.blood ? '#ff2040' : a.self ? '#7ad0ff' : '#ff4040'; }
+  // ---------------- demon blood-art visuals ----------------
+  // Every hazard knows who cast it (h.bk), so each demon has its own colour, crest and shapes:
+  // Rui's silk, Daki's obi, Muzan's thorned tentacles, Kokushibo's moons, Douma's ice, Hantengu's
+  // wood dragons and lightning, Akaza's compass shockwaves, Gyokko's water pot, Gyutaro's sickles.
+  const HAZ_THEME = { thread: 'normal', moon: 'moon', whip: 'blood', obi: 'love', claw: 'stone', arrow: 'demon', frost: 'mist', storm: 'water', bolt: 'thunder' };
+  const HCOL = { thread: '#f4f4ff', moon: '#c8a8ff', whip: '#ff1838', obi: '#ff4c8a', claw: '#e0a060', arrow: '#ff3030', bolt: '#fff070', frost: '#bfe8ff', storm: '#7ad0ff' };
+  const DCOL = { temoni: '#8fd060', susamaru: '#ff5040', kyogai: '#e0a060', rui: '#f2f2ff', enmu: '#c080ff', akaza: '#5ac8ff', akaza2: '#5ac8ff', daki: '#ff4c8a', gyutaro: '#ff2448', gyokko: '#3aa8ff', hantengu: '#ffe060', doma: '#bfe8ff', mini_doma: '#bfe8ff', kokushibo: '#b48cff', muzan: '#ff1838' };
+  const DCREST = { temoni: '鬼', susamaru: '毬', kyogai: '鼓', rui: '糸', enmu: '夢', akaza: '破', akaza2: '破', daki: '帯', gyutaro: '鎌', gyokko: '壺', hantengu: '雷', doma: '氷', mini_doma: '氷', kokushibo: '月', muzan: '無' };
+  function hazCol(h) { const a = h.a || {}; return a.ice ? '#cfefff' : a.moon ? '#c8a8ff' : a.water ? '#48a8ff' : a.blood ? '#ff1838' : a.poison ? '#ff2448' : HCOL[h.style] || DCOL[h.bk] || '#ff4040'; }
+  const geoC = {};
+  const sgeo = (k, f) => { if (!geoC[k]) { geoC[k] = f(); geoC[k].userData.shared = true; } return geoC[k]; };
+  const UV_VS = `varying vec2 vUv; void main(){ vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.); }`;
+  // warning band: bright rims, a core that fills in as the strike nears, chevrons streaming along it
+  const TELE_FS = `uniform vec3 uC; uniform float uP, uTime, uLen, uA; varying vec2 vUv;
+    void main(){ float d = abs(vUv.y - .5) * 2.;
+      float edge = smoothstep(.2, 0., abs(d - .8));
+      float core = smoothstep(.55, 0., d) * (.12 + .9 * uP * uP);
+      float ch = fract(vUv.x * uLen - d * .5 - uTime * 2.4); float chev = smoothstep(0., .1, ch) * smoothstep(.42, .28, ch) * (1. - d);
+      float ends = smoothstep(0., .06, vUv.x) * smoothstep(1., .94, vUv.x);
+      float pulse = .72 + .28 * sin(uTime * (7. + uP * 28.));
+      float a = clamp((edge * .85 + core + chev * .5) * ends * pulse * uA, 0., 1.);
+      gl_FragColor = vec4(mix(uC, vec3(1.), core * .55), a); }`;
+  // the blow itself: a white-hot core inside a flickering coloured glow
+  const ACT_FS = `uniform vec3 uC; uniform float uA, uTime, uLen, uSeed; varying vec2 vUv; ${NOISE}
+    void main(){ float d = abs(vUv.y - .5) * 2.;
+      float n = vnoise(vec2(vUv.x * uLen - uTime * 9., vUv.y * 3. + uSeed));
+      float core = exp(-d * d * 14.), glow = exp(-d * 2.6) * (.45 + n * .8);
+      float a = clamp((core * 1.2 + glow) * uA, 0., 1.);
+      gl_FragColor = vec4(mix(uC, vec3(1.), core * .75), a); }`;
+  const shMat = (fs, u) => new T3.ShaderMaterial({ uniforms: u, vertexShader: UV_VS, fragmentShader: fs, transparent: true, depthWrite: false, blending: T3.AdditiveBlending, side: T3.DoubleSide });
+  const teleMat = (c, len) => shMat(TELE_FS, { uC: { value: col3(c) }, uP: { value: 0 }, uTime: { value: 0 }, uLen: { value: len || 40 }, uA: { value: 1 } });
+  const actMat = (c, len) => shMat(ACT_FS, { uC: { value: col3(c) }, uA: { value: 1 }, uTime: { value: 0 }, uLen: { value: len || 20 }, uSeed: { value: Math.random() * 10 } });
+  const sigilTex = (k) => cTex('sigil' + k, 256, 256, (c) => {
+    c.translate(128, 128); c.strokeStyle = c.fillStyle = '#fff'; c.shadowColor = '#fff'; c.shadowBlur = 6;
+    c.lineWidth = 5; c.beginPath(); c.arc(0, 0, 122, 0, TAU); c.stroke();
+    c.lineWidth = 2; c.beginPath(); c.arc(0, 0, 108, 0, TAU); c.stroke(); c.beginPath(); c.arc(0, 0, 74, 0, TAU); c.stroke();
+    c.font = 'bold 19px serif'; c.textAlign = 'center'; c.textBaseline = 'middle';
+    const txt = ('血鬼術' + k).repeat(3); for (let i = 0; i < txt.length; i++) { c.save(); c.rotate(i / txt.length * TAU); c.fillText(txt[i], 0, -91); c.restore(); }
+    c.lineWidth = 2.5; for (const o of [0, Math.PI / 3]) { c.beginPath(); for (let i = 0; i <= 3; i++) { const a = o + i / 3 * TAU - Math.PI / 2; i ? c.lineTo(Math.cos(a) * 74, Math.sin(a) * 74) : c.moveTo(Math.cos(a) * 74, Math.sin(a) * 74); } c.stroke(); }
+    for (let i = 0; i < 24; i++) { c.save(); c.rotate(i / 24 * TAU); c.fillRect(-1.5, -122, 3, i % 2 ? 6 : 13); c.restore(); }
+    c.font = 'bold 62px serif'; c.fillText(k, 0, 4);
+  });
+  const flakeTex = () => cTex('flake', 64, 64, (c) => { c.translate(32, 32); c.strokeStyle = '#fff'; c.lineWidth = 3; c.shadowColor = '#fff'; c.shadowBlur = 4; for (let i = 0; i < 6; i++) { c.save(); c.rotate(i / 6 * TAU); c.beginPath(); c.moveTo(0, 0); c.lineTo(0, -28); c.moveTo(0, -15); c.lineTo(-8, -23); c.moveTo(0, -15); c.lineTo(8, -23); c.stroke(); c.restore(); } });
+  const barkTex = () => { const t = cTex('bark', 64, 128, (c) => { c.fillStyle = '#6a4a2a'; c.fillRect(0, 0, 64, 128); for (let i = 0; i < 26; i++) { c.strokeStyle = i % 3 ? '#4a3018' : '#8a6a42'; c.lineWidth = rnd(1, 3); c.beginPath(); const x = rnd(0, 64); c.moveTo(x, 0); c.bezierCurveTo(x + rnd(-8, 8), 40, x + rnd(-8, 8), 90, x + rnd(-6, 6), 128); c.stroke(); } }); t.wrapS = t.wrapT = T3.RepeatWrapping; return t; };
+  const fleshTex = () => { const t = cTex('flesh', 64, 64, (c) => { c.fillStyle = '#c890a8'; c.fillRect(0, 0, 64, 64); c.strokeStyle = '#8a3a5a'; c.lineWidth = 1.5; for (let i = 0; i < 9; i++) { c.beginPath(); let x = rnd(0, 64), y = 0; c.moveTo(x, y); while (y < 64) { x += rnd(-6, 6); y += rnd(4, 9); c.lineTo(x, y); } c.stroke(); } }); t.wrapS = t.wrapT = T3.RepeatWrapping; return t; };
+  const obiTex = () => { const t = cTex('obiL', 128, 32, (c) => { c.fillStyle = '#c03060'; c.fillRect(0, 0, 128, 32); c.fillStyle = '#ffd040'; for (let i = 0; i < 4; i++) { c.beginPath(); c.arc(16 + i * 32, 16, 7, 0, TAU); c.fill(); } c.fillStyle = '#e85a8a'; for (let i = 0; i < 4; i++) c.fillRect(i * 32, 13, 4, 6); c.fillStyle = '#6a1030'; c.fillRect(0, 0, 128, 4); c.fillRect(0, 28, 128, 4); c.fillStyle = '#ffd040'; c.fillRect(0, 4, 128, 1.5); c.fillRect(0, 26.5, 128, 1.5); }); t.wrapS = T3.RepeatWrapping; return t; };
+  function spr(tex, c, size, op) { const m = new T3.Sprite(new T3.SpriteMaterial({ map: tex, color: c, blending: T3.AdditiveBlending, depthWrite: false, transparent: true, fog: false, opacity: op === undefined ? 1 : op })); m.scale.set(size, size, 1); m.frustumCulled = false; return m; }
+  function groundSigil(k, c, op) { const m = new T3.Mesh(sgeo('gplane', () => new T3.PlaneGeometry(2, 2).rotateX(-Math.PI / 2)), new T3.MeshBasicMaterial({ map: sigilTex(k), color: c, transparent: true, opacity: op === undefined ? 0.9 : op, blending: T3.AdditiveBlending, depthWrite: false, fog: false, side: T3.DoubleSide })); m.frustumCulled = false; return m; }
+  function groundRing(c, op) { const m = new T3.Mesh(sgeo('gring', () => new T3.RingGeometry(0.9, 1, 48).rotateX(-Math.PI / 2)), amat(c, op || 0.8)); m.frustumCulled = false; return m; }
+  function groundDisc(c, op) { const m = new T3.Mesh(sgeo('gplane', () => new T3.PlaneGeometry(2, 2).rotateX(-Math.PI / 2)), new T3.MeshBasicMaterial({ map: radialTex(), color: c, transparent: true, opacity: op === undefined ? 0.6 : op, blending: T3.AdditiveBlending, depthWrite: false, fog: false })); m.frustumCulled = false; return m; }
+  // a tube along pts whose radius follows taper(u) — tentacles, wood dragons, silk
+  function taperTube(pts, segs, rad, radial, taper) {
+    const curve = new T3.CatmullRomCurve3(pts), geo = new T3.TubeGeometry(curve, segs, rad, radial, false), p = geo.attributes.position, c = new T3.Vector3();
+    for (let i = 0; i <= segs; i++) { curve.getPointAt(i / segs, c); const k = taper(i / segs); for (let j = 0; j <= radial; j++) { const v = i * (radial + 1) + j; p.setXYZ(v, c.x + (p.getX(v) - c.x) * k, c.y + (p.getY(v) - c.y) * k, c.z + (p.getZ(v) - c.z) * k); } }
+    geo.computeVertexNormals(); geo.userData.tip = curve.getPointAt(1); return geo;
+  }
+  const crescG = () => sgeo('cres', crescentGeo);
+  const coneG = () => sgeo('spike', () => new T3.ConeGeometry(0.07, 0.5, 6).translate(0, 0.25, 0));
+  const iceMat = () => tmat('#dff4ff', { emissive: new T3.Color('#3a78b0'), transparent: true, opacity: 0.92 });
+  const ease = (x) => 1 - Math.pow(1 - clamp(x, 0, 1), 3);
+
+  // ---- active lines: built in the line's own frame (x along it), so they're static meshes
+  function makeLine(h, g, add) {
+    const U = g.userData, L = Math.hypot(h.x2 - h.x1, h.y2 - h.y1) * S, hl = L / 2, ang = Math.atan2(h.y2 - h.y1, h.x2 - h.x1), c = HCOL[h.style] || DCOL[h.bk] || '#ff4040', w = h.w * S;
+    g.position.set(toX((h.x1 + h.x2) / 2), toY((h.y1 + h.y2) / 2), (h.z || 0) * S); g.rotation.z = -ang;
+    // the blow travels from the end nearest the demon
+    const ex = Math.cos(ang), bx = h.bx !== undefined ? h.bx : h.src, base = (bx - (h.x1 + h.x2) / 2) * ex >= 0 ? 1 : -1;
+    const body = new T3.Group(); g.add(body); U.body = body; U.base = base; U.hl = hl;
+    const B = (m) => { m.frustumCulled = false; body.add(m); return m; };
+    U.mats = [];
+    const band = (wid, mat) => { const m = B(new T3.Mesh(new T3.PlaneGeometry(L, wid), mat)); if (mat.uniforms) U.mats.push(mat); return m; };
+    const s = h.style;
+    if (s === 'thread') { // Rui: three taut steel-silk strands that glint
+      band(w * 1.6, actMat(c, 30)).material.uniforms.uA.value = 0.5;
+      for (const o of [-1, 0, 1]) { const m = B(new T3.Mesh(new T3.PlaneGeometry(L, 0.018), amat('#ffffff', 1))); m.position.set(0, o * 0.05, o * 0.02); }
+      U.glint = []; for (let i = 0; i < 9; i++) { const sp = B(spr(radialTex(), '#ffffff', 0.18)); sp.userData.u = Math.random(); U.glint.push(sp); }
+    } else if (s === 'obi') { // Daki: a real silk sash, patterned and rippling
+      band(w * 2.4, actMat(c, 20)).material.uniforms.uA.value = 0.55;
+      const t = obiTex(), m = B(new T3.Mesh(new T3.PlaneGeometry(L, w * 1.5, 160, 1), tmat(0xffffff, { map: t, side: T3.DoubleSide, emissive: new T3.Color('#401020') })));
+      t.repeat.set(L / 0.9, 1); m.castShadow = true; U.obi = m; U.obiX = Float32Array.from({ length: m.geometry.attributes.position.count }, (_, i) => m.geometry.attributes.position.getX(i));
+    } else if (s === 'whip') { // Muzan: a thorned flesh tentacle lashing out of the dark
+      band(w * 2.2, actMat('#ff1838', 20)).material.uniforms.uA.value = 0.6;
+      const sd = Math.random() * 6, pts = []; for (let i = 0; i <= 40; i++) { const x = -hl + L * i / 40; pts.push(new T3.Vector3(x, Math.sin(x * 1.1 + sd) * 0.14, Math.cos(x * 0.7 + sd) * 0.18)); }
+      const geo = taperTube(pts, 160, 0.11, 7, (u) => { const k = base > 0 ? u : 1 - u; return 0.25 + 0.75 * k; });
+      const tm = tmat('#2a0408', { emissive: new T3.Color('#4a0010') }); B(new T3.Mesh(geo, tm)).castShadow = true;
+      const thm = tmat('#9a1028', { emissive: new T3.Color('#500010') });
+      for (let i = 0; i < 26; i++) { const x = rnd(-hl * 0.5, hl * 0.5), t = B(new T3.Mesh(coneG(), thm)); t.position.set(x, Math.sin(x * 1.1 + sd) * 0.14, Math.cos(x * 0.7 + sd) * 0.18); t.rotation.set(rnd(-1, 1), 0, (Math.random() < 0.5 ? 1 : -1) * rnd(0.6, 1.4)); t.scale.setScalar(rnd(0.5, 1)); }
+    } else if (s === 'moon') { // Kokushibo: crescent moons of every size riding the cut
+      band(w * 2.6, actMat(c, 20)); band(Math.max(0.03, w * 0.35), amat('#ffffff', 0.95));
+      U.cres = []; for (let i = 0; i < 16; i++) { const big = i < 6, m = B(new T3.Mesh(big ? crescG() : sgeo('moonlet', () => new T3.TorusGeometry(1, 0.08, 4, 14, 2.4)), amat(big ? '#d8c0ff' : '#fff4ff', big ? 0.8 : 0.95)));
+        const sc = big ? rnd(0.3, 0.75) : rnd(0.06, 0.16); m.scale.setScalar(sc); m.position.set(rnd(-5, 5) * (big ? 0.7 : 1), rnd(-0.35, 0.35) * (big ? 0.6 : 1.4), rnd(-0.2, 0.2)); m.rotation.z = rnd(0, TAU); m.userData.sc = sc; m.userData.sp = rnd(-0.08, 0.08); U.cres.push(m); }
+    } else if (s === 'frost') { // Douma: a breath of frost that grows ice spikes and freezing mist
+      band(w * 1.6, actMat('#7ac8ff', 12)).material.uniforms.uA.value = 0.45; band(0.04, amat('#ffffff', 0.8)); const im = iceMat();
+      U.ice = []; for (let i = 0; i < 22; i++) { const m = B(new T3.Mesh(coneG(), im)); const up = Math.random() < 0.5 ? 1 : -1; m.position.set(rnd(-6, 6), up * rnd(0, w * 0.4), rnd(-0.3, 0.3)); m.rotation.set(rnd(-0.5, 0.5), 0, (up > 0 ? 0 : Math.PI) + rnd(-0.7, 0.7)); m.userData.sc = rnd(0.8, 2); m.scale.setScalar(0.01); m.castShadow = true; U.ice.push(m); }
+      U.mist = []; for (let i = 0; i < 7; i++) { const sp = B(spr(radialTex(), '#a8d8ff', rnd(1, 1.8), 0.15)); sp.position.set(rnd(-5, 5), rnd(-0.3, 0.3), 0.1); U.mist.push(sp); }
+    } else if (s === 'bolt') { // Sekido's lightning: a jagged forked bolt, re-struck every couple of frames
+      U.zig = B(new T3.Mesh(ribbonGeo(18), ribbonMat('thunder', 0))); U.zigC = B(new T3.Mesh(ribbonGeo(18), amat('#ffffff', 1)));
+      U.br = []; for (let i = 0; i < 4; i++) U.br.push(B(new T3.Mesh(ribbonGeo(6), amat('#fff3a0', 0.9))));
+      U.mats.push(U.zig.material);
+    } else if (s === 'storm') { // Akaza: blue-silver light scattered like snowflakes (青銀乱残光)
+      band(w * 2.2, actMat(c, 20)); band(Math.max(0.025, w * 0.3), amat('#ffffff', 0.9));
+      U.flakes = []; for (let i = 0; i < 9; i++) { const sp = B(spr(flakeTex(), '#bfeaff', rnd(0.25, 0.5))); sp.position.set(rnd(-5, 5), rnd(-0.3, 0.3), 0.05); sp.userData.r = rnd(-0.2, 0.2); U.flakes.push(sp); }
+    } else if (s === 'arrow') { // Yahaba's arrows: red vectors streaming along the line
+      band(w * 2, actMat(c, 20));
+      U.arrows = []; for (let i = 0; i < 10; i++) { const m = B(new T3.Mesh(sgeo('arrowhead', () => { const sh = new T3.Shape(); sh.moveTo(0.18, 0); sh.lineTo(-0.1, 0.12); sh.lineTo(-0.04, 0); sh.lineTo(-0.1, -0.12); sh.lineTo(0.18, 0); return new T3.ShapeGeometry(sh); }), amat('#ff6060', 0.95))); m.userData.u = i / 10; U.arrows.push(m); }
+    } else { // claw marks and anything else
+      band(w * 2.2, actMat(c, 20)); band(Math.max(0.03, w * 0.3), amat('#ffffff', 0.9));
+    }
+    flash((h.x1 + h.x2) / 2, (h.y1 + h.y2) / 2, HAZ_THEME[s] || 'demon', 2.5);
+  }
+  function fadeAll(g, a) { // glows fade linearly, solid bodies hold then dissolve over the last 40%
+    g.traverse(o => { const m = o.material; if (!m || m.uniforms) return; const ud = m.userData; if (ud.o0 === undefined) { ud.o0 = m.opacity; ud.tr = m.transparent; }
+      if (m.blending === T3.AdditiveBlending) m.opacity = ud.o0 * a; else { const k = Math.min(1, a / 0.4); m.opacity = ud.o0 * k; if (!ud.tr && (k < 1) !== m.transparent) { m.transparent = k < 1; m.needsUpdate = true; } } });
+  }
+  function updateLine(g, h, a) {
+    const U = g.userData, t = h.t || 0, rev = ease(t / 4);
+    U.body.scale.x = Math.max(0.01, rev); U.body.position.x = U.base * U.hl * (1 - rev);
+    for (const m of U.mats) { if (m.uniforms.uTime) m.uniforms.uTime.value = time; m.uniforms.uA.value = (m.userData.a0 || (m.userData.a0 = m.uniforms.uA.value)) * a * 1.3; }
+    fadeAll(g, a);
+    if (U.glint) U.glint.forEach(sp => { sp.userData.u = (sp.userData.u + 0.03) % 1; sp.position.x = (sp.userData.u - 0.5) * 10; sp.scale.setScalar(0.1 + Math.abs(Math.sin(time * 20 + sp.userData.u * 9)) * 0.2); });
+    if (U.obi) { const p = U.obi.geometry.attributes.position; for (let i = 0; i < p.count; i++) { const x = U.obiX[i]; p.setZ(i, Math.sin(x * 2.2 - t * 0.9) * 0.12); p.setY(i, (i < p.count / 2 ? 1 : -1) * h.w * S * 0.75 + Math.sin(x * 1.3 + t * 0.6) * 0.05); } p.needsUpdate = true; }
+    if (U.cres) U.cres.forEach(m => { m.rotation.z += m.userData.sp; m.scale.setScalar(m.userData.sc * (0.6 + 0.6 * ease(t / 5))); });
+    if (U.ice) U.ice.forEach((m, i) => { const k = ease((t - i * 0.15) / 3); m.scale.set(m.userData.sc * k, m.userData.sc * k * (a < 0.35 ? a / 0.35 : 1), m.userData.sc * k); });
+    if (U.mist) U.mist.forEach(sp => { sp.position.x += 0.01; sp.scale.multiplyScalar(1.02); });
+    if (U.flakes) U.flakes.forEach(sp => { sp.material.rotation += sp.userData.r; });
+    if (U.arrows) U.arrows.forEach(m => { m.userData.u = (m.userData.u + 0.02) % 1; m.position.x = (m.userData.u - 0.5) * 12; });
+    if (U.zig && (t % 2 === 0 || !U.zz)) { // re-strike the bolt
+      const N = 18, pts = []; for (let i = 0; i <= N; i++) pts.push([(i / N - 0.5) * 14, i && i < N ? rnd(-0.22, 0.22) : 0]);
+      const rib = (geo, P, wd) => setRibbon(geo, (i) => { const p = P[Math.min(i, P.length - 1)]; return [p[0], p[1] + wd, 0, p[0], p[1] - wd, 0]; });
+      rib(U.zig.geometry, pts, 0.12); rib(U.zigC.geometry, pts, 0.025);
+      U.br.forEach(m => { const k = 2 + Math.floor(Math.random() * (N - 4)), P = [pts[k]]; let [x, y] = pts[k]; const dy = Math.random() < 0.5 ? 1 : -1; for (let i = 1; i <= 6; i++) { x += rnd(0.1, 0.35); y += dy * rnd(0.05, 0.2); P.push([x, y]); } rib(m.geometry, P, 0.015); });
+      U.zz = 1;
+    }
+  }
+
   function makeHaz(h) {
-    const g = new T3.Group(), add = (m) => { m.frustumCulled = false; g.add(m); return m; };
+    const g = new T3.Group(), U = g.userData, add = (m) => { m.frustumCulled = false; g.add(m); return m; }, c = hazCol(h), a = h.a || {};
     switch (h.type) {
-      case 'line': {
-        g.userData.rib = add(new T3.Mesh(ribbonGeo(h.style === 'bolt' ? 14 : 2), ribbonMat(h.style === 'bolt' ? 'thunder' : HAZ_THEME[h.style] || 'demon', 0)));
-        g.userData.core = add(new T3.Mesh(ribbonGeo(2), amat('#ffffff', 0.9)));
-        if (h.style === 'moon') { g.userData.cres = []; for (let i = 0; i < 12; i++) { const m = add(new T3.Mesh(new T3.TorusGeometry(0.1 + (i % 3) * 0.05, 0.01, 4, 12, 2.4), amat('#f4e8ff', 0.9))); g.userData.cres.push(m); } }
-        flash((h.x1 + h.x2) / 2, (h.y1 + h.y2) / 2, HAZ_THEME[h.style] || 'demon', 2.5);
-        break;
-      }
-      case 'circle': { const c = hazCol(h); g.userData.disc = add(new T3.Mesh(new T3.PlaneGeometry(2, 2), new T3.MeshBasicMaterial({ map: radialTex(), color: c, transparent: true, blending: T3.AdditiveBlending, depthWrite: false, fog: false })));
-        g.userData.ring = add(new T3.Mesh(new T3.TorusGeometry(1, 0.03, 4, 40), amat(c, 0.9)));
-        if (h.a && h.a.self && !h.a.moon && !h.a.blood) { const pos = []; for (let i = 0; i < 12; i++) { const a = i / 12 * TAU; pos.push(0, 0, 0, Math.cos(a), Math.sin(a), 0); } const lg = new T3.BufferGeometry(); lg.setAttribute('position', new T3.Float32BufferAttribute(pos, 3)); g.userData.spokes = add(new T3.LineSegments(lg, new T3.LineBasicMaterial({ color: 0xbbffff, transparent: true, blending: T3.AdditiveBlending, depthWrite: false }))); }
-        flash(h.x, h.y, h.a && h.a.ice ? 'mist' : h.a && h.a.moon ? 'moon' : 'demon', 3); break; }
-      case 'arm': {
-        const a = h.a || {}, cl = a.dragon ? '#7a5a3a' : a.flesh ? '#c890a8' : a.thorn ? '#3a0a14' : '#6d8a48', m = tmat(cl), m2 = tmat(shade(cl, 15));
-        const stalk = add(new T3.Mesh(new T3.CylinderGeometry(0.5, 1, 1, 10, 4), m)); stalk.geometry.translate(0, 0.5, 0); stalk.castShadow = true; g.userData.stalk = stalk;
-        const top = new T3.Group(); g.add(top); g.userData.top = top;
-        if (a.dragon) { const hd = new T3.Mesh(new T3.ConeGeometry(0.22, 0.6, 8), tmat('#8a6a4a')); hd.rotation.z = -Math.PI / 2 - 0.3; top.add(hd); for (const z of [-0.12, 0.12]) { const e = new T3.Mesh(new T3.SphereGeometry(0.04, 6, 4), new T3.MeshBasicMaterial({ color: 0xffff00 })); e.position.set(0.1, 0.1, z); top.add(e); } for (const z of [-0.08, 0.08]) { const hn = new T3.Mesh(new T3.ConeGeometry(0.03, 0.3, 5), m2); hn.position.set(-0.15, 0.18, z); hn.rotation.z = 0.9; top.add(hn); } }
-        else if (a.thorn) { for (let i = 0; i < 8; i++) { const t = new T3.Mesh(new T3.ConeGeometry(0.06, 0.3, 5), tmat('#8a0a20')); t.userData.k = i; t.rotation.z = (i % 2 ? 1 : -1) * 1.1; g.add(t); (g.userData.thorns || (g.userData.thorns = [])).push(t); } }
-        else { for (let i = 0; i < 5; i++) { const f = new T3.Mesh(new T3.CapsuleGeometry(0.05, 0.22, 3, 6), m2); f.position.set(-0.18 + i * 0.09, 0.15, 0); f.rotation.z = (i - 2) * 0.2; top.add(f); } if (a.flesh) { const mo = new T3.Mesh(new T3.SphereGeometry(0.1, 8, 6), new T3.MeshBasicMaterial({ color: 0x802040 })); mo.scale.set(1, 0.5, 0.5); mo.position.set(0, -0.2, 0.15); top.add(mo); } }
-        top.traverse(o => { o.frustumCulled = false; o.castShadow = true; });
-        break;
-      }
-      case 'cage': { const pos = []; for (let i = 0; i < 16; i++) { const a = i / 16 * TAU; pos.push(Math.cos(a), Math.sin(a), 0, Math.cos(a) * 10, Math.sin(a) * 10, 0); } for (let k = 0; k < 3; k++) for (let i = 0; i < 16; i++) { const a0 = i / 16 * TAU, a1 = (i + 1) / 16 * TAU, r = 1 + k * 0.625; pos.push(Math.cos(a0) * r, Math.sin(a0) * r, 0, Math.cos(a1) * r, Math.sin(a1) * r, 0); }
-        g.userData.lines = add(new T3.Mesh(stripGeo(pos, 0.035), amat('#f4f4ff', 1))); break; }
-      case 'sweep': { const c = h.a && h.a.whip ? '#c01030' : '#b080ff'; g.userData.body = add(new T3.Mesh(new T3.SphereGeometry(1, 24, 10), amat(c, 0.6))); g.userData.core = add(new T3.Mesh(new T3.SphereGeometry(1, 20, 6), amat('#ffffff', 0.85))); flash(h.src, GY - 40, h.a && h.a.whip ? 'blood' : 'moon', 4); break; }
-      case 'shock': { const m = add(new T3.Mesh(new T3.ConeGeometry(0.3, 0.9, 12, 1, true), amat('#a0dcff', 0.6))); m.position.y = 0.45; add(glowSprite('#80c8ff', 0.8)).position.y = 0.2; break; }
+      case 'line': makeLine(h, g, add); break;
+      case 'circle': {
+        U.ring = add(groundRing(c, 0.95)); U.disc = add(groundDisc(c, 0.7)); U.sig = add(groundSigil(DCREST[h.bk] || '鬼', c, 0.8));
+        if (a.water) { // Gyokko 水獄鉢: a sphere of water that swallows its target
+          U.sph = add(new T3.Mesh(new T3.SphereGeometry(1, 28, 18), tmat('#2a8cff', { transparent: true, opacity: 0.42, emissive: new T3.Color('#0a3a80') })));
+          U.sph2 = add(new T3.Mesh(new T3.SphereGeometry(0.96, 20, 12), amat('#a0e0ff', 0.18)));
+          U.bub = []; for (let i = 0; i < 14; i++) { const b = add(spr(radialTex(), '#e0f6ff', rnd(0.05, 0.12))); b.userData.o = [rnd(-0.6, 0.6), rnd(-0.8, 0.8), rnd(-0.6, 0.6), rnd(0.01, 0.03)]; U.bub.push(b); }
+        } else if (a.ice) { // Douma 散り蓮華: ice lotus petals scatter and spikes burst outward
+          const im = iceMat(); U.ice = []; for (let i = 0; i < 18; i++) { const m = add(new T3.Mesh(coneG(), im)), an = i / 18 * TAU + rnd(-0.1, 0.1), d = rnd(0.2, 1); m.position.set(Math.cos(an) * d, 0, Math.sin(an) * d); m.rotation.set(Math.sin(an) * rnd(0.3, 0.9), 0, -Math.cos(an) * rnd(0.3, 0.9)); m.userData.sc = rnd(1.5, 3.5); m.castShadow = true; U.ice.push(m); }
+          const pm = tmat('#e8f8ff', { emissive: new T3.Color('#4a80b0'), side: T3.DoubleSide }); U.pet = []; for (let i = 0; i < 12; i++) { const m = add(new T3.Mesh(sgeo('petal', () => new T3.CircleGeometry(1, 10).scale(0.06, 0.13, 1)), pm)); m.userData.o = [i / 12 * TAU, rnd(0.3, 1.4), rnd(0.04, 0.09)]; U.pet.push(m); }
+        } else if (a.moon) { // Kokushibo 月魄災渦: a vortex of crescents spinning round him
+          U.orb = []; for (let i = 0; i < 14; i++) { const pv = new T3.Group(); add(pv); const m = new T3.Mesh(i % 3 ? crescG() : sgeo('moonlet', () => new T3.TorusGeometry(1, 0.08, 4, 14, 2.4)), amat(i % 3 ? '#d8c0ff' : '#ffffff', 0.85)); m.frustumCulled = false; m.scale.setScalar(i % 3 ? rnd(0.3, 0.6) : rnd(0.1, 0.2)); m.rotation.y = Math.PI / 2; pv.add(m); pv.userData.o = [rnd(0, TAU), rnd(0.55, 1), rnd(0.2, 2.4), rnd(0.12, 0.22)]; U.orb.push(pv); }
+        } else if (a.blood) { // Muzan: thorned blood spikes erupt from the whole floor around him
+          const sm = tmat('#4a0410', { emissive: new T3.Color('#600014') }); U.ice = []; for (let i = 0; i < 26; i++) { const m = add(new T3.Mesh(coneG(), sm)), an = rnd(0, TAU), d = Math.sqrt(Math.random()); m.position.set(Math.cos(an) * d, 0, Math.sin(an) * d); m.rotation.set(rnd(-0.3, 0.3), 0, rnd(-0.3, 0.3)); m.userData.sc = rnd(2, 4.5); m.castShadow = true; U.ice.push(m); }
+        } else if (a.poison) { // Gyutaro 円斬旋回: a storm of blood sickles whirling outward
+          U.sick = []; for (let i = 0; i < 9; i++) { const pv = new T3.Group(); add(pv); const m = new T3.Mesh(sgeo('sickle', () => new T3.TorusGeometry(1, 0.1, 5, 20, Math.PI * 1.3)), new T3.MeshBasicMaterial({ color: 0xff2040 })); m.frustumCulled = false; m.scale.setScalar(0.28); pv.add(m); const gl = spr(radialTex(), '#ff0020', 0.9, 0.7); pv.add(gl); pv.userData.o = [i / 9 * TAU, rnd(0.4, 1.6)]; U.sick.push(pv); }
+        } else { // Akaza 破壊殺・滅式: a pillar of blue force, compass spokes and flying rubble
+          U.pil = add(new T3.Mesh(new T3.CylinderGeometry(1, 1, 3, 32, 1, true).translate(0, 1.5, 0), amat(c, 0.45)));
+          const pos = []; for (let i = 0; i < 12; i++) { const an = i / 12 * TAU; pos.push(Math.cos(an) * 0.15, 0.04, Math.sin(an) * 0.15, Math.cos(an), 0.04, Math.sin(an)); }
+          const sg = []; for (let i = 0; i < pos.length; i += 6) { const [x1, , z1, x2, , z2] = pos.slice(i, i + 6), an = Math.atan2(z2 - z1, x2 - x1), nx = -Math.sin(an) * 0.03, nz = Math.cos(an) * 0.03; sg.push(x1 + nx, 0.04, z1 + nz, x1 - nx, 0.04, z1 - nz, x2 + nx, 0.04, z2 + nz, x1 - nx, 0.04, z1 - nz, x2 - nx, 0.04, z2 - nz, x2 + nx, 0.04, z2 + nz); }
+          const lg = new T3.BufferGeometry(); lg.setAttribute('position', new T3.Float32BufferAttribute(sg, 3)); U.spokes = add(new T3.Mesh(lg, amat('#d8f4ff', 0.9)));
+          const rm = tmat('#6a6a72'); U.rub = []; for (let i = 0; i < 14; i++) { const m = add(new T3.Mesh(sgeo('rock', () => new T3.DodecahedronGeometry(0.08, 0)), rm)); const an = rnd(0, TAU), sp = rnd(0.04, 0.1); m.userData.v = [Math.cos(an) * sp, rnd(0.06, 0.14), Math.sin(an) * sp]; m.scale.setScalar(rnd(0.6, 1.8)); m.castShadow = true; U.rub.push(m); }
+        }
+        flash(h.x, h.y, a.ice ? 'mist' : a.moon ? 'moon' : a.water ? 'water' : 'demon', a.ice ? 2 : 4); break; }
+      case 'arm': makeArm(h, g, add); break;
+      case 'cage': U.cage = add(cageMesh(a.tight ? '#ff3a50' : '#ffffff', 1)); U.glow = add(groundDisc(a.tight ? '#ff2040' : '#e8e8ff', 0.5)); break;
+      case 'sweep': {
+        if (a.whip) { // Muzan: one colossal tentacle scything across the whole floor
+          const L = (AR - AL) * 0.5 * S + 1, sd = Math.random() * 6, pts = []; for (let i = 0; i <= 40; i++) { const x = L * i / 40; pts.push(new T3.Vector3(x, 0.45 + Math.sin(x * 0.6 + sd) * 0.18, Math.sin(x * 0.4 + sd) * 0.35)); }
+          const tube = add(new T3.Mesh(taperTube(pts, 160, 0.34, 9, (u) => 1 - u * 0.8), tmat('#2a0408', { emissive: new T3.Color('#4a0010') }))); tube.castShadow = true; U.tube = tube;
+          const thm = tmat('#9a1028', { emissive: new T3.Color('#500010') }); for (let i = 0; i < 40; i++) { const x = rnd(0, L), t = new T3.Mesh(coneG(), thm); t.position.set(x, 0.45 + Math.sin(x * 0.6 + sd) * 0.18, Math.sin(x * 0.4 + sd) * 0.35); t.rotation.set(rnd(-1.4, 1.4), 0, rnd(-1.4, 1.4)); t.scale.setScalar(rnd(0.8, 1.6) * (1 - x / L * 0.6)); t.frustumCulled = false; tube.add(t); }
+          U.body = add(new T3.Mesh(new T3.SphereGeometry(1, 24, 10), amat('#c01030', 0.4)));
+        } else { // Kokushibo 月龍輪尾: a tidal wall of crescents rolling across the room
+          U.body = add(new T3.Mesh(new T3.SphereGeometry(1, 24, 10), amat('#b080ff', 0.5))); U.core = add(new T3.Mesh(new T3.SphereGeometry(1, 20, 6), amat('#ffffff', 0.8)));
+          U.cres = []; for (let i = 0; i < 12; i++) { const m = add(new T3.Mesh(i % 2 ? crescG() : sgeo('moonlet', () => new T3.TorusGeometry(1, 0.08, 4, 14, 2.4)), amat(i % 2 ? '#d8c0ff' : '#ffffff', 0.85))); m.userData.o = [rnd(-0.6, 0.1), rnd(0.2, 1.8), rnd(-0.5, 0.5), i % 2 ? rnd(0.6, 1.3) : rnd(0.15, 0.3)]; U.cres.push(m); }
+        }
+        flash(h.src, GY - 40, a.whip ? 'blood' : 'moon', 4); break; }
+      case 'shock': {
+        const col = DCOL[h.bk] || '#a0dcff'; U.col = col;
+        if (h.bk === 'hantengu') { // 狂圧鳴波: rings of crushing sound
+          U.rings = []; for (let i = 0; i < 4; i++) { const m = add(new T3.Mesh(sgeo('sring', () => new T3.TorusGeometry(1, 0.04, 4, 32)), amat(i % 2 ? '#fff6c0' : col, 0.8))); m.rotation.y = Math.PI / 2; m.userData.k = i / 4; U.rings.push(m); }
+        } else { // a ground rupture: a wave front and a trail of rock (or blood) spikes
+          const m = add(new T3.Mesh(new T3.ConeGeometry(0.32, 1, 12, 1, true), amat(col, 0.6))); m.position.y = 0.5; U.front = m;
+          const sm = h.bk === 'muzan' ? tmat('#4a0410', { emissive: new T3.Color('#600014') }) : tmat('#7a7068'); U.spk = []; for (let i = 0; i < 9; i++) { const s = add(new T3.Mesh(coneG(), sm)); s.userData.d = (i + 1) * 0.28; s.userData.zo = rnd(-0.25, 0.25); s.userData.sc = rnd(1.2, 2.4); s.rotation.set(rnd(-0.3, 0.3), 0, rnd(-0.3, 0.3)); s.castShadow = true; U.spk.push(s); }
+        }
+        add(spr(radialTex(), col, 0.9)).position.y = 0.25; U.lastX = h.x; break; }
+      case 'zone': { // melee swipes: an arc of the demon's colour where the blow lands
+        const col = DCOL[h.bk] || '#ff4040'; U.arc = add(new T3.Mesh(sgeo('zarc', () => new T3.TorusGeometry(1, 0.05, 4, 24, 2.4)), amat('#ffffff', 0.95)));
+        U.fan = add(new T3.Mesh(sgeo('zfan', () => new T3.CircleGeometry(1, 24, 0, 2.4)), amat(col, 0.35))); U.glow = add(spr(radialTex(), col, 1.2, 0.8));
+        if (h.bk === 'doma') { const im = iceMat(); U.ice = []; for (let i = 0; i < 7; i++) { const m = add(new T3.Mesh(coneG(), im)); const an = 0.2 + i / 6 * 2; m.position.set(Math.cos(an) * 0.8, Math.sin(an) * 0.8, 0); m.rotation.z = an - Math.PI / 2; m.userData.sc = rnd(0.8, 1.4); U.ice.push(m); } }
+        break; }
       default: return null;
     }
     scene.add(g); return g;
   }
   function updateHaz(g, h) {
-    const a = clamp(1 - h.t / h.life, 0, 1), U = g.userData;
+    const a = clamp(1 - (h.t || 0) / h.life, 0, 1), U = g.userData, t = h.t || 0, z = (h.z || 0) * S;
     switch (h.type) {
-      case 'line': {
-        const ang = Math.atan2(h.y2 - h.y1, h.x2 - h.x1), nx = -Math.sin(ang), ny = Math.cos(ang), w = h.w * (h.style === 'thread' ? 0.3 : 1);
-        if (h.style === 'bolt') { const pts = []; for (let i = 0; i <= 14; i++) { const u = i / 14; pts.push([lerp(h.x1, h.x2, u) + (i && i < 14 ? rnd(-18, 18) : 0), lerp(h.y1, h.y2, u) + (i && i < 14 ? rnd(-18, 18) : 0)]); } setRibbon(U.rib.geometry, (i) => { const p = pts[i]; return [toX(p[0] + nx * 4), toY(p[1] + ny * 4), 0.45, toX(p[0] - nx * 4), toY(p[1] - ny * 4), 0.45]; }); }
-        else setRibbon(U.rib.geometry, (i, u) => { const x = lerp(h.x1, h.x2, u), y = lerp(h.y1, h.y2, u); return [toX(x + nx * w), toY(y + ny * w), 0.45, toX(x - nx * w), toY(y - ny * w), 0.45]; });
-        const cw = Math.max(2, w * 0.25);
-        setRibbon(U.core.geometry, (i, u) => { const x = lerp(h.x1, h.x2, u), y = lerp(h.y1, h.y2, u); return [toX(x + nx * cw / 2), toY(y + ny * cw / 2), 0.46, toX(x - nx * cw / 2), toY(y - ny * cw / 2), 0.46]; });
-        U.rib.material.uniforms.uA.value = a * 1.4; U.rib.material.uniforms.uTime.value = time; U.core.material.opacity = a;
-        U.core.visible = h.style !== 'bolt';
-        if (U.cres) U.cres.forEach((m, i) => { const u = (i * 0.618 + h.x1 * 0.001) % 1; m.position.set(toX(lerp(h.x1, h.x2, u) + nx * 20 * Math.sin(i)), toY(lerp(h.y1, h.y2, u) + ny * 20 * Math.sin(i)), 0.5); m.rotation.z = -i; m.material.opacity = a; });
-        break;
-      }
-      case 'circle': { const x = h.follow ? h.follow.x : h.x, r = h.r * (1 + (1 - a) * 0.2) * S;
-        g.position.set(toX(x), toY(h.y), 0.35); U.disc.scale.setScalar(r); U.disc.material.opacity = a; U.ring.scale.setScalar(r * (0.9 + (1 - a) * 0.4)); U.ring.material.opacity = a;
-        if (U.spokes) { U.spokes.scale.setScalar(r); U.spokes.material.opacity = a; } break; }
-      case 'arm': { const ht = h.h * Math.min(1, h.t / 6) * (h.t > h.life - 8 ? (h.life - h.t) / 8 : 1) * S, w = h.w * S * 0.5;
-        g.position.set(toX(h.x), 0, 0.1); U.stalk.scale.set(w, Math.max(0.01, ht), w * 0.8); U.stalk.rotation.z = Math.sin(h.t * 0.3) * 0.08;
-        U.top.position.set(-Math.sin(U.stalk.rotation.z) * ht, ht, 0); U.top.scale.setScalar(h.w / 60); U.top.visible = ht > 0.05;
-        if (U.thorns) U.thorns.forEach((t) => { const k = t.userData.k; t.position.set((k % 2 ? 1 : -1) * w * 0.7, ht * (k + 0.5) / 8, 0); t.visible = ht > 0.05; });
+      case 'line': updateLine(g, h, a); break;
+      case 'circle': { const x = h.follow ? h.follow.x : h.x, r = h.r * S, k = ease(t / 5), cz = h.follow ? (h.follow.z || 0) * S : z, cy = toY(h.y);
+        g.position.set(toX(x), 0.03, cz);
+        U.ring.scale.setScalar(r * (0.3 + k * 0.9)); U.ring.material.opacity = a; U.disc.scale.setScalar(r * 1.1); U.disc.material.opacity = a * (h.a && (h.a.ice || h.a.water) ? 0.25 : 0.7);
+        U.sig.scale.setScalar(r); U.sig.rotation.y = time * 1.5; U.sig.material.opacity = a * 0.8;
+        if (U.sph) { U.sph.position.y = U.sph2.position.y = cy; const s = r * 0.8 * ease(t / 4); U.sph.scale.setScalar(Math.max(0.01, s)); U.sph2.scale.setScalar(Math.max(0.01, s)); U.sph.material.opacity = 0.42 * Math.min(1, a * 2.5); U.sph2.material.opacity = 0.18 * a;
+          U.bub.forEach(b => { const o = b.userData.o; o[1] += o[3] * 3; if (o[1] > 0.8) o[1] = -0.8; b.position.set(o[0] * s, cy + o[1] * s, o[2] * s); b.material.opacity = a; }); }
+        if (U.ice) U.ice.forEach((m, i) => { const e = ease((t - (i % 6) * 0.3) / 3) * (a < 0.3 ? a / 0.3 : 1), d = m.userData.d0 || (m.userData.d0 = [m.position.x, m.position.z]); m.position.set(d[0] * r, 0, d[1] * r); m.scale.set(m.userData.sc * e, m.userData.sc * e * 1.3, m.userData.sc * e); });
+        if (U.pet) U.pet.forEach(m => { const o = m.userData.o, rr = r * (0.2 + k * 0.9); m.position.set(Math.cos(o[0] + t * o[2]) * rr, o[1], Math.sin(o[0] + t * o[2]) * rr); m.rotation.set(t * 0.2, o[0] + t * o[2], 0); m.material.opacity = a; });
+        if (U.orb) U.orb.forEach(pv => { const o = pv.userData.o; pv.position.y = o[2]; pv.rotation.y = o[0] + t * o[3]; pv.children[0].position.x = r * o[1] * (0.4 + k * 0.6); pv.children[0].rotation.z = t * 0.3; pv.children[0].material.opacity = a * 0.9; });
+        if (U.sick) U.sick.forEach(pv => { const o = pv.userData.o; pv.position.y = o[1]; pv.rotation.y = o[0] + t * 0.45; pv.children[0].position.x = pv.children[1].position.x = r * (0.25 + k * 0.75); pv.children[0].rotation.z = -t * 0.9; pv.children[1].material.opacity = a * 0.7; });
+        if (U.pil) { U.pil.scale.set(r * (0.25 + k * 0.85), 1 + k * 0.4, r * (0.25 + k * 0.85)); U.pil.material.opacity = a * 0.45; U.spokes.scale.setScalar(r * (0.4 + k * 0.8)); U.spokes.rotation.y = t * 0.02; U.spokes.material.opacity = a;
+          U.rub.forEach(m => { const v = m.userData.v; if (t <= 1) m.position.set(rnd(-0.3, 0.3) * r, 0.05, rnd(-0.3, 0.3) * r); m.position.x += v[0] * r * 0.4; m.position.z += v[2] * r * 0.4; m.position.y = Math.max(0.04, m.position.y + v[1]); v[1] -= 0.012; m.rotation.x += 0.2; m.rotation.y += 0.15; }); }
         break; }
-      case 'cage': g.position.set(toX(h.x), toY(h.y), 0.4); U.lines.scale.setScalar(80 * S); U.lines.material.opacity = a; break;
-      case 'sweep': { const AW = AR - AL, prog = Math.min(1, h.t / 6), cx = h.src + h.dir * AW * 0.5 * prog, rx = (AW * 0.5 * prog + 40) * S;
-        g.position.set(toX(cx), toY(GY - 36), 0.3); U.body.scale.set(rx, 34 * S, 0.5); U.core.scale.set(Math.max(0.01, rx - 0.2), 8 * S, 0.3); U.body.material.opacity = a * 0.6; U.core.material.opacity = a * 0.85; break; }
-      case 'shock': g.position.set(toX(h.x), 0, 0.2); g.scale.setScalar(0.8 + Math.sin(time * 30) * 0.15); break;
+      case 'arm': updateArm(g, h); break;
+      case 'cage': { g.position.set(toX(h.x), 0.02, z); const r = (h.r || h.r0) * S * (1 - 0.7 * ease(t / h.life)); U.cage.scale.set(r, 1, r); U.cage.rotation.y = t * 0.04; U.cage.material.opacity = a; U.glow.scale.setScalar(r); U.glow.material.opacity = a * 0.5; break; }
+      case 'sweep': { const AW = AR - AL, prog = ease(t / 6), cx = h.src + h.dir * AW * 0.5 * prog, rx = (AW * 0.5 * prog + 40) * S;
+        if (U.tube) { g.position.set(toX(h.src), 0, z); g.rotation.y = h.dir > 0 ? 0 : Math.PI; U.tube.scale.set(Math.max(0.01, prog), 1, 1); U.tube.position.y = Math.sin(t * 0.5) * 0.08; U.body.position.set(AW * 0.25 * prog * S, 0.45, 0); U.body.scale.set(Math.max(0.01, rx * 0.5), 0.5, 0.6); U.body.material.opacity = a * 0.4; if (a < 0.3) U.tube.scale.y = U.tube.scale.z = a / 0.3; break; }
+        g.position.set(toX(cx), toY(GY - 36), z); U.body.scale.set(rx, 34 * S, 0.5); U.core.scale.set(Math.max(0.01, rx - 0.2), 8 * S, 0.3); U.body.material.opacity = a * 0.5; U.core.material.opacity = a * 0.8;
+        U.cres.forEach(m => { const o = m.userData.o; m.position.set(h.dir * (rx + o[0]), o[1] - toY(GY - 36), o[2]); m.scale.setScalar(o[3] * (0.6 + prog * 0.6)); m.rotation.z = (h.dir > 0 ? 0 : Math.PI) + Math.sin(t * 0.3 + o[1]) * 0.4; m.material.opacity = a * 0.9; });
+        break; }
+      case 'shock': { g.position.set(toX(h.x), 0, z); const dir = Math.sign(h.vx || 1);
+        if (U.rings) U.rings.forEach(m => { const k = (m.userData.k + t * 0.04) % 1; m.position.set(-dir * k * 0.6, 0.6, 0); m.scale.setScalar(0.2 + k * 1.1); m.material.opacity = (1 - k) * 0.9; });
+        if (U.front) { U.front.scale.setScalar(0.85 + Math.sin(time * 30) * 0.15); U.spk.forEach(s => { const d = s.userData.d, life = clamp(1 - Math.abs(Math.sin((t * 0.25 + d) * 1.3)) * 0.5, 0, 1); s.position.set(-dir * d, 0, s.userData.zo); s.scale.set(s.userData.sc * life, s.userData.sc * life * 1.4, s.userData.sc * life); }); }
+        break; }
+      case 'zone': { const f = h.follow || { x: h.x, face: 1, z: 0 }, face = f.face || 1, r = h.r * S;
+        g.position.set(toX(f.x + face * (h.off || 0) * 0.4), toY(h.y), (f.z || 0) * S + 0.1); g.scale.setScalar(r);
+        g.rotation.z = (face > 0 ? -1.2 : Math.PI - 1.2) - face * (1 - a) * 0.9 + face * 0.45;
+        U.arc.material.opacity = a; U.fan.material.opacity = a * 0.35; U.glow.material.opacity = a * 0.8;
+        if (U.ice) U.ice.forEach(m => { const e = ease(t / 2); m.scale.setScalar(m.userData.sc * e * a); });
+        break; }
     }
-    if (h.type === 'line') g.position.z = (h.z || 0) * S; else g.position.z += (h.z || 0) * S;
+  }
+  // ---- arms rising from the floor: Hantengu's wood dragons, Enmu's flesh, Muzan's thorned tendrils
+  function makeArm(h, g, add) {
+    const U = g.userData, a = h.a || {}, sd = Math.random() * 6, pts = [];
+    for (let i = 0; i <= 8; i++) { const u = i / 8; pts.push(new T3.Vector3(Math.sin(u * 3 + sd) * 0.35 * u, u, Math.cos(u * 2.4 + sd) * 0.25 * u)); }
+    let mat;
+    if (a.dragon) { const t = barkTex(); t.repeat.set(1, 3); mat = tmat(0xffffff, { map: t }); }
+    else if (a.flesh) { const t = fleshTex(); t.repeat.set(3, 2); mat = tmat(0xffffff, { map: t, emissive: new T3.Color('#301020') }); }
+    else if (a.thorn) mat = tmat('#2a0408', { emissive: new T3.Color('#4a0010') });
+    else mat = tmat('#6d8a48');
+    const stalk = add(new T3.Mesh(taperTube(pts, 24, 0.5, 8, (u) => 1 - u * 0.45), mat)); stalk.castShadow = true; U.stalk = stalk; U.tip = stalk.geometry.userData.tip;
+    const top = new T3.Group(); g.add(top); U.top = top;
+    if (a.dragon) { // a wooden dragon head: snout, open jaw, horns, glowing eyes
+      const hm = tmat('#7a5a38'), hm2 = tmat('#5a3e22');
+      const sk = new T3.Mesh(new T3.ConeGeometry(0.2, 0.62, 8), hm); sk.rotation.z = -Math.PI / 2 - 0.25; sk.position.x = 0.12; top.add(sk);
+      const jaw = new T3.Mesh(new T3.ConeGeometry(0.12, 0.5, 6), hm2); jaw.rotation.z = -Math.PI / 2 - 0.75; jaw.position.set(0.1, -0.12, 0); top.add(jaw); U.jaw = jaw;
+      for (const z of [-0.1, 0.1]) { const e = new T3.Mesh(new T3.SphereGeometry(0.035, 6, 4), new T3.MeshBasicMaterial({ color: 0xffee40 })); e.position.set(0.08, 0.1, z); top.add(e); const eg = spr(radialTex(), '#ffd000', 0.16); eg.position.set(0.08, 0.1, z); top.add(eg); }
+      for (const z of [-0.08, 0.08]) { const hn = new T3.Mesh(new T3.ConeGeometry(0.03, 0.35, 5), hm2); hn.position.set(-0.12, 0.2, z); hn.rotation.z = 1.0; top.add(hn); }
+      for (let i = 0; i < 4; i++) { const mn = new T3.Mesh(new T3.ConeGeometry(0.025, 0.2, 4), hm2); mn.position.set(-0.2 - i * 0.05, 0.05, 0); mn.rotation.z = 1.4; top.add(mn); }
+    } else if (a.thorn) {
+      const thm = tmat('#9a1028', { emissive: new T3.Color('#500010') }); U.thorns = []; for (let i = 0; i < 10; i++) { const u = (i + 0.5) / 10, p = new T3.Vector3(Math.sin(u * 3 + sd) * 0.35 * u, u, Math.cos(u * 2.4 + sd) * 0.25 * u), t = new T3.Mesh(coneG(), thm); t.position.copy(p); t.rotation.set(rnd(-1, 1), 0, (i % 2 ? 1 : -1) * rnd(0.9, 1.4)); t.scale.set(4, 0.5, 4); stalk.add(t); }
+      const tip = new T3.Mesh(coneG(), thm); tip.scale.set(2, 0.8, 2); top.add(tip);
+    } else {
+      const m2 = tmat(a.flesh ? '#d8a0b8' : '#7d9a58'); for (let i = 0; i < 5; i++) { const f = new T3.Mesh(new T3.CapsuleGeometry(0.05, 0.22, 3, 6), m2); f.position.set(-0.18 + i * 0.09, 0.15, 0); f.rotation.z = (i - 2) * 0.2; top.add(f); }
+      if (a.flesh) { for (let i = 0; i < 3; i++) { const e = new T3.Mesh(new T3.SphereGeometry(0.045, 8, 6), new T3.MeshBasicMaterial({ color: 0xffffff })); e.position.set(rnd(-0.1, 0.1), -0.25 - i * 0.12, 0.13); top.add(e); const pu = new T3.Mesh(new T3.SphereGeometry(0.02, 6, 4), new T3.MeshBasicMaterial({ color: 0x400010 })); pu.position.copy(e.position).add(new T3.Vector3(0, 0, 0.035)); top.add(pu); } }
+    }
+    U.dust = add(groundDisc(a.dragon ? '#c09060' : a.thorn ? '#ff1838' : '#d0a0c0', 0.6));
+    top.traverse(o => { o.frustumCulled = false; if (o.isMesh) o.castShadow = true; });
+  }
+  function updateArm(g, h) {
+    const U = g.userData, t = h.t || 0, ht = h.h * ease(t / 6) * (t > h.life - 8 ? (h.life - t) / 8 : 1) * S, w = h.w * S * 0.5;
+    g.position.set(toX(h.x), 0, (h.z || 0) * S + 0.1);
+    U.stalk.scale.set(w, Math.max(0.01, ht), w); U.stalk.rotation.z = Math.sin(t * 0.3) * 0.1; U.stalk.rotation.y = Math.sin(t * 0.13) * 0.3;
+    U.stalk.updateMatrix(); U.top.position.copy(U.tip).applyMatrix4(U.stalk.matrix); U.top.scale.setScalar(h.w / 60);
+    U.top.visible = ht > 0.05; if (U.jaw) U.jaw.rotation.z = -Math.PI / 2 - 0.5 - Math.abs(Math.sin(t * 0.4)) * 0.5;
+    U.dust.scale.setScalar(w * 2.4); U.dust.material.opacity = clamp(1 - t / h.life, 0, 1) * 0.6;
+  }
+  // Rui's thread cage: silk strands drawn from a circle on the floor up to a point over the target
+  function cageMesh(c, op) {
+    const geo = sgeo('cage', () => {
+      const out = [], seg = (x1, y1, z1, x2, y2, z2, w) => { const dx = x2 - x1, dz = z2 - z1, L = Math.hypot(dx, dz) || 1, nx = -dz / L * w, nz = dx / L * w; out.push(x1 + nx, y1, z1 + nz, x1 - nx, y1, z1 - nz, x2 + nx, y2, z2 + nz, x1 - nx, y1, z1 - nz, x2 - nx, y2, z2 - nz, x2 + nx, y2, z2 + nz); };
+      const N = 18; for (let i = 0; i < N; i++) { const a = i / N * TAU, a2 = a + 1.1; seg(Math.cos(a), 0, Math.sin(a), Math.cos(a2) * 0.12, 2.6, Math.sin(a2) * 0.12, 0.012); seg(Math.cos(a), 0, Math.sin(a), Math.cos(a - 1.1) * 0.12, 2.6, Math.sin(a - 1.1) * 0.12, 0.012); }
+      for (const [y, r] of [[0.05, 1], [0.9, 0.72], [1.7, 0.42]]) for (let i = 0; i < 36; i++) { const a0 = i / 36 * TAU, a1 = (i + 1) / 36 * TAU; seg(Math.cos(a0) * r, y, Math.sin(a0) * r, Math.cos(a1) * r, y, Math.sin(a1) * r, 0.01); }
+      const g = new T3.BufferGeometry(); g.setAttribute('position', new T3.Float32BufferAttribute(out, 3)); return g;
+    });
+    const m = new T3.Mesh(geo, amat(c, op)); m.frustumCulled = false; return m;
   }
   // ---- 3D telegraphs (warnings before an attack lands)
-  const dashTex = () => cTex('dash', 64, 8, (c) => { c.fillStyle = '#fff'; c.fillRect(0, 0, 40, 8); });
-  const HCOL = { thread: '#f4f4ff', moon: '#d0b0ff', whip: '#c01030', obi: '#ff4c8a', claw: '#d09050', arrow: '#ff3030', bolt: '#fff070', frost: '#bfe8ff', storm: '#8fd8ff' };
-  function groundRing(c, op) { const m = new T3.Mesh(new T3.RingGeometry(0.9, 1, 48).rotateX(-Math.PI / 2), amat(c, op || 0.8)); m.frustumCulled = false; return m; }
   function makeTele(h) {
-    const g = new T3.Group(), U = g.userData, add = (m) => { m.frustumCulled = false; g.add(m); return m; };
+    const g = new T3.Group(), U = g.userData, add = (m) => { m.frustumCulled = false; g.add(m); return m; }, c = hazCol(h), crest = DCREST[h.bk] || '鬼';
+    U.d0 = Math.max(1, h.delay);
     switch (h.type) {
-      case 'line': { const t = dashTex(); t.wrapS = T3.RepeatWrapping; t.repeat.set(80, 1); U.rib = add(new T3.Mesh(ribbonGeo(2), new T3.MeshBasicMaterial({ map: t, color: HCOL[h.style] || '#ff4040', transparent: true, depthWrite: false, side: T3.DoubleSide, fog: false, blending: T3.AdditiveBlending })));
-        const ang = Math.atan2(h.y2 - h.y1, h.x2 - h.x1), nx = -Math.sin(ang) * 2.5, ny = Math.cos(ang) * 2.5; setRibbon(U.rib.geometry, (i, u) => { const x = lerp(h.x1, h.x2, u), y = lerp(h.y1, h.y2, u); return [toX(x + nx), toY(y + ny), 0, toX(x - nx), toY(y - ny), 0]; }); break; }
-      case 'circle': { const c = hazCol(h); U.ring = add(new T3.Mesh(new T3.TorusGeometry(1, 0.025, 4, 48), amat(c, 0.7))); U.disc = add(new T3.Mesh(new T3.CircleGeometry(1, 40), amat(c, 0.18))); U.gr = add(groundRing(c, 0.7)); break; }
-      case 'arm': U.gr = add(groundRing('#ff3030', 0.8)); U.fill = add(new T3.Mesh(new T3.CircleGeometry(1, 32).rotateX(-Math.PI / 2), amat('#ff3030', 0.3))); break;
-      case 'rainmark': U.gr = add(groundRing('#ff6060', 0.85)); { const l = add(new T3.Mesh(new T3.BoxGeometry(0.03, 0.24, 0.03), amat('#ff6060', 0.85))); l.position.y = 0.18; } break;
-      case 'cage': { const pos = []; for (let i = 0; i < 16; i++) { const a = i / 16 * TAU; pos.push(Math.cos(a), Math.sin(a), 0, Math.cos(a) * 10, Math.sin(a) * 10, 0); } for (let k = 0; k < 3; k++) for (let i = 0; i < 16; i++) { const a0 = i / 16 * TAU, a1 = (i + 1) / 16 * TAU, r = 1 + k * 0.625; pos.push(Math.cos(a0) * r, Math.sin(a0) * r, 0, Math.cos(a1) * r, Math.sin(a1) * r, 0); }
-        U.lines = add(new T3.Mesh(stripGeo(pos, 0.02), amat('#f4f4ff', 0.75))); break; }
-      case 'sweep': U.band = add(new T3.Mesh(new T3.PlaneGeometry((AR - AL) * S, 6).rotateX(-Math.PI / 2), amat('#ff2020', 0.3))); U.wall = add(new T3.Mesh(new T3.PlaneGeometry((AR - AL) * S, 0.7), amat('#ff2020', 0.25))); break;
+      case 'line': { const L = Math.hypot(h.x2 - h.x1, h.y2 - h.y1) * S; U.rib = add(new T3.Mesh(new T3.PlaneGeometry(L, 1), teleMat(c, L * 1.6)));
+        g.position.set(toX((h.x1 + h.x2) / 2), toY((h.y1 + h.y2) / 2), (h.z || 0) * S); g.rotation.z = -Math.atan2(h.y2 - h.y1, h.x2 - h.x1); break; }
+      case 'circle': U.sig = add(groundSigil(crest, c, 0.85)); U.fill = add(groundDisc(c, 0.5)); U.gr = add(groundRing(c, 0.9)); U.ring = add(new T3.Mesh(sgeo('vring', () => new T3.TorusGeometry(1, 0.02, 4, 48)), amat(c, 0.5))); break;
+      case 'arm': U.sig = add(groundSigil(crest, c === '#ff4040' ? '#ff5050' : c, 0.9)); U.fill = add(groundDisc('#ff3030', 0.5)); break;
+      case 'rainmark': { const s = h.a && h.a.shape, rc = s === 'lotus' || s === 'icicle' ? '#bfe8ff' : s === 'fish' ? '#70e0ff' : s === 'moonbeam' ? '#c8a8ff' : '#ff6060';
+        U.gr = add(groundRing(rc, 0.85)); U.fill = add(groundDisc(rc, 0.5)); U.col = add(new T3.Mesh(sgeo('rcol', () => new T3.CylinderGeometry(1, 1, 1, 12, 1, true).translate(0, 0.5, 0)), amat(rc, 0.12))); U.tall = s === 'moonbeam' ? 6 : 2.2; break; }
+      case 'cage': U.cage = add(cageMesh(h.a && h.a.tight ? '#ff6070' : '#f4f4ff', 0.5)); U.sig = add(groundSigil('糸', h.a && h.a.tight ? '#ff3050' : '#e8e8ff', 0.6)); break;
+      case 'sweep': { const W2 = (AR - AL) * S; U.band = add(new T3.Mesh(new T3.PlaneGeometry(W2, 3).rotateX(-Math.PI / 2), teleMat(h.a && h.a.whip ? '#ff2030' : '#b080ff', W2 * 0.8))); U.wall = add(new T3.Mesh(new T3.PlaneGeometry(W2, 0.8), teleMat(h.a && h.a.whip ? '#ff2030' : '#b080ff', W2 * 0.8))); U.wall.position.y = 0.4; break; }
       default: return null;
     }
     scene.add(g); return g;
   }
   function updateTele(g, h) {
-    const U = g.userData, blink = (G.t % 8) < 4, z = (h.z || 0) * S;
+    const U = g.userData, z = (h.z || 0) * S, p = clamp(1 - h.delay / U.d0, 0, 1), blink = 0.55 + 0.45 * Math.sin(time * (8 + p * 26));
     switch (h.type) {
-      case 'line': g.position.set(0, 0, z); U.rib.material.opacity = blink ? 0.75 : 0.3; break;
-      case 'circle': { const x = h.follow ? h.follow.x : h.x, p = 1 - h.delay / h.a.tele, r = h.r * S; U.ring.position.set(toX(x), toY(h.y), z); U.ring.scale.setScalar(r); U.disc.position.set(toX(x), toY(h.y), z); U.disc.scale.setScalar(Math.max(0.01, r * p)); U.gr.position.set(toX(x), 0.03, z); U.gr.scale.setScalar(r); U.gr.material.opacity = blink ? 0.8 : 0.4; break; }
-      case 'arm': { const r = (h.w / 2 + 6) * S; U.gr.position.set(toX(h.x), 0.03, z); U.gr.scale.setScalar(r); U.fill.position.set(toX(h.x), 0.025, z); U.fill.scale.setScalar(r); U.gr.material.opacity = blink ? 0.9 : 0.35; break; }
-      case 'rainmark': g.position.set(toX(h.x), 0.03, z); g.scale.setScalar(0.32); g.children.forEach(m => m.material.opacity = blink ? 0.9 : 0.35); break;
-      case 'cage': g.position.set(toX(h.x), toY(h.y), z); U.lines.scale.setScalar((h.r || h.r0) * S); break;
-      case 'sweep': U.band.position.set(toX((AL + AR) / 2), 0.03, z); U.wall.position.set(toX((AL + AR) / 2), 0.35, z + 0.6); U.band.material.opacity = blink ? 0.4 : 0.15; U.wall.material.opacity = blink ? 0.3 : 0.1; break;
+      case 'line': { const u = U.rib.material.uniforms; u.uP.value = p; u.uTime.value = time; U.rib.scale.y = lerp(30, 10, p) * S; break; }
+      case 'circle': { const x = h.follow ? h.follow.x : h.x, r = h.r * S, cz = h.follow ? (h.follow.z || 0) * S : z; g.position.set(toX(x), 0.03, cz);
+        U.sig.scale.setScalar(r); U.sig.rotation.y = time * (0.6 + p * 2); U.sig.material.opacity = 0.35 + 0.55 * p;
+        U.fill.scale.setScalar(Math.max(0.01, r * p)); U.fill.material.opacity = 0.5 * blink; U.gr.scale.setScalar(r); U.gr.material.opacity = 0.5 + 0.4 * blink;
+        U.ring.position.y = toY(h.y); U.ring.scale.setScalar(r); U.ring.material.opacity = 0.25 * blink; break; }
+      case 'arm': { const r = (h.w / 2 + 10) * S; g.position.set(toX(h.x), 0.03, z); U.sig.scale.setScalar(r); U.sig.rotation.y = -time * 2; U.sig.material.opacity = 0.4 + 0.5 * blink; U.fill.scale.setScalar(Math.max(0.01, r * p)); break; }
+      case 'rainmark': { g.position.set(toX(h.x), 0.03, z); const r = 0.34; U.gr.scale.setScalar(r); U.gr.material.opacity = 0.4 + 0.5 * blink; U.fill.scale.setScalar(Math.max(0.01, r * p)); U.col.scale.set(r * 0.5, U.tall, r * 0.5); U.col.material.opacity = 0.05 + p * 0.15; break; }
+      case 'cage': { g.position.set(toX(h.x), 0.02, z); const r = (h.r || h.r0) * S; U.cage.scale.set(r, 1, r); U.cage.rotation.y = -time * 0.4; U.cage.material.opacity = 0.2 + 0.4 * p; U.sig.scale.setScalar(r); U.sig.rotation.y = time; U.sig.material.opacity = 0.3 + 0.4 * blink; break; }
+      case 'sweep': { g.position.set(toX((AL + AR) / 2), 0.03, z); for (const m of [U.band, U.wall]) { const u = m.material.uniforms; u.uP.value = p; u.uTime.value = time * (h.dir > 0 ? 1 : -1); } U.wall.position.z = 0.6; break; }
     }
   }
-  function syncEnemy(eproj, haz) {
+  // ---- charge-up: while a demon winds up, its crest burns on the floor and power gathers round it
+  const auras = new Map();
+  function makeAura(b) {
+    const g = new T3.Group(), U = g.userData, c = DCOL[b.key] || '#ff3040', add = (m) => { m.frustumCulled = false; g.add(m); return m; };
+    U.sig = add(groundSigil(DCREST[b.key] || '鬼', c, 0)); U.glow = add(spr(radialTex(), c, 1.6, 0)); U.core = add(spr(radialTex(), '#ffffff', 0.5, 0));
+    U.rings = []; for (let i = 0; i < 2; i++) { const m = add(new T3.Mesh(sgeo('aring', () => new T3.TorusGeometry(1, 0.025, 4, 40).rotateX(Math.PI / 2)), amat(c, 0))); m.userData.k = i * 0.5; U.rings.push(m); }
+    U.streaks = []; for (let i = 0; i < 10; i++) { const m = add(new T3.Mesh(sgeo('astreak', () => new T3.PlaneGeometry(0.035, 0.9)), amat(i % 2 ? '#ffffff' : c, 0))); const an = i / 10 * TAU; m.userData.o = [an, rnd(0, 1), rnd(0.5, 0.8)]; U.streaks.push(m); }
+    scene.add(g); return g;
+  }
+  function updateAura(g, b) {
+    const U = g.userData, p = clamp(b.st / Math.max(1, b.atk.tele), 0, 1), s = (b.scale || 1) * (b.def.minion ? 0.7 : 1), hh = (b.hh || 170) * S;
+    g.position.set(toX(b.x), 0.03, (b.z || 0) * S);
+    U.sig.scale.setScalar(1.3 * s * (0.6 + 0.4 * ease(p * 2))); U.sig.rotation.y = time * (1 + p * 3); U.sig.material.opacity = Math.min(1, p * 3) * 0.85;
+    U.glow.position.y = hh * 0.55; U.glow.scale.setScalar((1.2 + p * 1.4 + Math.sin(time * 30) * 0.1) * s); U.glow.material.opacity = 0.25 + p * 0.5;
+    U.core.position.y = hh * 0.55; U.core.scale.setScalar((0.3 + p * 0.5) * s); U.core.material.opacity = p > 0.85 ? 1 : p * 0.6;
+    U.rings.forEach(m => { const k = (m.userData.k + time * 0.9) % 1; m.position.y = k * hh * 1.1; m.scale.setScalar((0.9 - k * 0.5) * s); m.material.opacity = (1 - k) * 0.8 * Math.min(1, p * 4); });
+    U.streaks.forEach(m => { const o = m.userData.o, k = (o[1] + time * 1.4) % 1; m.position.set(Math.cos(o[0]) * o[2] * s, k * hh * 1.2, Math.sin(o[0]) * o[2] * s); m.lookAt(camera.position.x, m.position.y + g.position.y, camera.position.z); m.material.opacity = Math.sin(k * Math.PI) * 0.8 * p; });
+  }
+  function syncEnemy(eproj, haz, bosses) {
     const seen = new Set();
     for (const p of eproj) { let g = eMeshes.get(p); if (!g) { g = makeEProj(p); eMeshes.set(p, g); } updateEProj(g, p); seen.add(p); }
     for (const [p, g] of eMeshes) if (!seen.has(p)) { disposeFx(g); eMeshes.delete(p); }
@@ -645,6 +875,9 @@ const R3D = (() => {
       seenH.add(h);
     }
     for (const [h, o] of hMeshes) if (!seenH.has(h)) { if (o.tele) disposeFx(o.tele); if (o.act) disposeFx(o.act); hMeshes.delete(h); }
+    const live = new Set();
+    for (const b of bosses || []) if (b.state === 'tele' && b.atk && !b.dead && !b.pending) { let g = auras.get(b); if (!g) { g = makeAura(b); auras.set(b, g); } updateAura(g, b); live.add(b); }
+    for (const [b, g] of auras) if (!live.has(b)) { disposeFx(g); auras.delete(b); }
   }
 
   // ---------------- 3D technique effects ----------------
@@ -692,7 +925,7 @@ const R3D = (() => {
   }
   function disposeFx(m) {
     scene.remove(m);
-    m.traverse(o => { if (o.geometry) o.geometry.dispose(); if (o.material && o.material.dispose) o.material.dispose(); });
+    m.traverse(o => { if (o.geometry && !o.geometry.userData.shared) o.geometry.dispose(); if (o.material && o.material.dispose) o.material.dispose(); });
   }
   function updateFxMesh(m, e) {
     const mat = m.material;
@@ -1004,7 +1237,7 @@ const R3D = (() => {
     syncGhosts(G);
     syncFx((G.fx || []));
     syncProj(G.pproj || []);
-    syncEnemy(G.eproj || [], G.haz || []);
+    syncEnemy(G.eproj || [], G.haz || [], G.bosses || []);
     updateParticles((G.parts || []).concat(G.amb || []));
     bloom.strength = 0.85 + (G.flashScreen ? 0.5 : 0);
     grade.uniforms.uTime.value = time; grade.uniforms.uAA.value = api.quality >= 1 ? 1 : 0;
