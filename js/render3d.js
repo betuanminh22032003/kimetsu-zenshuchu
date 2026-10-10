@@ -7,7 +7,7 @@
 'use strict';
 
 const R3D = (() => {
-  const api = { ok: false, vrm: {}, vrmLoading: {}, stats: { fx: 0, parts: 0 } };
+  const api = { ok: false, vrm: {}, vrmLoading: {}, chibi: {}, no3dChars: location.search.includes('2dchars'), stats: { fx: 0, parts: 0 } };
   if (!window.THREE || location.search.includes('no3d')) return api;
   const T3 = THREE;
   const S = 0.01;
@@ -608,7 +608,7 @@ const R3D = (() => {
     return m;
   }
   function syncActors(actors, dt) {
-    const used = new Set(), usedV = new Set();
+    const used = new Set(), usedV = new Set(), usedC = new Set();
     for (const a of actors) {
       const sh = blob(a.id); used.add(a.id);
       const air = Math.max(0, GY - a.y) * S;
@@ -616,6 +616,14 @@ const R3D = (() => {
       sh.material.opacity = (a.alpha === undefined ? 1 : a.alpha) * Math.max(0.2, 1 - air * 0.5);
       const E = api.vrm[a.key];
       if (E && !a.custom) { poseVRM(E, a, dt); usedV.add(a.key); if (billboards[a.id]) billboards[a.id].mesh.visible = false; continue; }
+      const build = !api.no3dChars && typeof CHIBI3D !== 'undefined' && !a.custom && CHIBI3D[a.key];
+      if (build) {
+        let M = api.chibi[a.key];
+        if (!M) { M = api.chibi[a.key] = build(a.look || {}); scene.add(M.root); }
+        CHIBI3D.pose(M, a, dt); usedC.add(a.key);
+        M.root.visible = (a.alpha === undefined || a.alpha > 0.4) || (time * 20 % 2 < 1);
+        if (billboards[a.id]) billboards[a.id].mesh.visible = false; continue;
+      }
       const big = a.boss ? [600, 480, 300, 440] : [380, 320, 190, 290];
       const B = billboard(a.id, big[0], big[1]);
       B.tick = (B.tick || 0) + 1;
@@ -626,6 +634,7 @@ const R3D = (() => {
     for (const id in billboards) if (!used.has(id)) billboards[id].mesh.visible = false;
     for (const id in shadows) if (!used.has(id)) shadows[id].visible = false;
     for (const k in api.vrm) if (!usedV.has(k)) { api.vrm[k].root.visible = false; api.vrm[k].blade.visible = false; }
+    for (const k in api.chibi) if (!usedC.has(k)) api.chibi[k].root.visible = false;
   }
 
   // ---------------- main render ----------------
@@ -662,6 +671,7 @@ const R3D = (() => {
     camera.position.set(-sx * S, CAMY + sy * S, D);
     camera.rotation.set(0, 0, G.tiltT > 0 ? G.tilt * 0.12 * Math.sin(Math.PI * G.tiltT / 120) : 0);
     api.lastShake = [sx, sy];
+    if (api.camOverride) { const o = api.camOverride; camera.position.set(...o.pos); camera.lookAt(...o.look); }
     // flash lights
     for (const l of flashLights) { if (l.userData.life > 0) { l.userData.life -= dt * 3; l.intensity = Math.max(0, l.userData.life) * l.userData.power; } else l.intensity = 0; }
     if (G.flashScreen && G.flashScreen.t < 2) flash(activeP ? activeP().x : 640, 420, 'sun', 6);
