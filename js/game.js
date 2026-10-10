@@ -117,7 +117,7 @@ function damageEnemy(b, grp, hx, hy) {
   if (P && P.buffs.invis) { d *= 2; crit = true; P.buffs.invis = 0; }
   if (grp.mercy && b.hp < b.maxhp * 0.3) { d *= 3; crit = true; }
   if (b.pending) d = 0;
-  b.hp -= d; b.flash = 4; b.hurt = 10;
+  b.hp -= d; b.flash = 4; b.hurt = 10; b.noRegen = 180; // no regeneration for 3s after a hit
   if (grp.poison) { b.poison = Math.min(40, b.poison + grp.poison); addText(hx, hy - 30, '毒 Độc', '#c080ff', 18); Audio.sfx.poison(); }
   if (grp.burn) b.burn = 300;
   if (G.dawnMax) G.dawn += d * 0.6;
@@ -784,7 +784,9 @@ function updateBoss(b) {
   if (b.fleeing) { b.x += 14 * b.face; b.walk += 0.5; return; }
   // regen, poison, burn
   const poisonF = Math.max(0, 1 - b.poison / 20);
-  b.hp = Math.min(b.maxhp, b.hp + d.regen * poisonF * (b.regenBurst > 0 ? 6 : 1));
+  if (b.noRegen > 0) b.noRegen--;
+  else b.hp = Math.min(b.maxhp, b.hp + d.regen * poisonF * (b.regenBurst > 0 ? 6 : 1));
+  if (b.regenBurst > 0 && b.noRegen > 0) b.hp = Math.min(b.maxhp, b.hp + d.regen * 4); // dawn-stage forced regeneration still works
   if (b.regenBurst > 0) b.regenBurst--;
   if (b.poison > 0) { b.hp -= b.poison * 0.035; b.poison = Math.max(0, b.poison - 0.008); if (G.t % 12 === 0) G.parts.push({ x: b.x + rnd(-20, 20), y: b.y - rnd(40, b.hh), vx: 0, vy: -1, life: 30, max: 30, s: 4, c: '#b070ff', k: 'drop', g: -0.02 }); if (b.hp <= 0) checkBossDeath(b); }
   if (b.burn > 0) { b.burn--; b.hp -= 0.25; if (G.t % 4 === 0) particles('blood', b.x + rnd(-25, 25), b.y - rnd(20, b.hh), 1, 2, { g: -0.1 }); if (b.hp <= 0) checkBossDeath(b); }
@@ -800,7 +802,7 @@ function updateBoss(b) {
     const dx = tx - b.x; b.face = Math.sign(dx) || b.face;
     const want = d.minion ? 50 : 200;
     if (Math.abs(dx) > want + 30) { b.x += Math.sign(dx) * d.speed * spd; b.walk += 0.2; }
-    else if (Math.abs(dx) < want - 80 && !d.minion) { b.x -= Math.sign(dx) * d.speed * 0.6; b.walk += 0.15; }
+    else if (Math.abs(dx) < want - 80 && !d.minion && !(b.noRegen > 90)) { b.x -= Math.sign(dx) * d.speed * 0.45; b.walk += 0.15; } // backs off only when not under pressure
     if (D3() && d.speed) { // close the depth gap too (demons stalk you around the arena)
       const tz = P.buffs.invis ? (b.fakeZ === undefined ? (b.fakeZ = rnd(-180, 180)) : b.fakeZ) : P.z, dz = tz - b.z;
       if (!P.buffs.invis) b.fakeZ = undefined;
