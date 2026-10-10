@@ -291,14 +291,14 @@ const WORLD3D = (() => {
     o = o || {};
     const mat = windify(lam({ side: T3.DoubleSide }), 'grass', o.amp);
     const list = [];
-    for (let i = 0; i < n; i++) { const z = Math.pow(rnd(0, 1), 1.6) * (o.z1 === undefined ? -16 : o.z1) + (o.z0 === undefined ? 4 : o.z0); const half = (13.4 - z) * 0.5 + 3; const x = rnd(-half, half); if (o.avoid && o.avoid(x, z)) continue; list.push({ x, z, s: rnd(0.12, 0.3) * (o.h || 1), ry: rnd(0, TAU), col: C(o.tint || '#ffffff').multiplyScalar(rnd(0.7, 1.15)) }); }
+    n = Math.round(n * 1.5); for (let i = 0; i < n; i++) { const z = Math.pow(rnd(0, 1), 1.6) * (o.z1 === undefined ? -16 : o.z1) + (o.z0 === undefined ? 4 : o.z0); const half = (13.4 - z) * 0.45 + 17; const x = rnd(-half, half); if (o.avoid && o.avoid(x, z)) continue; list.push({ x, z, s: rnd(0.12, 0.3) * (o.h || 1), ry: rnd(0, TAU), col: C(o.tint || '#ffffff').multiplyScalar(rnd(0.7, 1.15)) }); }
     return instanced(grassGeo(), mat, list, (ob, t) => { ob.position.set(t.x, HF(t.x, t.z), t.z); ob.rotation.set(0, t.ry, 0); ob.scale.set(t.s * 1.3, t.s, t.s * 1.3); }, { detail: 1 });
   }
   function rocks(n, o) {
     const list = []; for (let i = 0; i < n; i++) { const z = rnd(o.z0, o.z1), x = rnd(-(o.w || 30), o.w || 30); if (o.avoid && o.avoid(x, z)) continue; list.push({ x, z, s: rnd(o.s0 || 0.2, o.s1 || 0.8), ry: rnd(0, 6), col: C(o.tint || '#ffffff').multiplyScalar(rnd(0.7, 1.1)) }); }
     return instanced(rockGeo(), lam({ map: T.stone() }), list, (ob, t) => { ob.position.set(t.x, HF(t.x, t.z) - t.s * 0.1, t.z); ob.rotation.set(rnd(-0.2, 0.2), t.ry, rnd(-0.2, 0.2)); ob.scale.set(t.s, t.s, t.s); }, { cast: true });
   }
-  const bandFree = (x, z) => z > -2.2 && z < 3.5; // keep the fighting lane clear
+  const bandFree = (x, z) => z > -3.6 && z < 4; // keep the fighting lane clear
 
   // ---------------- atmosphere ----------------
   const MIST_FS = `uniform float uTime; uniform vec3 uCol; uniform float uA; uniform float uSeed; varying vec2 vUv; ${GLSL_NOISE}
@@ -329,6 +329,7 @@ const WORLD3D = (() => {
       float a; if (uShape == 1) a = smoothstep(.5, .3, length(c * vec2(1., 2.2))); else if (uShape == 2) a = smoothstep(.5, .0, length(c)) * .6; else a = smoothstep(.5, .1, length(c));
       gl_FragColor = vec4(mix(uCol2, uCol, vS), a * vA * uA); }`;
   function particles(o) {
+    if (o.origin && o.origin[0] === 0 && o.box && o.box[0] < 56) { o.n = Math.round((o.n || 300) * 56 / o.box[0]); o.box = [56, o.box[1], o.box[2]]; } // cover the wide arena
     const n = o.n || 300, g = new T3.BufferGeometry(), seed = new Float32Array(n * 4), pos = new Float32Array(n * 3);
     for (let i = 0; i < n * 4; i++) seed[i] = Math.random();
     g.setAttribute('seed', new T3.BufferAttribute(seed, 4)); g.setAttribute('position', new T3.BufferAttribute(pos, 3));
@@ -342,7 +343,7 @@ const WORLD3D = (() => {
     const mat = new T3.ShaderMaterial({ uniforms: { uCol: { value: C(o.col) }, uA: { value: o.a || 0.12 }, uTime: U.uTime }, vertexShader: 'varying vec2 vUv; void main(){ vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position,1.); }',
       fragmentShader: 'uniform vec3 uCol; uniform float uA; uniform float uTime; varying vec2 vUv; void main(){ float a = smoothstep(0., .5, vUv.x) * smoothstep(1., .5, vUv.x) * pow(vUv.y, 1.5) * (.75 + .25 * sin(uTime * .5 + vUv.x * 3.)); gl_FragColor = vec4(uCol, a * uA); }',
       transparent: true, depthWrite: false, blending: T3.AdditiveBlending, fog: false, side: T3.DoubleSide });
-    for (let i = 0; i < n; i++) { const g = new T3.PlaneGeometry(rnd(1.5, 4), o.h || 18); const m = new T3.Mesh(g, mat); m.position.set(rnd(-18, 18), (o.h || 18) / 2 - 1, rnd(o.z0 || -16, o.z1 || -5)); m.rotation.z = o.tilt === undefined ? -0.35 : o.tilt; add(m); detail.push(m); }
+    for (let i = 0; i < n; i++) { const g = new T3.PlaneGeometry(rnd(1.5, 4), o.h || 18); const m = new T3.Mesh(g, mat); m.position.set(rnd(-26, 26), (o.h || 18) / 2 - 1, rnd(o.z0 || -16, o.z1 || -5)); m.rotation.z = o.tilt === undefined ? -0.35 : o.tilt; add(m); detail.push(m); }
   }
   // glowing lantern with halo sprite (+ optional real light)
   function glowSprite(x, y, z, col, size, op) { const s = new T3.Sprite(new T3.SpriteMaterial({ map: T.glow(), color: C(col), blending: T3.AdditiveBlending, depthWrite: false, transparent: true, opacity: op || 0.6, fog: true })); s.position.set(x, y, z); s.scale.set(size, size, 1); add(s); return s; }
@@ -423,7 +424,7 @@ const WORLD3D = (() => {
     E.scene.background = C(o.fog);
     E.scene.fog = new T3.Fog(o.fog, o.fogNear || 18, o.fogFar || 140);
     E.hemi.color.set(o.hemi[0]); E.hemi.groundColor.set(o.hemi[1]); E.hemi.intensity = o.hemi[2];
-    E.sun.color.set(o.key[0]); E.sun.intensity = o.key[1]; E.sun.position.set(...(o.keyPos || [-6, 12, 9]));
+    E.sun.color.set(o.key[0]); E.sun.intensity = o.key[1]; E.sun.position.set(...(o.keyPos || [-6, 12, 9])); E.sun.userData.base = (o.keyPos || [-6, 12, 9]).slice();
     if (o.sky !== false) makeSky(o);
   }
 
@@ -440,7 +441,7 @@ const WORLD3D = (() => {
       // wisteria trees: gnarled trunks, leafy canopies, hundreds of hanging racemes
       const b = Batch(), racemes = [];
       for (let i = 0; i < 13; i++) {
-        const x = -21 + i * 3.5 + rnd(-1, 1), z = rnd(-12, -4.5), y = HF(x, z), th = rnd(2.6, 3.6);
+        const x = -27 + i * 4.5 + rnd(-1, 1), z = rnd(-13, -5.5), y = HF(x, z), th = rnd(2.6, 3.6);
         const pts = [new T3.Vector3(x, y, z), new T3.Vector3(x + rnd(-0.4, 0.4), y + th * 0.4, z + rnd(-0.3, 0.3)), new T3.Vector3(x + rnd(-0.6, 0.6), y + th * 0.8, z), new T3.Vector3(x + rnd(-0.3, 0.3), y + th, z)];
         b.add(new T3.TubeGeometry(new T3.CatmullRomCurve3(pts), 10, 0.16, 7), 'bark', '#8a7a6a');
         for (let k = 0; k < 3; k++) { const a = rnd(0, TAU), bp = [pts[2].clone(), pts[2].clone().add(new T3.Vector3(Math.cos(a) * 1.3, 0.5, Math.sin(a) * 0.8))]; b.add(new T3.TubeGeometry(new T3.CatmullRomCurve3(bp), 4, 0.07, 5), 'bark', '#8a7a6a'); }
@@ -448,7 +449,7 @@ const WORLD3D = (() => {
         for (let k = 0; k < 5; k++) { const c = jitter(new T3.IcosahedronGeometry(1, 1), 0.35, i * 7 + k); b.add(colorize(c, '#1a2418', '#3c4a34', 'Y', -1, 1), 'def', undefined, M(x + rnd(-cw / 2, cw / 2), y + th + rnd(0, 0.4), z + rnd(-0.7, 0.7), rnd(0, 3), rnd(0.7, 1.0), 0.4, rnd(0.6, 0.9))); }
         for (let k = 0; k < 64; k++) racemes.push({ x: x + rnd(-cw * 0.7, cw * 0.7), y: y + th - rnd(-0.1, 0.25), z: z + rnd(-0.9, 0.9), s: rnd(0.6, 1.25) });
       }
-      for (let i = 0; i < 5; i++) stoneLantern(b, -16 + i * 8 + rnd(-1, 1), -3.4 + rnd(-0.5, 0.3), 1.1);
+      for (let i = 0; i < 7; i++) stoneLantern(b, -24 + i * 8 + rnd(-1, 1), -4.4 + rnd(-0.4, 0.2), 1.1);
       b.build(stdMats(), { cast: { bark: 1, def: 1, stone: 1 } });
       const rm = windify(lam({ emissive: 0x3a1c6a, emissiveIntensity: 0.55 }), 'hang', 0.12);
       instanced(racemeGeo('#9a72e0', '#f0e6ff'), rm, racemes, (o, t) => { o.position.set(t.x, t.y, t.z); o.rotation.set(0, rnd(0, 6), 0); o.scale.set(t.s * 1.1, t.s, t.s * 1.1); });
@@ -470,11 +471,11 @@ const WORLD3D = (() => {
       { const x = 14, z = -60, y = HF(x, z); for (let f = 0; f < 12; f++) { const r = 2.4 - f * 0.08; b.add(new T3.CylinderGeometry(r, r, 1.5, 8), f < 10 ? 'brick' : 'plaster', '#ffffff', M(x, y + f * 1.55 + 0.75, z)); b.add(new T3.CylinderGeometry(r + 0.15, r + 0.15, 0.1, 8), 'stone', '#d8d0c0', M(x, y + f * 1.55 + 1.5, z)); for (let k = 0; k < 8; k++) if (h2(f, k) < 0.5) b.add(new T3.PlaneGeometry(0.5, 0.8), 'winLit', '#ffffff', M(x + Math.sin(k / 8 * TAU) * (r + 0.02), y + f * 1.55 + 0.8, z + Math.cos(k / 8 * TAU) * (r + 0.02), k / 8 * TAU)); }
         b.add(new T3.ConeGeometry(1.4, 3, 8), 'def', '#3a3a44', M(x, y + 12 * 1.55 + 1.5, z)); glowSprite(x, y + 21, z, '#ff3030', 1.5, 0.8); }
       // gas lamps + telegraph poles with wires
-      for (let i = 0; i < 7; i++) streetLamp(b, -18 + i * 6, -3.2);
+      for (let i = 0; i < 9; i++) streetLamp(b, -24 + i * 6, -4.3);
       let prev = null; for (let i = 0; i < 8; i++) { const p = pole(b, -24 + i * 7, -5.6, 5); if (prev) { wire(b, [prev[0] - 0.5, prev[1], prev[2]], [p[0] - 0.5, p[1], p[2]], 0.4); wire(b, [prev[0] + 0.5, prev[1], prev[2]], [p[0] + 0.5, p[1], p[2]], 0.45); } prev = p; }
       for (let i = 0; i < 10; i++) paperLantern(b, -22 + i * 4.8, 2.3, -6.1, '#ff6030', 0.9);
       b.build(mats, { cast: { def: 1, wood: 1 } });
-      pointLight(-6, 3.3, -3.2, 0xffc070, 1.6, 7, 1); pointLight(6, 3.3, -3.2, 0xffc070, 1.6, 7, 1); pointLight(0, 2.4, -6, 0xff6030, 0.8, 6, 1);
+      pointLight(-6, 3.3, -4.3, 0xffc070, 1.6, 7, 1); pointLight(6, 3.3, -4.3, 0xffc070, 1.6, 7, 1); pointLight(0, 2.4, -6, 0xff6030, 0.8, 6, 1);
       mistLayers('#2a3450', 0.25, [-12, -24], 1, 4);
     },
     // ---- Tsuzumi mansion interior ----
@@ -492,7 +493,7 @@ const WORLD3D = (() => {
       const ceil = new T3.PlaneGeometry(60, 26).rotateX(Math.PI / 2); scaleUV(ceil, 20, 9); b.add(ceil, 'wood', '#6a4a30', M(0, 5, -4));
       for (let i = -10; i <= 10; i++) b.add(boxG(0.25, 0.3, 26), 'wood', '#3a2010', M(i * 3, 4.85, -4));
       // scattered tsuzumi drums + andon lamps
-      for (let i = 0; i < 9; i++) { const x = -14 + i * 3.5 + rnd(-0.6, 0.6), z = rnd(-5.4, -3), ry = rnd(0, 3); b.add(new T3.CylinderGeometry(0.13, 0.2, 0.25, 12).translate(0, 0.125, 0), 'wood', '#a06a3a', M(x, 0.36, z, ry, 1, 1, 1, Math.PI / 2)); b.add(new T3.CylinderGeometry(0.2, 0.13, 0.25, 12).translate(0, -0.125, 0), 'wood', '#a06a3a', M(x, 0.36, z, ry, 1, 1, 1, Math.PI / 2)); for (const e of [-0.25, 0.25]) b.add(new T3.CylinderGeometry(0.34, 0.34, 0.05, 18).translate(0, e, 0), 'def', '#efe4c8', M(x, 0.36, z, ry, 1, 1, 1, Math.PI / 2)); }
+      for (let i = 0; i < 9; i++) { const x = -14 + i * 3.5 + rnd(-0.6, 0.6), z = rnd(-5.6, -4.3), ry = rnd(0, 3); b.add(new T3.CylinderGeometry(0.13, 0.2, 0.25, 12).translate(0, 0.125, 0), 'wood', '#a06a3a', M(x, 0.36, z, ry, 1, 1, 1, Math.PI / 2)); b.add(new T3.CylinderGeometry(0.2, 0.13, 0.25, 12).translate(0, -0.125, 0), 'wood', '#a06a3a', M(x, 0.36, z, ry, 1, 1, 1, Math.PI / 2)); for (const e of [-0.25, 0.25]) b.add(new T3.CylinderGeometry(0.34, 0.34, 0.05, 18).translate(0, e, 0), 'def', '#efe4c8', M(x, 0.36, z, ry, 1, 1, 1, Math.PI / 2)); }
       for (const x of [-11, 0, 11]) { b.add(boxG(0.4, 0.7, 0.4), 'shojiLit', '#ffffff', M(x, 0.45, -5.2)); b.add(boxG(0.5, 0.08, 0.5), 'wood', '#3a2010', M(x, 0.84, -5.2)); glowSprite(x, 0.5, -5.1, '#ffb060', 2.4, 0.6); }
       b.build(mats, { cast: { def: 1, wood: 1 } });
       pointLight(-11, 1, -4.8, 0xffb060, 1.5, 7, 1); pointLight(0, 1, -4.8, 0xffb060, 1.5, 7, 1); pointLight(11, 1, -4.8, 0xffb060, 1.5, 7, 1);
@@ -574,7 +575,7 @@ const WORLD3D = (() => {
         for (const [g, c, px, py, pz] of parts) b.add(g, 'iron', c, R.clone().multiply(new T3.Matrix4().makeTranslation(px, py, pz)));
         for (let k = 0; k < 4; k++) b.add(new T3.CylinderGeometry(0.6, 0.6, 0.15, 16).rotateX(Math.PI / 2), 'iron', '#2a2a2e', R.clone().multiply(new T3.Matrix4().makeTranslation(-2 + k * 1.5, -1.1, 1.1))); }
       for (const [x, z, r] of [[6, -9, -0.6], [12, -12, 0.4], [18, -10, 1.3]]) { const y = HF(x, z); b.add(boxG(9, 2.6, 2.8), 'iron', '#3a1c18', M(x, y + 1.0, z, r, 1, 1, 1, 0, rnd(-0.3, 0.3))); for (let i = 0; i < 6; i++) b.add(new T3.PlaneGeometry(0.9, 0.7), 'winDark', '#ffffff', M(x, y + 1.2, z, r).multiply(new T3.Matrix4().makeTranslation(-3.6 + i * 1.4, 0, 1.42))); }
-      for (let i = 0; i < 14; i++) b.add(jitter(boxG(rnd(0.3, 0.9), rnd(0.1, 0.3), rnd(0.3, 0.8)), 0.3, i), 'iron', '#2a2420', M(rnd(-14, 14), HF(0, -5) + 0.1, rnd(-8, -3.5), rnd(0, 6)));
+      for (let i = 0; i < 14; i++) b.add(jitter(boxG(rnd(0.3, 0.9), rnd(0.1, 0.3), rnd(0.3, 0.8)), 0.3, i), 'iron', '#2a2420', M(rnd(-18, 18), HF(0, -5) + 0.1, rnd(-8, -4.2), rnd(0, 6)));
       b.build(mats, { cast: { iron: 1 } });
       rocks(20, { z0: -14, z1: -3, avoid: bandFree });
       grass(E.q >= 2 ? 6500 : 2600, { h: 1.0 });
@@ -606,7 +607,7 @@ const WORLD3D = (() => {
       forest(broadleafGeo('#1a2a18', '#3a5228'), 60, { z0: -20, z1: -8, s0: 3, s1: 5, w: 40, cast: 1 });
       const b = Batch(), mats = stdMats();
       for (const [x, z, f] of [[-15, -9, 1], [-7, -12, 2], [4, -14, 1], [13, -10, 2], [21, -13, 1], [-23, -14, 2]]) houseJP(b, x, z, { w: 4.4, d: 3.4, floors: f, thatch: f === 1, roofH: 1.4 });
-      for (let i = 0; i < 4; i++) stoneLantern(b, -14 + i * 9, -4 + rnd(-0.4, 0.4), 1);
+      for (let i = 0; i < 6; i++) stoneLantern(b, -23 + i * 9, -4.8 + rnd(-0.3, 0.3), 1);
       // hot spring pool with rock rim
       const px = 7, pz = -5.5;
       for (let i = 0; i < 18; i++) { const a = i / 18 * TAU; b.add(jitter(new T3.IcosahedronGeometry(0.4, 1), 0.4, i), 'stone', '#9a9690', M(px + Math.cos(a) * 3.2, -0.05, pz + Math.sin(a) * 1.4, rnd(0, 6), rnd(0.8, 1.3), 0.6, 1)); }
@@ -630,7 +631,7 @@ const WORLD3D = (() => {
       const ice = floor({ map: T.ice(), w: 80, d: 40, tile: 6, color: 0xc8e8ff });
       ice.material = new T3.MeshPhongMaterial({ map: T.ice(), color: 0x34536e, specular: 0x6aa8d8, shininess: 110 });
       const b = Batch(), mats = stdMats({ shojiIce: basic({ map: T.shoji(), color: 0x6a8cb0 }), crystal: new T3.MeshPhongMaterial({ vertexColors: true, color: 0xffffff, specular: 0xffffff, shininess: 120, transparent: true, opacity: 0.82, emissive: 0x1a4060 }) });
-      for (let i = 0; i < 26; i++) { const x = rnd(-20, 20), z = rnd(-14, -3.2), s = rnd(0.6, 1.4); b.add(new T3.CylinderGeometry(0.9 * s, 0.9 * s, 0.05, 20), 'crystal', '#4a7a9a', M(x, 0.03, z, 0, 1, 1, 1, 0, rnd(-0.1, 0.1))); if (i % 2) for (let k = 0; k < 8; k++) { const a = k / 8 * TAU; b.add(new T3.ConeGeometry(0.12 * s, 0.6 * s, 4).translate(0, 0.3 * s, 0).rotateX(0.55), 'crystal', '#e8f6ff', M(x, 0.05, z, a)); } }
+      for (let i = 0; i < 26; i++) { const x = rnd(-22, 22), z = rnd(-14, -4.3), s = rnd(0.6, 1.4); b.add(new T3.CylinderGeometry(0.9 * s, 0.9 * s, 0.05, 20), 'crystal', '#4a7a9a', M(x, 0.03, z, 0, 1, 1, 1, 0, rnd(-0.1, 0.1))); if (i % 2) for (let k = 0; k < 8; k++) { const a = k / 8 * TAU; b.add(new T3.ConeGeometry(0.12 * s, 0.6 * s, 4).translate(0, 0.3 * s, 0).rotateX(0.55), 'crystal', '#e8f6ff', M(x, 0.05, z, a)); } }
       for (let i = 0; i < 40; i++) { const x = rnd(-24, 24), z = rnd(-18, -6), s = rnd(0.5, 2.2); b.add(new T3.ConeGeometry(0.25 * s, 2.2 * s, 5).translate(0, 1.1 * s, 0), 'crystal', '#c8ecff', M(x, 0, z, rnd(0, 6), 1, 1, 1, rnd(-0.25, 0.25), rnd(-0.25, 0.25))); }
       for (let i = -8; i <= 8; i++) { b.add(new T3.PlaneGeometry(2.6, 5), 'shojiIce', '#ffffff', M(i * 2.8, 2.5, -18)); b.add(boxG(0.25, 6, 0.25), 'wood', '#1a2a3a', M(i * 2.8 - 1.4, 3, -17.9)); }
       b.add(boxG(50, 0.4, 0.4), 'wood', '#1a2a3a', M(0, 5.2, -17.8));
@@ -649,11 +650,11 @@ const WORLD3D = (() => {
       for (let i = 0; i < 8; i++) houseWest(b, -24 + i * 6.6, -11 - rnd(0, 1.5), { w: 6, d: 4, floors: 3 + (i % 3), dome: i === 3, broken: i % 3 === 2, lit: 0.35, mat: i % 2 ? 'brick' : 'plaster', col: i % 2 ? '#ffffff' : '#d8d0c0' });
       for (let i = 0; i < 12; i++) houseWest(b, -36 + i * 6.5, -21 - rnd(0, 8), { w: 6, d: 5, floors: 4 + (i % 4), lit: 0.3, dome: i === 7 });
       for (const dz of [-2.9, -2.1]) b.add(boxG(80, 0.03, 0.06), 'iron', '#8a8a90', M(0, 0.015, dz)); // streetcar rails
-      for (let i = 0; i < 6; i++) streetLamp(b, -16 + i * 6.5, -4);
+      for (let i = 0; i < 8; i++) streetLamp(b, -23 + i * 6.5, -4.4);
       let prev = null; for (let i = 0; i < 8; i++) { const p = pole(b, -24 + i * 7, -6.5, 5.5); if (prev) wire(b, prev, p, 0.5); prev = p; }
-      for (let i = 0; i < 18; i++) b.add(jitter(boxG(rnd(0.3, 0.9), rnd(0.2, 0.5), rnd(0.3, 0.8)), 0.3, i), 'brick', '#a89080', M(rnd(-20, 20), 0.12, rnd(-7, -3.4), rnd(0, 6)));
+      for (let i = 0; i < 18; i++) b.add(jitter(boxG(rnd(0.3, 0.9), rnd(0.2, 0.5), rnd(0.3, 0.8)), 0.3, i), 'brick', '#a89080', M(rnd(-20, 20), 0.12, rnd(-7, -4.3), rnd(0, 6)));
       b.build(mats, { cast: { def: 1, iron: 1 } });
-      pointLight(-3, 3.4, -4, 0xffc070, 1.4, 8, 1); pointLight(10, 3.4, -4, 0xffc070, 1.4, 8, 1);
+      pointLight(-3, 3.4, -4.4, 0xffc070, 1.4, 8, 1); pointLight(10, 3.4, -4.4, 0xffc070, 1.4, 8, 1);
       particles({ kind: 'rise', n: 100, col: '#ffb060', col2: '#ff3010', size: 4, box: [30, 6, 6], origin: [0, 0, -6], speed: 0.6, add: 1 });
       particles({ kind: 'fall', n: 200, col: '#8a8080', size: 3, box: [36, 8, 10], origin: [0, 0, -3], speed: 0.4, a: 0.5 });
       mistLayers('#2a2030', 0.3, [-12, -24], 1, 4);
@@ -702,7 +703,7 @@ const WORLD3D = (() => {
     u.uSun.value = smooth(0.35, 1, d); u.uSunDir.value.set(0.55, -0.15 + d * 0.3, -1).normalize(); u.uCloudCol.value.set(o.cloud).lerp(C('#c07060'), d);
     E.scene.fog.color.copy(u.uFog.value); E.scene.background.copy(u.uFog.value);
     E.hemi.color.set(o.hemiA).lerp(C('#ffc8a0'), d); E.hemi.intensity = 0.9 + d * 0.5;
-    E.sun.color.set(o.keyA).lerp(C('#ffb070'), d); E.sun.intensity = 0.75 + d * 0.6; E.sun.position.set(-6 + d * 16, 12 - d * 6, 9 - d * 4);
+    E.sun.color.set(o.keyA).lerp(C('#ffb070'), d); E.sun.intensity = 0.75 + d * 0.6; E.sun.userData.base = [-6 + d * 16, 12 - d * 6, 9 - d * 4];
     if (sunSprite) { sunSprite.visible = d > 0.45; sunSprite.position.copy(u.uSunDir.value).multiplyScalar(370); }
     if (moonMesh) { moonMesh.material.opacity = 1 - d * 0.8; moonGlow.material.opacity = 0.55 * (1 - d); }
   }

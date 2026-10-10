@@ -29,7 +29,28 @@ cv.addEventListener('mousedown', e => {
   Audio.init();
   const r = cv.getBoundingClientRect();
   Input.click = { x: (e.clientX - r.left) * W / r.width, y: (e.clientY - r.top) * H / r.height };
+  // in battle: left click = slash (hold for auto combo), right click = fire the selected form
+  if (mode === 'battle' && Input.click.y < H - 130 && !(Input.click.x < 400 && Input.click.y > H - 200)) {
+    if (e.button === 0) { Input.pressed.KeyJ = true; Input.keys.KeyJ = true; }
+    if (e.button === 2) Input.pressed.KeyK = true;
+  }
 });
+addEventListener('mouseup', e => { if (e.button === 0) Input.keys.KeyJ = false; });
+cv.addEventListener('contextmenu', e => e.preventDefault());
+// ---- gamepad (standard mapping): stick/D-pad move · A jump · X slash · Y form · B dash · LB/RB choose form · LT palette · RT focus · Back switch · Start pause
+const PAD_MAP = [[0, ['Space', 'Enter']], [1, ['ShiftLeft']], [2, ['KeyJ']], [3, ['KeyK']], [4, ['KeyQ']], [5, ['KeyE']], [6, ['KeyF']], [7, ['KeyL']], [8, ['Tab']], [9, ['Escape']], [12, ['KeyW']], [13, ['KeyS']], [14, ['KeyA']], [15, ['KeyD']]];
+const padHeld = {};
+function pollPad() {
+  const pads = navigator.getGamepads ? navigator.getGamepads() : []; const gp = pads && [...pads].find(p => p && p.connected); if (!gp) return;
+  const want = {};
+  for (const [bi, codes] of PAD_MAP) if (gp.buttons[bi] && gp.buttons[bi].pressed) codes.forEach(c => want[c] = 1);
+  const ax = gp.axes[0] || 0, ay = gp.axes[1] || 0;
+  if (ax < -0.4) want.KeyA = 1; if (ax > 0.4) want.KeyD = 1; if (ay < -0.4) want.KeyW = 1; if (ay > 0.4) want.KeyS = 1;
+  for (const c of new Set([...Object.keys(want), ...Object.keys(padHeld)])) {
+    if (want[c] && !padHeld[c]) { Input.pressed[c] = true; Input.keys[c] = true; padHeld[c] = 1; Audio.init(); }
+    else if (!want[c] && padHeld[c]) { Input.keys[c] = false; delete padHeld[c]; }
+  }
+}
 function fit() {
   const s = Math.min(innerWidth / W, innerHeight / H);
   for (const el of [cv, document.getElementById('gl'), document.getElementById('wrap')]) if (el) { el.style.width = W * s + 'px'; el.style.height = H * s + 'px'; }
@@ -306,6 +327,15 @@ function renderBattle3D() {
   }
   const P = activeP(); G.cz = P.z || 0;
   if (!P.down) atWorld(P.x, P.y, P.z, () => drawAuras(P));
+  // off-screen demons: arrow + name at the screen edge
+  for (const b of G.bosses) {
+    if (b.dead || b.def.minion) continue;
+    const p = R3D.project(b.x, b.y - b.hh * 0.6, b.z); if (p[0] > 30 && p[0] < W - 30) continue;
+    const side = p[0] < 30 ? -1 : 1, x = side < 0 ? 34 : W - 34, y = clamp(p[1], 150, H - 160), pulse = 0.75 + Math.sin(G.t * 0.2) * 0.25;
+    ctx.save(); ctx.globalAlpha = pulse; ctx.translate(x, y); ctx.fillStyle = COL.crimson; ctx.strokeStyle = '#fff'; ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.moveTo(side * 22, 0); ctx.lineTo(-side * 6, -16); ctx.lineTo(-side * 6, 16); ctx.closePath(); ctx.fill(); ctx.stroke(); ctx.restore();
+    T(b.def.name, x - side * 26, y + 5, { size: 15, font: JPF, col: '#fff', align: side < 0 ? 'left' : 'right', stroke: 3 });
+  }
   for (const t of G.texts) { const jp = /[　-鿿]/.test(t.s); atWorld(t.x, t.y, t.z, () => T(t.s, 0, 0, { size: t.size, col: t.c, align: 'center', font: jp ? JPF : UIF, weight: jp ? '' : 700, stroke: 4, alpha: Math.min(1, t.life / 20) }), 0.7); }
 }
 function renderBattle() {
@@ -494,13 +524,22 @@ function drawHUD() {
     portrait(p.look, x, y, 15, { key: p.key, theme: curStyle(p).theme, active: i === G.ai, ring: 3, grey: p.down });
     ctx.strokeStyle = p.down ? '#555' : '#6cf0a0'; ctx.lineWidth = 3; ctx.beginPath(); ctx.arc(x, y, 20, -Math.PI / 2, -Math.PI / 2 + TAU * p.hp / p.maxhp); ctx.stroke();
     ctx.fillStyle = i === G.ai ? COL.crimson : 'rgba(0,0,0,.85)'; ctx.beginPath(); ctx.arc(x + 13, y + 13, 7, 0, TAU); ctx.fill();
-    T(i < 10 ? String((i + 1) % 10) : '·', x + 13, y + 17, { size: 10, col: '#fff', align: 'center', weight: 700 });
+    T(i === G.ai ? '▶' : '·', x + 13, y + 17, { size: 9, col: '#fff', align: 'center', weight: 700 });
+    if (clickIn(x - 18, y - 18, 36, 36)) switchTo(i);
   });
   // ---- technique panel
   const forms = st.forms, fi = P.formIdx[P.styleIdx], f = forms[fi];
   const fx = 412, fy = H - 102, fw = W - fx - 14, fh = 92;
   panel(fx, fy, fw, fh, { pattern: P_SEIGAIHA(), patAlpha: 0.05, accent: th.m });
   const can = P.br >= f.cost;
+  forms.forEach((g, i) => { // number-key strip: press the number to fire that form directly
+    if (i > 13) return; const x = fx + 8 + i * 46, y = fy - 26, ok = P.br >= g.cost, cur = i === fi;
+    ctx.fillStyle = cur ? 'rgba(179,18,46,.92)' : 'rgba(10,8,16,.78)'; ctx.fillRect(x, y, 42, 22);
+    ctx.strokeStyle = cur ? COL.gold2 : 'rgba(217,182,106,.35)'; ctx.lineWidth = 1; ctx.strokeRect(x + 0.5, y + 0.5, 41, 21);
+    T(PALETTE_LABELS[i], x + 8, y + 16, { size: 12, col: COL.gold2, align: 'center', weight: 700 });
+    T((g.kata || g.name || '').replace(/ノ型.*/, '').slice(0, 2), x + 27, y + 16, { size: 12, font: JPF, col: ok ? '#fff' : '#6a6070', align: 'center' });
+    if (clickIn(x, y, 42, 22)) { P.formIdx[P.styleIdx] = i; P.bufK = 12; P.qcast = true; }
+  });
   seal(fx + 16, fy + 12, 68, sealText(f, st), { rot: -0.06, col: can ? COL.crimson : '#5a4a50' });
   const lab = (st.noZen ? '' : '全集中・') + styleLabel(st);
   const lw = T(lab, fx + 100, fy + 24, { size: 16, font: JPF, col: th.l, weight: 600 });
@@ -515,7 +554,7 @@ function drawHUD() {
   const prev = forms[(fi - 1 + forms.length) % forms.length], next = forms[(fi + 1) % forms.length];
   keycap('Q', rx, fy + 26, { size: 10 }); T('◀ ' + (prev.kata ? prev.kata + ' ' : '') + prev.name, rx + 26, fy + 24, { size: 13, font: JPF, col: '#b8a8b0' });
   keycap('E', rx, fy + 47, { size: 10 }); T('▶ ' + (next.kata ? next.kata + ' ' : '') + next.name, rx + 26, fy + 45, { size: 13, font: JPF, col: '#b8a8b0' });
-  keycap('K', rx, fy + 68, { size: 10 }); T('技を放つ', rx + 26, fy + 66, { size: 13, font: JPF, col: '#fff' });
+  keycap('K', rx, fy + 68, { size: 10 }); T('/ 1-0', rx + 24, fy + 66, { size: 11, col: COL.gold2, weight: 700 });
   T('Tung chiêu · ' + f.cost + ' hơi' + (f.hpCost ? ' · ' + f.hpCost + ' máu' : ''), rx + 86, fy + 66, { size: 11, col: can ? '#8fd0ff' : '#ff7080', weight: 600 });
   const hk = P.ch.styles.length > 1 ? ['R', '呼吸切替', 'Đổi hơi thở'] : ['L', '全集中', 'Giữ để hồi hơi'];
   keycap(hk[0], rx, fy + 89, { size: 10 }); T(hk[1], rx + 26, fy + 87, { size: 13, font: JPF, col: '#fff' }); T(hk[2], rx + 86, fy + 87, { size: 11, col: COL.dim });
@@ -527,8 +566,8 @@ function drawPause() {
   bi('一時停止', 'TẠM DỪNG · Hướng dẫn điều khiển', W / 2 - 316, 132, { size: 40, font: DISP, vcol: COL.gold2, vsize: 15, gap: 28 });
   const rows = [
     ['W A S D', '移動', 'Di chuyển 8 hướng'], ['Space', 'ジャンプ', 'Nhảy'], ['Shift', '回避', 'Lướt né theo hướng đi'],
-    ['J', '斬撃', 'Chém thường — combo 3 đòn'], ['K', '技を放つ', 'Tung thức đang chọn'], ['Q / E / Chuột', '型を選ぶ', 'Chọn thức'],
-    ['R', '呼吸切替', 'Đổi hơi thở (Tanjiro: Nước ↔ Hinokami)'], ['L (giữ)', '全集中', 'Hồi thanh hơi thở nhanh'], ['1…0 / Tab', '交代', 'Đổi nhân vật trong đội'], ['F (giữ)', '型を選ぶ', 'Bảng chọn thức nhanh (dừng thời gian, bấm số)'],
+    ['J / Chuột trái', '斬撃', 'Chém — GIỮ để tự ra combo liên hoàn'], ['1…0 - = [ ]', '技を放つ', 'Tung thẳng thức số đó (khỏi chọn)'], ['K / Chuột phải', '技', 'Tung thức đang chọn (Q/E/lăn chuột)'],
+    ['R', '呼吸切替', 'Đổi hơi thở (Tanjiro: Nước ↔ Hinokami)'], ['L (giữ)', '全集中', 'Hồi thanh hơi thở nhanh'], ['Tab / C', '交代', 'Đổi nhân vật (hoặc bấm chân dung)'], ['Tay cầm', 'ゲームパッド', 'Cần: đi · A nhảy · X chém · Y thức · B lướt'],
   ];
   rows.forEach(([k, jp, vn], i) => {
     const y = 204 + i * 39;
@@ -803,6 +842,7 @@ let last = performance.now(), acc = 0;
 function frame(now) {
   requestAnimationFrame(frame);
   acc += Math.min(100, now - last); last = now;
+  pollPad();
   let steps = 0;
   try {
     while (acc >= 1000 / 60 && steps < 4) {

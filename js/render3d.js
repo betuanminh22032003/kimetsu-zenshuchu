@@ -203,7 +203,7 @@ const R3D = (() => {
     hemi = new T3.HemisphereLight(0x8090c0, 0x1a1420, 1.0); scene.add(hemi);
     moonLight = new T3.DirectionalLight(0xc0ccff, 0.9); moonLight.position.set(-8, 14, 10);
     moonLight.castShadow = true; moonLight.shadow.mapSize.set(1024, 1024); moonLight.shadow.bias = -0.0008; moonLight.shadow.normalBias = 0.02; Object.assign(moonLight.shadow.camera, { left: -13, right: 13, top: 11, bottom: -5, near: 1, far: 60 });
-    scene.add(moonLight);
+    scene.add(moonLight); scene.add(moonLight.target);
     for (let i = 0; i < 4; i++) { const l = new T3.PointLight(0xffffff, 0, 9, 2); l.userData.life = 0; scene.add(l); flashLights.push(l); }
     makeAtlas();
     partAdd = makeParticles(2500, true); partNorm = makeParticles(1500, false);
@@ -593,7 +593,7 @@ const R3D = (() => {
         if (U.thorns) U.thorns.forEach((t) => { const k = t.userData.k; t.position.set((k % 2 ? 1 : -1) * w * 0.7, ht * (k + 0.5) / 8, 0); t.visible = ht > 0.05; });
         break; }
       case 'cage': g.position.set(toX(h.x), toY(h.y), 0.4); U.lines.scale.setScalar(80 * S); U.lines.material.opacity = a; break;
-      case 'sweep': { const prog = Math.min(1, h.t / 6), cx = h.src + h.dir * W * 0.75 * prog, rx = (W * 0.75 * prog + 40) * S;
+      case 'sweep': { const AW = AR - AL, prog = Math.min(1, h.t / 6), cx = h.src + h.dir * AW * 0.5 * prog, rx = (AW * 0.5 * prog + 40) * S;
         g.position.set(toX(cx), toY(GY - 36), 0.3); U.body.scale.set(rx, 34 * S, 0.5); U.core.scale.set(Math.max(0.01, rx - 0.2), 8 * S, 0.3); U.body.material.opacity = a * 0.6; U.core.material.opacity = a * 0.85; break; }
       case 'shock': g.position.set(toX(h.x), 0, 0.2); g.scale.setScalar(0.8 + Math.sin(time * 30) * 0.15); break;
     }
@@ -613,7 +613,7 @@ const R3D = (() => {
       case 'rainmark': U.gr = add(groundRing('#ff6060', 0.85)); { const l = add(new T3.Mesh(new T3.BoxGeometry(0.03, 0.24, 0.03), amat('#ff6060', 0.85))); l.position.y = 0.18; } break;
       case 'cage': { const pos = []; for (let i = 0; i < 16; i++) { const a = i / 16 * TAU; pos.push(Math.cos(a), Math.sin(a), 0, Math.cos(a) * 10, Math.sin(a) * 10, 0); } for (let k = 0; k < 3; k++) for (let i = 0; i < 16; i++) { const a0 = i / 16 * TAU, a1 = (i + 1) / 16 * TAU, r = 1 + k * 0.625; pos.push(Math.cos(a0) * r, Math.sin(a0) * r, 0, Math.cos(a1) * r, Math.sin(a1) * r, 0); }
         U.lines = add(new T3.Mesh(stripGeo(pos, 0.02), amat('#f4f4ff', 0.75))); break; }
-      case 'sweep': U.band = add(new T3.Mesh(new T3.PlaneGeometry(W * S, 6).rotateX(-Math.PI / 2), amat('#ff2020', 0.3))); U.wall = add(new T3.Mesh(new T3.PlaneGeometry(W * S, 0.7), amat('#ff2020', 0.25))); break;
+      case 'sweep': U.band = add(new T3.Mesh(new T3.PlaneGeometry((AR - AL) * S, 6).rotateX(-Math.PI / 2), amat('#ff2020', 0.3))); U.wall = add(new T3.Mesh(new T3.PlaneGeometry((AR - AL) * S, 0.7), amat('#ff2020', 0.25))); break;
       default: return null;
     }
     scene.add(g); return g;
@@ -626,7 +626,7 @@ const R3D = (() => {
       case 'arm': { const r = (h.w / 2 + 6) * S; U.gr.position.set(toX(h.x), 0.03, z); U.gr.scale.setScalar(r); U.fill.position.set(toX(h.x), 0.025, z); U.fill.scale.setScalar(r); U.gr.material.opacity = blink ? 0.9 : 0.35; break; }
       case 'rainmark': g.position.set(toX(h.x), 0.03, z); g.scale.setScalar(0.32); g.children.forEach(m => m.material.opacity = blink ? 0.9 : 0.35); break;
       case 'cage': g.position.set(toX(h.x), toY(h.y), z); U.lines.scale.setScalar((h.r || h.r0) * S); break;
-      case 'sweep': U.band.position.set(0, 0.03, z); U.wall.position.set(0, 0.35, z + 0.6); U.band.material.opacity = blink ? 0.4 : 0.15; U.wall.material.opacity = blink ? 0.3 : 0.1; break;
+      case 'sweep': U.band.position.set(toX((AL + AR) / 2), 0.03, z); U.wall.position.set(toX((AL + AR) / 2), 0.35, z + 0.6); U.band.material.opacity = blink ? 0.4 : 0.15; U.wall.material.opacity = blink ? 0.3 : 0.1; break;
     }
   }
   function syncEnemy(eproj, haz) {
@@ -976,11 +976,12 @@ const R3D = (() => {
       const P = G.team[G.ai], foes = G.bosses.filter(b => !b.dead && !b.pending);
       const b = foes.length ? foes.reduce((a, c) => Math.hypot(c.x - P.x, (c.z || 0) - P.z) < Math.hypot(a.x - P.x, (a.z || 0) - P.z) ? c : a) : null;
       T = { fx: toX(P.x), fy: 1.25, fz: (P.z || 0) * S, dist: 9.5, pitch: 0.24, yaw: 0, fov: 40 };
-      if (b) { const sep = Math.hypot(b.x - P.x, ((b.z || 0) - P.z) * 1.6); T.fx = toX((P.x + b.x) / 2); T.fz = ((P.z || 0) + (b.z || 0)) / 2 * S; T.dist = clamp(8 + sep * 0.0085, 8.6, 15.5); T.yaw = clamp(((b.z || 0) - P.z) * S * Math.sign(b.x - P.x || 1) * -0.08, -0.22, 0.22); }
+      if (b) { const sep = Math.hypot(b.x - P.x, ((b.z || 0) - P.z) * 1.6), k = sep > 900 ? 450 / sep : 0.5; // far apart: stay on the player, lean toward the demon
+        T.fx = toX(P.x + (b.x - P.x) * k); T.fz = ((P.z || 0) + ((b.z || 0) - P.z) * k) * S; T.dist = sep > 900 ? 11.5 : clamp(8 + sep * 0.0085, 8.6, 15.5); T.yaw = clamp(((b.z || 0) - P.z) * S * Math.sign(b.x - P.x || 1) * -0.08, -0.22, 0.22); }
       if (P.y < GY - 150) { T.fy = 1.25 + (GY - P.y) * S * 0.5; T.dist += 1.2; }
       if (G.cutin && G.cutin.P) { const C = G.cutin.P; T = { fx: toX(C.x + C.face * 50), fy: 1.15, fz: (C.z || 0) * S, dist: 5.6, pitch: 0.1, yaw: C.face * (0.55 + G.cutin.t * 0.004), fov: 36 }; }
       if (G.over === 'win' && !b) { const k = G.bosses.find(x => !x.def.minion); if (k) T = { fx: toX(k.x), fy: 1.3, fz: (k.z || 0) * S, dist: 8, pitch: 0.18, yaw: Math.sin(time * 0.25) * 0.6, fov: 38 }; }
-      T.fx = clamp(T.fx, -4.2, 4.2);
+      T.fx = clamp(T.fx, toX(AL) + 4, toX(AR) - 4);
     }
     const ek = 1 - Math.exp(-dt * (G.cutin ? 6 : 3));
     for (const k in T) V[k] += (T[k] - V[k]) * ek;
@@ -995,6 +996,7 @@ const R3D = (() => {
     api.lastShake = [sx, sy];
     if (api.camOverride) { const o = api.camOverride; camera.position.set(...o.pos); camera.lookAt(...o.look); }
     if (world) world.update(time, camera);
+    { const base = moonLight.userData.base; if (base) { moonLight.position.set(base[0] + V.fx, base[1], base[2] + V.fz); moonLight.target.position.set(V.fx, 0, V.fz); moonLight.target.updateMatrixWorld(); } }
     // flash lights
     for (const l of flashLights) { if (l.userData.life > 0) { l.userData.life -= dt * 3; l.intensity = Math.max(0, l.userData.life) * l.userData.power; } else l.intensity = 0; }
     if (G.flashScreen && G.flashScreen.t < 2) flash(activeP ? activeP().x : 640, 420, 'sun', 6);

@@ -17,11 +17,12 @@ const pressed = (...ks) => ks.some(k => Input.pressed[k]);
 const held = (...ks) => ks.some(k => Input.keys[k]);
 
 let G = null;
-const AL = 40, AR = W - 40;
+let AL = 40, AR = W - 40; // arena bounds (x). The 3D arena is ~2.5x wider than the screen; the camera follows.
+const ARENA3D = [-1000, 2280];
 // ---- 3D arena depth: every entity has z (game px, + = toward the camera). Only active with the 3D renderer.
 const DZ = 50;
 const D3 = () => typeof R3D !== 'undefined' && R3D.ok && !(G && G.S && G.S.flat);
-const zRange = () => (G && G.S && G.S.bg === 'train') ? [-95, 95] : [-200, 200];
+const zRange = () => (G && G.S && G.S.bg === 'train') ? [-95, 95] : [-300, 300];
 // arrays that stamp new entries with the depth of whoever is acting (G.cz), so FX/particles/hazards land at the right z
 class ZArr extends Array { push(...a) { const z = G ? G.cz || 0 : 0; for (const it of a) if (it && typeof it === 'object' && it.z === undefined) it.z = z; return super.push(...a); } }
 const zarr = () => new ZArr();
@@ -58,6 +59,7 @@ function startBattle(si, custom) {
     shake: 0, hitstop: 0, slow: 1, slowT: 0, cutin: null, banner: null, callouts: [], dawn: 0, dawnMax: bd.dawn || 0,
     tilt: 0, tiltT: 0, over: null, overT: 0, lastSay: -999, switchCd: 0, paused: false, bossLine: null,
   };
+  if (D3()) { AL = ARENA3D[0]; AR = ARENA3D[1]; } else { AL = 40; AR = W - 40; }
   G.bosses.push(makeBoss(S.boss, S.boss2 ? 880 : 960));
   if (S.boss2) { G.bosses.push(makeBoss(S.boss2, 1080)); if (D3()) { G.bosses[0].z = -70; G.bosses[1].z = 70; } }
   for (let i = 0; i < (S.minions || 0); i++) { const m = makeBoss('mini', 620 + i * 110); if (D3()) m.z = rnd(-150, 150); G.bosses.push(m); }
@@ -149,7 +151,7 @@ function checkBossDeath(b) {
   }
   if (d.trueBody && !(b.small && b.small.hp <= 0)) {
     b.hp = b.maxhp * 0.12;
-    if (!b.small) b.small = { x: b.x < W / 2 ? W - 120 : 120, y: GY, z: D3() ? rnd(-150, 150) : 0, hp: 360, vx: 3, vz: 0 };
+    if (!b.small) b.small = { x: b.x < (AL + AR) / 2 ? clamp(b.x + 700, AL + 80, AR - 80) : clamp(b.x - 700, AL + 80, AR - 80), y: GY, z: D3() ? rnd(-150, 150) : 0, hp: 360, vx: 3, vz: 0 };
     banner('本体を探せ！', 'Đó không phải bản thể! Chém con quỷ nhỏ 「恨」!', 150); return;
   }
   if (d.neckRegen && !b.revived) {
@@ -288,8 +290,8 @@ const KINDS = {
         else fxSlash(P, P.ch.flailW ? 130 : P.ch.whipBlade ? 140 : 88, a0, a1, P.ch.flailW ? 24 : 16, c.th, { grp, sweep: 6, fade: 8, alpha: 0.75 });
         if (P.ch.dual || P.ch.cleaver) fxSlash(P, 80, a1 * 0.8, a0 * 0.8, 12, c.th, { grp, sweep: 6, fade: 8, alpha: 0.6 });
       }
-      if (pressed('KeyJ') && c.t > 5) c.queue = true;
-      if (pressed('KeyK') && c.t > 4) { P.cast = null; tryCast(P); }
+      if ((P.bufJ > 0 || held('KeyJ')) && c.t > 5) { c.queue = true; P.bufJ = 0; } // hold J = auto combo
+      if (P.bufK > 0 && c.t > 4) { P.bufK = 0; P.cast = null; tryCast(P); }          // cancel a slash into a form
     },
     end(P, c) { if (c.queue) beginNormal(P, c.combo + 1); }
   },
@@ -698,6 +700,10 @@ function physics(P, noGrav) {
 }
 function updatePlayer(P) {
   G.cz = P.z || 0;
+  // input buffer: a press made slightly early (during an attack, a hit-stun or a dash) still comes out
+  if (pressed('KeyJ')) P.bufJ = 12; else if (P.bufJ > 0) P.bufJ--;
+  if (pressed('KeyK')) P.bufK = 12; else if (P.bufK > 0 && !P.qcast) P.bufK--;
+  P.qcast = false;
   if (P.inv > 0) P.inv--;
   if (P.dashCd > 0) P.dashCd--;
   for (const k in P.buffs) if (P.buffs[k] > 0) P.buffs[k]--;
@@ -735,8 +741,8 @@ function updatePlayer(P) {
   }
   if ((D3() ? pressed('Space') : pressed('KeyW', 'Space', 'ArrowUp')) && P.ground) { P.vy = -15.5; }
   if (pressed('ShiftLeft', 'ShiftRight', 'KeyI') && P.dashCd <= 0) { const l = Math.hypot(mv, mz); P.dashDir = l ? [mv / l, mz / l] : [P.face, 0]; P.dashT = 11; P.dashCd = 34; P.inv = Math.max(P.inv, 13); if (mv) P.face = mv; Audio.sfx.wind(); }
-  if (pressed('KeyJ')) beginNormal(P, 0);
-  else if (pressed('KeyK')) tryCast(P);
+  if (P.bufK > 0) { P.bufK = 0; tryCast(P); }
+  else if (P.bufJ > 0 || held('KeyJ')) { P.bufJ = 0; beginNormal(P, 0); }
   P.br = Math.min(P.maxbr, P.br + 0.09);
   physics(P);
 }
@@ -761,8 +767,9 @@ function handleSelectionInput() {
     PALETTE_KEYS.forEach((code, i) => { if (pressed(code) && i < n) { P.formIdx[P.styleIdx] = i; Audio.sfx.select(); } });
     return;
   }
-  for (let i = 0; i < 10; i++) if (pressed('Digit' + ((i + 1) % 10))) switchTo(i);
-  if (pressed('Tab')) { for (let k = 1; k <= G.team.length; k++) { const j = (G.ai + k) % G.team.length; if (!G.team[j].down) { switchTo(j); break; } } }
+  // number keys fire that form straight away (no need to scroll with Q/E first)
+  for (let i = 0; i < Math.min(n, PALETTE_KEYS.length); i++) if (pressed(PALETTE_KEYS[i])) { P.formIdx[P.styleIdx] = i; P.bufK = 12; P.qcast = true; }
+  if (pressed('Tab', 'KeyC')) { for (let k = 1; k <= G.team.length; k++) { const j = (G.ai + k) % G.team.length; if (!G.team[j].down) { switchTo(j); break; } } }
 }
 
 // ---------------- BOSS AI ----------------
@@ -858,7 +865,7 @@ function onTele(b, a, P) {
       break;
     }
     case 'storm': {
-      for (let i = 0; i < 14; i++) { G.cz = D3() ? clamp(P.z + rnd(-160, 160), ...zRange()) : 0; addLine(rnd(100, W - 100), GY - rnd(30, 300), rnd(0, Math.PI), T + i * 5, Object.assign({}, a, { style: a.moon ? 'moon' : a.whip ? 'whip' : 'storm' }), b); }
+      for (let i = 0; i < 14; i++) { G.cz = D3() ? clamp(P.z + rnd(-160, 160), ...zRange()) : 0; addLine(clamp(P.x + rnd(-560, 560), AL, AR), GY - rnd(30, 300), rnd(0, Math.PI), T + i * 5, Object.assign({}, a, { style: a.moon ? 'moon' : a.whip ? 'whip' : 'storm' }), b); }
       break;
     }
     case 'circle': {
@@ -967,7 +974,7 @@ function updateHazards() {
       case 'arm': { const ht = h.h * Math.min(1, h.t / 6); hit = Math.abs(P.x - h.x) < h.w / 2 + 12 && P.y > GY - ht && dz < h.w / 2 + 12; break; }
       case 'cage': hit = Math.hypot(pc[0] - h.x, pc[1] - h.y, dz) < 80; break;
       case 'sweep': hit = P.y > GY - 70 && h.t < 10 && dz < 300; break;
-      case 'shock': h.x += h.vx; hit = Math.abs(P.x - h.x) < 26 && P.y > GY - 56 && dz < 40; if (h.x < 0 || h.x > W) h.life = 0; break;
+      case 'shock': h.x += h.vx; hit = Math.abs(P.x - h.x) < 26 && P.y > GY - 56 && dz < 40; if (h.x < AL - 100 || h.x > AR + 100) h.life = 0; break;
     }
     if (hit && h.dmg) {
       if (nagiCut(P, pc[0], pc[1]) && h.type !== 'cage') { h.done = true; continue; }
@@ -986,7 +993,7 @@ function updateHazards() {
     p.x += p.vx; p.y += p.vy;
     if (p.fall && p.y > GY - 10) { p.life = 0; particles(p.shape === 'lotus' || p.shape === 'icicle' ? 'mist' : 'demon', p.x, GY - 10, 12, 6, { k: p.shape === 'lotus' || p.shape === 'icicle' ? 'ice' : undefined }); fxRing(p.x, GY - 4, 50, 'demon', 12, { sq: 0.3 }); }
     p.life--;
-    if (p.x < -100 || p.x > W + 100 || p.y < -200 || p.y > H + 50) p.life = 0;
+    if (p.x < AL - 200 || p.x > AR + 200 || p.y < -200 || p.y > H + 50) p.life = 0;
     const [rx, ry, rw, rh] = playerRect(P);
     if (circleRect(p.x, p.y, p.r * 0.8, rx, ry, rw, rh) && (!d3 || Math.abs((p.z || 0) - pz) < p.r * 0.8 + 34)) {
       if (P.cast && P.cast.block) { p.life = 0; particles(P.cast.th, p.x, p.y, 10, 5); Audio.sfx.hit(); continue; }
@@ -1016,7 +1023,7 @@ function updatePProj() {
     p.x += p.vx; p.y += p.vy; p.life--;
     strike(p.grp, p.x, p.y, p.r * 0.8);
     if (p.k === 'tiger' || p.k === 'crescent') particles(p.theme, p.x - p.face * 20, p.y + rnd(-30, 30), 3, 3);
-    if (p.x < -200 || p.x > W + 200) p.life = 0;
+    if (p.x < AL - 300 || p.x > AR + 300) p.life = 0;
   }
   G.pproj = G.pproj.filter(p => p.life > 0);
 }
@@ -1069,7 +1076,7 @@ function battleStep() {
     if (G.dawn >= G.dawnMax) {
       G.dawn = G.dawnMax;
       const boss = G.bosses.find(b => !b.def.minion);
-      if (boss.def.flee) { boss.fleeing = true; boss.face = boss.x < W / 2 ? -1 : 1; banner('夜明けだ！', 'BÌNH MINH! Akaza bỏ chạy khỏi ánh mặt trời!', 200); }
+      if (boss.def.flee) { boss.fleeing = true; boss.face = boss.x < (AL + AR) / 2 ? -1 : 1; banner('夜明けだ！', 'BÌNH MINH! Akaza bỏ chạy khỏi ánh mặt trời!', 200); }
       else { killBoss(boss); banner('夜明けだ！！', 'BÌNH MINH! Muzan bị mặt trời thiêu đốt!', 240); boss.burning = true; }
       Audio.sfx.gong(); G.over = 'win'; G.overT = -60;
     }
