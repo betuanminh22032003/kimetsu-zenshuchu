@@ -7,8 +7,9 @@ Giao diện song ngữ 日本語 / Tiếng Việt. Font thư pháp (Yuji Syuku, 
 ## Đồ họa 3D
 - Thế giới 3D (Three.js r147, WebGL): bối cảnh 3D từng ải (rừng tử đằng, phố Asakusa, dinh thự trống, núi nhện, tàu Vô Hạn, phố đèn đỏ, làng rèn, **Vô Hạn Thành với phòng shoji trôi lơ lửng**, Tokyo), ánh sáng, sương mù, đèn lóe theo chiêu, bloom phát sáng.
 - Chiêu thức 3D: vệt chém có sóng nước / lửa / sét bằng shader, **rồng 3D** (生生流転, 日暈の龍, 火雷神, rắn), **hổ lửa** 炎虎, hạt hiệu ứng GPU.
-- **Tanjiro 3D** dựng sẵn bằng code (kiểu figure Nendoroid: toon shading, viền mực, mặt anime có biểu cảm, haori caro, hoa tai hanafuda, hộp gỗ của Nezuko, kiếm Nichirin đen). `?2dchars` để xem lại bản 2D.
-- Nhân vật khác: dùng model **VRM** nếu có (xem [assets/README.md](assets/README.md) — tự nặn bằng VRoid Studio miễn phí); chưa có thì hiện bản vẽ 2D anime đứng trong cảnh 3D.
+- **Toàn bộ nhân vật & quỷ là 3D**, dựng bằng code (kiểu figure Nendoroid: toon shading, viền mực, mặt anime có biểu cảm): 14 kiếm sĩ với tóc/haori/kiếm riêng (haori caro Tanjiro, tam giác Zenitsu, nửa-nửa Giyu, lửa Rengoku, bướm Shinobu, đầu heo Inosuke, ống tre Nezuko, bím tóc Mitsuri, rìu-chùy Gyomei, roi kiếm, dao phay đôi…) và mọi con quỷ (xúc tu Muzan, dải obi Daki, quạt Doma, liềm máu Gyutaro, kiếm thịt Kokushibo 6 mắt, tay quỷ, bình Gyokko, trống Kyogai/Hantengu…). Không tải file model nào — 0 KB.
+- Đạn & đòn của quỷ (quả cầu, nắm đấm khí, trăng khuyết, băng, lưới tơ, cột trăng…) và bóng mờ khi lướt cũng là 3D; lớp 2D chỉ còn HUD, chữ và vạch cảnh báo.
+- `?2dchars` để xem lại nhân vật 2D. Có model **VRM** riêng thì game ưu tiên dùng (xem [assets/README.md](assets/README.md)); thư viện VRM chỉ tải khi có file .vrm, asset nặng được phục vụ qua CDN jsDelivr.
 - Tự hạ chất lượng (tắt bóng → tắt bloom) nếu máy chạy chậm. `?no3d` để về bản 2D.
 
 ## Điều khiển
