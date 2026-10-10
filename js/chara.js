@@ -13,12 +13,13 @@ const ASSETS = { portrait: {}, cutin: {}, sprite: {} };
   if (location.search.includes('noassets')) return;
   // only files listed in assets/manifest.js are loaded (avoids hundreds of 404 probes)
   const files = (window.ASSET_FILES || []);
-  const load = (path, cb) => { const im = new Image(); im.onload = () => cb(im); im.src = path; };
+  const base = window.ASSET_BASE || 'assets/'; // may point at a CDN (see assets/manifest.js)
+  const load = (path, cb) => { const im = new Image(); if (/^https?:/.test(base)) im.crossOrigin = 'anonymous'; im.onload = () => cb(im); im.src = base + path; };
   for (const f of files) {
     let m;
-    if ((m = f.match(/^portraits\/(\w+)\.png$/))) load('assets/' + f, im => ASSETS.portrait[m[1]] = im);
-    else if ((m = f.match(/^cutin\/(\w+)\.png$/))) load('assets/' + f, im => ASSETS.cutin[m[1]] = im);
-    else if ((m = f.match(/^sprites\/(\w+?)_(idle|run|jump|attack|hurt)\.png$/))) { const k = m[1], p = m[2]; load('assets/' + f, im => { (ASSETS.sprite[k] = ASSETS.sprite[k] || {})[p] = im; }); }
+    if ((m = f.match(/^portraits\/(\w+)\.png$/))) load(f, im => ASSETS.portrait[m[1]] = im);
+    else if ((m = f.match(/^cutin\/(\w+)\.png$/))) load(f, im => ASSETS.cutin[m[1]] = im);
+    else if ((m = f.match(/^sprites\/(\w+?)_(idle|run|jump|attack|hurt)\.png$/))) { const k = m[1], p = m[2]; load(f, im => { (ASSETS.sprite[k] = ASSETS.sprite[k] || {})[p] = im; }); }
   }
 })();
 function drawSprite(c, key, x, y, face, pose, alpha, h) {

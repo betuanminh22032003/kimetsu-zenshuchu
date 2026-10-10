@@ -261,9 +261,10 @@ function screenHeader(jp, vn, sealT, right) {
 // ============================================================
 function battleActors() {
   const out = [], P = activeP();
-  G.bosses.forEach((b, i) => out.push({ id: 'B' + i, key: b.key, boss: 1, x: b.x, y: b.y, scale: b.scale, face: b.face, look: DEMON_LOOKS[b.def.look], custom: !DEMON_LOOKS[b.def.look],
-    pose: { t: G.t, run: b.walk, swing: b.swing !== undefined ? b.swing : 0.9, lean: b.lean || 0, hurt: b.hurt > 0, arm2: b.arm2 },
+  G.bosses.forEach((b, i) => out.push({ id: 'B' + i, key: b.key, lk: b.def.look, boss: 1, x: b.x, y: b.y, scale: b.scale, face: b.face, look: DEMON_LOOKS[b.def.look], custom: !DEMON_LOOKS[b.def.look], flash: b.flash > 0, alpha: b.dead ? Math.max(0, 1 - b.deadT / 90) : 1,
+    pose: { t: G.t, run: b.walk, swing: b.swing !== undefined ? b.swing : 0.9, lean: b.lean || 0, hurt: b.hurt > 0, arm2: b.arm2, shout: b.state === 'tele' },
     draw: (g, ox, oy) => drawBoss(g, Object.assign({}, b, { x: ox, y: oy, small: null }), G) }));
+  G.bosses.forEach((b, i) => { if (b.def.trueBody && b.small && !b.dead) out.push({ id: 'S' + i, key: 'hantengu_small', lk: 'hantengu_small', boss: 1, x: b.small.x, y: b.small.y, scale: 0.22, face: b.face, look: DEMON_LOOKS.hantengu, pose: { t: G.t, run: G.t * 0.4 }, draw: () => 0 }); });
   if (!P.down) { const pose = playerPose(P), alpha = playerAlpha(P); out.push({ id: 'P', key: P.key, ch: P.ch, look: P.look, x: P.x, y: P.y, face: P.face, scale: P.scale, pose, alpha, z: 0.02,
     draw: (g, ox, oy) => drawPerson(g, P.look, P.ch, ox, oy, P.face, Object.assign({}, pose, { noShadow: 1 }), alpha, P.scale) }); }
   return out;
@@ -279,7 +280,7 @@ function renderBattle3D() {
     if (b.burning || (G.over === 'win' && G.dawnMax && b.def.final)) for (let i = 0; i < 3; i++) particles('flame', b.x + rnd(-30, 30), b.y - rnd(0, b.hh), 1, 3, { g: -0.15 });
     if (b.pending) { seal(b.x - 22, b.y - b.hh - 74, 44, '頸', { rot: Math.sin(G.t * 0.2) * 0.1 }); T(Math.ceil(b.pending / 60) + 's', b.x, b.y - b.hh - 80, { size: 14, col: '#fff', align: 'center', stroke: 3, weight: 700 }); }
     if (b.def.minion && !b.dead) gauge(b.x - 30, b.y - b.hh - 16, 60, 6, b.hp / b.maxhp, trailOf(b, 'hp', b.hp / b.maxhp), '#ff5060', '#a01020');
-    if (b.def.trueBody && b.small && !b.dead) drawSmallBody(ctx, b, G.t);
+    if (b.def.trueBody && b.small && !b.dead) drawSmallBody(ctx, b, G.t, true);
   }
   for (const p of G.eproj) drawEProj(p);
   const P = activeP();
@@ -535,7 +536,7 @@ function renderDialogScene() {
   if (R3D.ok) {
     const actors = G.team.slice(0, 4).map((p, i) => { const x = 300 - i * 70, pose = { t: G.t + i * 20, swing: 0.9 }, al = spk === p.key ? 1 : 0.75;
       return { id: 'D' + i, key: p.key, ch: p.ch, look: p.look, x, y: GY, face: 1, scale: p.scale, pose, alpha: al, z: -0.3 - i * 0.25, draw: (g, ox, oy) => drawPerson(g, p.look, p.ch, ox, oy, 1, Object.assign({ noShadow: 1 }, pose), al, p.scale) }; });
-    G.bosses.forEach((b, i) => actors.push({ id: 'B' + i, key: b.key, boss: 1, x: b.x, y: b.y, scale: b.scale, face: b.face, look: DEMON_LOOKS[b.def.look], custom: !DEMON_LOOKS[b.def.look], pose: { t: G.t, swing: 0.9 }, draw: (g, ox, oy) => drawBoss(g, Object.assign({}, b, { x: ox, y: oy, small: null }), G) }));
+    G.bosses.forEach((b, i) => actors.push({ id: 'B' + i, key: b.key, lk: b.def.look, boss: 1, x: b.x, y: b.y, scale: b.scale, face: b.face, look: DEMON_LOOKS[b.def.look], custom: !DEMON_LOOKS[b.def.look], pose: { t: G.t, swing: 0.9 }, draw: (g, ox, oy) => drawBoss(g, Object.assign({}, b, { x: ox, y: oy, small: null }), G) }));
     R3D.render(G, actors); ctx.clearRect(0, 0, W, H);
   } else {
     drawBackground(ctx, S.bg, G);
@@ -588,14 +589,24 @@ function drawKatana(x, y, s, rot) {
 function renderTitle() {
   if (!G || G.si !== -1) { G = { si: -1, t: 0, amb: [], S: { bg: 'wisteria' } }; }
   G.t++; gt++;
-  drawBackground(ctx, 'wisteria', G);
-  for (const p of G.amb) { p.x += p.vx; p.y += p.vy; p.life--; drawParticle(ctx, p); }
+  const tPose = { t: G.t, swing: -0.6 + Math.sin(G.t * 0.03) * 0.08 };
+  if (R3D.ok) { // 3D title scene: wisteria stage + 3D Tanjiro & Nezuko
+    for (const p of G.amb) { p.x += p.vx; p.y += p.vy; p.life--; }
+    R3D.render(G, [{ id: 'T0', key: 'nezuko', ch: CHARS.nezuko, look: CHARS.nezuko.look, x: 150, y: GY, face: 1, scale: 1.55, pose: { t: G.t, swing: 0.9 }, z: 0.3, draw: () => 0 },
+      { id: 'T1', key: 'tanjiro', ch: CHARS.tanjiro, look: CHARS.tanjiro.look, x: 285, y: GY, face: 1, scale: 1.85, pose: tPose, z: 0.5, draw: () => 0 }]);
+    ctx.clearRect(0, 0, W, H);
+  } else {
+    drawBackground(ctx, 'wisteria', G);
+    for (const p of G.amb) { p.x += p.vx; p.y += p.vy; p.life--; drawParticle(ctx, p); }
+  }
   G.amb = G.amb.filter(p => p.life > 0);
-  const lg = ctx.createLinearGradient(0, 0, W, 0); lg.addColorStop(0, 'rgba(0,0,0,.15)'); lg.addColorStop(0.5, 'rgba(0,0,0,.45)'); lg.addColorStop(1, 'rgba(0,0,0,.7)');
+  const lg = ctx.createLinearGradient(0, 0, W, 0); lg.addColorStop(0, 'rgba(0,0,0,0)'); lg.addColorStop(0.5, 'rgba(0,0,0,.4)'); lg.addColorStop(1, 'rgba(0,0,0,.7)');
   ctx.fillStyle = lg; ctx.fillRect(0, 0, W, H);
   vignette(0.7);
-  drawPerson(ctx, CHARS.nezuko.look, CHARS.nezuko, 150, GY + 10, 1, { t: G.t, swing: 0.9 }, 1, 1.55);
-  drawPerson(ctx, CHARS.tanjiro.look, CHARS.tanjiro, 285, GY + 10, 1, { t: G.t, swing: -0.6 + Math.sin(G.t * 0.03) * 0.08 }, 1, 1.85);
+  if (!R3D.ok) {
+    drawPerson(ctx, CHARS.nezuko.look, CHARS.nezuko, 150, GY + 10, 1, { t: G.t, swing: 0.9 }, 1, 1.55);
+    drawPerson(ctx, CHARS.tanjiro.look, CHARS.tanjiro, 285, GY + 10, 1, tPose, 1, 1.85);
+  }
   ctx.save(); drawSlash(ctx, { cx: 1000, cy: 330, r: 300, a0: -2.6, a1: 0.4, w: 40, theme: 'water', prog: 1, fade: 0.22, sq: 0.55 }); ctx.restore();
   // vertical logo
   ctx.save(); ctx.translate(1102, 40); ctx.rotate(Math.PI / 2); ink(0, 0, 530, 112, 'rgba(150,10,30,.62)', 1, 3); ctx.restore();

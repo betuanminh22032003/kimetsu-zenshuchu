@@ -142,10 +142,11 @@ function drawBoss(ctx, b, g) {
   if (b.def.trueBody && b.small) drawSmallBody(ctx, b, t);
   ctx.restore();
 }
-function drawSmallBody(ctx, b, t) {
+function drawSmallBody(ctx, b, t, noBody) {
   {
     const s = b.small;
-    ctx.save(); ctx.translate(s.x, s.y); ctx.fillStyle = '#e8c8a8'; ctx.beginPath(); ctx.arc(0, -16, 7, 0, TAU); ctx.fill(); ctx.fillStyle = '#3a2a1a'; ctx.fillRect(-5, -10, 10, 12);
+    ctx.save(); ctx.translate(s.x, s.y);
+    if (!noBody) { ctx.fillStyle = '#e8c8a8'; ctx.beginPath(); ctx.arc(0, -16, 7, 0, TAU); ctx.fill(); ctx.fillStyle = '#3a2a1a'; ctx.fillRect(-5, -10, 10, 12); }
     ctx.fillStyle = '#fff'; ctx.font = 'bold 14px serif'; ctx.textAlign = 'center'; ctx.fillText('恨', 0, -30);
     ctx.strokeStyle = '#ff4060'; ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(0, -10, 16 + Math.sin(t * 0.3) * 3, 0, TAU); ctx.stroke(); ctx.restore();
   }

@@ -28,13 +28,15 @@ jobs:
           cd assets
           files=$(find portraits cutin sprites vrm \( -name '*.png' -o -name '*.vrm' \) 2>/dev/null | sort | sed 's/.*/"&"/' | paste -sd, -)
           echo "window.ASSET_FILES = [${files}];" > manifest.js
+          # heavy assets (VRM models / art) are served from the jsDelivr multi-CDN, pinned to this commit
+          if [ -n "$files" ]; then echo "window.ASSET_BASE = 'https://cdn.jsdelivr.net/gh/${GITHUB_REPOSITORY}@${GITHUB_SHA}/assets/';" >> manifest.js; else echo "window.ASSET_BASE = 'assets/';" >> manifest.js; fi
           cat manifest.js
       - name: Collect site files
         run: |
           mkdir _site
           cp -r index.html js assets .nojekyll _site/
-          # cache-bust scripts so players always get the latest build
-          sed -i -E "s#src=\"(js|assets)/([^\"]+)\.js\"#src=\"\1/\2.js?v=${GITHUB_SHA::7}\"#g" _site/index.html
+          # cache-bust game scripts so players always get the latest build; vendor libs never change, so they stay cacheable
+          sed -i -E "/js\/vendor\//! s#src=\"(js|assets)/([^\"]+)\.js\"#src=\"\1/\2.js?v=${GITHUB_SHA::7}\"#g" _site/index.html
           grep -n '<script' _site/index.html
       - uses: actions/upload-pages-artifact@v3
         with:

@@ -4,8 +4,10 @@
 'use strict';
 
 function drawHazards() {
+  const in3d = R3D.ok; // active attacks are real 3D objects; overlay keeps only telegraphs + text
   for (const h of G.haz) {
     const tele = h.delay > 0, blink = (G.t % 8) < 4;
+    if (in3d && !tele && h.type !== 'cage') { if (h.type === 'shock') particles('mist', h.x, GY - 10, 1, 3, { k: 'rock', g: 0.3 }); continue; }
     ctx.save();
     switch (h.type) {
       case 'line': {
@@ -55,6 +57,7 @@ function drawHazards() {
       }
       case 'rainmark': if (tele) { ctx.globalAlpha = blink ? 0.8 : 0.3; ctx.strokeStyle = '#ff6060'; ctx.lineWidth = 3; ctx.beginPath(); ctx.ellipse(h.x, GY + 2, 30, 7, 0, 0, TAU); ctx.stroke(); ctx.beginPath(); ctx.moveTo(h.x, GY - 30); ctx.lineTo(h.x, GY - 6); ctx.stroke(); } break;
       case 'cage': {
+        if (in3d && !tele) break;
         const r = tele ? h.r : 80;
         ctx.globalAlpha = tele ? 0.75 : 1 - h.t / h.life; ctx.strokeStyle = '#f4f4ff'; ctx.lineWidth = tele ? 1.5 : 4; ctx.shadowColor = '#fff'; ctx.shadowBlur = 8;
         for (let i = 0; i < 16; i++) { const a = i / 16 * TAU; ctx.beginPath(); ctx.moveTo(h.x + Math.cos(a) * r, h.y + Math.sin(a) * r); ctx.lineTo(h.x + Math.cos(a) * (r + 900), h.y + Math.sin(a) * (r + 900)); ctx.stroke(); }
@@ -86,7 +89,7 @@ function drawHazards() {
   }
 }
 function drawEProj(p) {
-  if (p.delay > 0) return;
+  if (p.delay > 0 || R3D.ok) return;
   ctx.save(); ctx.translate(p.x, p.y);
   const ang = Math.atan2(p.vy, p.vx);
   switch (p.shape) {
@@ -197,7 +200,7 @@ function drawFx(e) {
 function playerPose(P) { return { t: G.t, run: P.walk, air: !P.ground, swing: P.swing, spin: P.spin, hurt: P.hurtT > 0, sleep: P.sleep > 0 || (P.ch.look.sleepy && P.cast), shadowY: GY - P.y, shout: !!(P.cast && P.cast.kind !== 'normal'), attack: !!P.cast }; }
 function playerAlpha(P) { let a = 1; if (P.buffs.invis) a = 0.22; if (P.inv > 0 && !P.cast && G.t % 6 < 3) a *= 0.5; return a; }
 function drawPlayerChar(P, noBody) {
-  for (const g of P.ghosts) {
+  if (!noBody) for (const g of P.ghosts) {
     ctx.save(); ctx.globalCompositeOperation = 'lighter';
     drawPerson(ctx, P.look, P.ch, g.x, g.y, g.face, { t: G.t, swing: g.swing, spin: g.spin, air: g.y < GY }, (g.life / 18) * 0.35, P.scale);
     ctx.restore();
