@@ -139,13 +139,16 @@ function drawBoss(ctx, b, g) {
     for (const s of [1, -1]) { ctx.save(); ctx.translate(b.x + f * s * 30, b.y - 100 * sc); ctx.rotate(t * 0.05 * s); ctx.strokeStyle = '#c01030'; ctx.lineWidth = 6; ctx.beginPath(); ctx.arc(0, 0, 22, 0, Math.PI * 1.2); ctx.stroke(); ctx.restore(); }
   }
   if (look === 'enmu') { ctx.save(); ctx.translate(b.x + f * 34, b.y - 120 * sc); ctx.fillStyle = '#e8d0e0'; ctx.beginPath(); ctx.arc(0, 0, 9, 0, TAU); ctx.fill(); ctx.fillStyle = '#802040'; ctx.beginPath(); ctx.ellipse(0, 0, 5, 2 + Math.abs(Math.sin(t * 0.1)) * 3, 0, 0, TAU); ctx.fill(); ctx.restore(); }
-  if (b.def.trueBody && b.small) { // tiny Hantengu true body
+  if (b.def.trueBody && b.small) drawSmallBody(ctx, b, t);
+  ctx.restore();
+}
+function drawSmallBody(ctx, b, t) {
+  {
     const s = b.small;
     ctx.save(); ctx.translate(s.x, s.y); ctx.fillStyle = '#e8c8a8'; ctx.beginPath(); ctx.arc(0, -16, 7, 0, TAU); ctx.fill(); ctx.fillStyle = '#3a2a1a'; ctx.fillRect(-5, -10, 10, 12);
     ctx.fillStyle = '#fff'; ctx.font = 'bold 14px serif'; ctx.textAlign = 'center'; ctx.fillText('恨', 0, -30);
     ctx.strokeStyle = '#ff4060'; ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(0, -10, 16 + Math.sin(t * 0.3) * 3, 0, TAU); ctx.stroke(); ctx.restore();
   }
-  ctx.restore();
 }
 function drawTemari(ctx, x, y, r, i) {
   ctx.fillStyle = ['#e04040', '#e8b030', '#4080e0', '#40b060'][i % 4]; ctx.beginPath(); ctx.arc(x, y, r, 0, TAU); ctx.fill();

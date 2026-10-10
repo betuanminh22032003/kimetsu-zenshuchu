@@ -32,7 +32,7 @@ cv.addEventListener('mousedown', e => {
 });
 function fit() {
   const s = Math.min(innerWidth / W, innerHeight / H);
-  cv.style.width = W * s + 'px'; cv.style.height = H * s + 'px';
+  for (const el of [cv, document.getElementById('gl'), document.getElementById('wrap')]) if (el) { el.style.width = W * s + 'px'; el.style.height = H * s + 'px'; }
 }
 addEventListener('resize', fit); fit();
 const clickIn = (x, y, w, h) => Input.click && Input.click.x >= x && Input.click.x <= x + w && Input.click.y >= y && Input.click.y <= y + h;
@@ -259,7 +259,38 @@ function screenHeader(jp, vn, sealT, right) {
 // ============================================================
 //  BATTLE
 // ============================================================
+function battleActors() {
+  const out = [], P = activeP();
+  G.bosses.forEach((b, i) => out.push({ id: 'B' + i, key: b.key, boss: 1, x: b.x, y: b.y, scale: b.scale, face: b.face, look: DEMON_LOOKS[b.def.look], custom: !DEMON_LOOKS[b.def.look],
+    pose: { t: G.t, run: b.walk, swing: b.swing !== undefined ? b.swing : 0.9, lean: b.lean || 0, hurt: b.hurt > 0, arm2: b.arm2 },
+    draw: (g, ox, oy) => drawBoss(g, Object.assign({}, b, { x: ox, y: oy, small: null }), G) }));
+  if (!P.down) { const pose = playerPose(P), alpha = playerAlpha(P); out.push({ id: 'P', key: P.key, ch: P.ch, look: P.look, x: P.x, y: P.y, face: P.face, scale: P.scale, pose, alpha, z: 0.02,
+    draw: (g, ox, oy) => drawPerson(g, P.look, P.ch, ox, oy, P.face, Object.assign({}, pose, { noShadow: 1 }), alpha, P.scale) }); }
+  return out;
+}
+function renderBattle3D() {
+  R3D.render(G, battleActors());
+  ctx.clearRect(0, 0, W, H);
+  ctx.save();
+  const sh = R3D.lastShake || [0, 0]; ctx.translate(sh[0], sh[1]);
+  if (G.tiltT > 0) { ctx.translate(W / 2, H / 2); ctx.rotate(G.tilt * 0.12 * Math.sin(Math.PI * G.tiltT / 120)); ctx.translate(-W / 2, -H / 2); }
+  drawHazards();
+  for (const b of G.bosses) {
+    if (b.burning || (G.over === 'win' && G.dawnMax && b.def.final)) for (let i = 0; i < 3; i++) particles('flame', b.x + rnd(-30, 30), b.y - rnd(0, b.hh), 1, 3, { g: -0.15 });
+    if (b.pending) { seal(b.x - 22, b.y - b.hh - 74, 44, '頸', { rot: Math.sin(G.t * 0.2) * 0.1 }); T(Math.ceil(b.pending / 60) + 's', b.x, b.y - b.hh - 80, { size: 14, col: '#fff', align: 'center', stroke: 3, weight: 700 }); }
+    if (b.def.minion && !b.dead) gauge(b.x - 30, b.y - b.hh - 16, 60, 6, b.hp / b.maxhp, trailOf(b, 'hp', b.hp / b.maxhp), '#ff5060', '#a01020');
+    if (b.def.trueBody && b.small && !b.dead) drawSmallBody(ctx, b, G.t);
+  }
+  for (const p of G.eproj) drawEProj(p);
+  const P = activeP();
+  if (!P.down) drawPlayerChar(P, true);
+  for (const e of G.fx) if (!R3D.handles(e.type)) drawFx(e);
+  for (const p of G.pproj) if (!R3D.handlesProj(p.k)) drawPProj(p);
+  for (const t of G.texts) { const jp = /[　-鿿]/.test(t.s); T(t.s, t.x, t.y, { size: t.size, col: t.c, align: 'center', font: jp ? JPF : UIF, weight: jp ? '' : 700, stroke: 4, alpha: Math.min(1, t.life / 20) }); }
+  ctx.restore();
+}
 function renderBattle() {
+  if (R3D.ok) { renderBattle3D(); renderBattleOverlay(); return; }
   ctx.save();
   if (G.shake > 0.5) ctx.translate(rnd(-G.shake, G.shake), rnd(-G.shake, G.shake));
   if (G.tiltT > 0) { ctx.translate(W / 2, H / 2); ctx.rotate(G.tilt * 0.12 * Math.sin(Math.PI * G.tiltT / 120)); ctx.translate(-W / 2, -H / 2); }
@@ -280,7 +311,10 @@ function renderBattle() {
   for (const p of G.parts) drawParticle(ctx, p);
   for (const t of G.texts) { const jp = /[　-鿿]/.test(t.s); T(t.s, t.x, t.y, { size: t.size, col: t.c, align: 'center', font: jp ? JPF : UIF, weight: jp ? '' : 700, stroke: 4, alpha: Math.min(1, t.life / 20) }); }
   ctx.restore();
-
+  renderBattleOverlay();
+}
+function renderBattleOverlay() {
+  const P = activeP();
   if (G.slow < 1) { const g = ctx.createRadialGradient(W / 2, H / 2, 200, W / 2, H / 2, 800); g.addColorStop(0, 'rgba(255,0,60,0)'); g.addColorStop(1, 'rgba(255,0,60,.35)'); ctx.fillStyle = g; ctx.fillRect(0, 0, W, H); }
   if (P.sleep > 0) {
     ctx.save(); ctx.globalAlpha = 0.6 * Math.min(1, P.sleep * 2); const g = ctx.createRadialGradient(W / 2, H / 2, 100, W / 2, H / 2, 700); g.addColorStop(0, 'rgba(255,200,240,.15)'); g.addColorStop(1, 'rgba(110,30,150,1)'); ctx.fillStyle = g; ctx.fillRect(0, 0, W, H); ctx.restore();
@@ -496,11 +530,18 @@ function advanceDialog() {
 }
 function renderDialogScene() {
   const S = G.S;
-  drawBackground(ctx, S.bg, G);
   const l = dlg.lines[dlg.i] || dlg.lines[dlg.lines.length - 1];
   const spk = l[0];
-  G.team.slice(0, 4).forEach((p, i) => drawPerson(ctx, p.look, p.ch, 300 - i * 70, GY, 1, { t: G.t + i * 20, swing: 0.9 }, spk === p.key ? 1 : 0.75, p.scale));
-  for (const b of G.bosses) drawBoss(ctx, b, G);
+  if (R3D.ok) {
+    const actors = G.team.slice(0, 4).map((p, i) => { const x = 300 - i * 70, pose = { t: G.t + i * 20, swing: 0.9 }, al = spk === p.key ? 1 : 0.75;
+      return { id: 'D' + i, key: p.key, ch: p.ch, look: p.look, x, y: GY, face: 1, scale: p.scale, pose, alpha: al, z: -0.3 - i * 0.25, draw: (g, ox, oy) => drawPerson(g, p.look, p.ch, ox, oy, 1, Object.assign({ noShadow: 1 }, pose), al, p.scale) }; });
+    G.bosses.forEach((b, i) => actors.push({ id: 'B' + i, key: b.key, boss: 1, x: b.x, y: b.y, scale: b.scale, face: b.face, look: DEMON_LOOKS[b.def.look], custom: !DEMON_LOOKS[b.def.look], pose: { t: G.t, swing: 0.9 }, draw: (g, ox, oy) => drawBoss(g, Object.assign({}, b, { x: ox, y: oy, small: null }), G) }));
+    R3D.render(G, actors); ctx.clearRect(0, 0, W, H);
+  } else {
+    drawBackground(ctx, S.bg, G);
+    G.team.slice(0, 4).forEach((p, i) => drawPerson(ctx, p.look, p.ch, 300 - i * 70, GY, 1, { t: G.t + i * 20, swing: 0.9 }, spk === p.key ? 1 : 0.75, p.scale));
+    for (const b of G.bosses) drawBoss(ctx, b, G);
+  }
   G.t++;
   vignette(0.6);
   // letterbox top

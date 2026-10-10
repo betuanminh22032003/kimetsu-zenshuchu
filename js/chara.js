@@ -628,7 +628,7 @@ function drawPerson(c, L, ch, x, y, face, pose, alpha, scale) {
   c.translate(x, y); c.scale(face * scale, scale);
   if (alpha !== undefined) c.globalAlpha *= alpha;
   // ground shadow
-  c.save(); c.globalAlpha *= 0.35; c.fillStyle = '#000'; c.beginPath(); c.ellipse(0, (pose.shadowY || 0) + 2, 30, 6, 0, 0, TAU); c.fill(); c.restore();
+  if (!pose.noShadow) { c.save(); c.globalAlpha *= 0.35; c.fillStyle = '#000'; c.beginPath(); c.ellipse(0, (pose.shadowY || 0) + 2, 30, 6, 0, 0, TAU); c.fill(); c.restore(); }
   if (pose.spin) { c.translate(0, -80); c.rotate(pose.spin); c.translate(0, 80); }
   const t = pose.t || 0, big = L.style === 'gyomei' ? 1.15 : 1;
   const lean = pose.lean || 0, crouch = pose.crouch || 0;

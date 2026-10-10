@@ -26,7 +26,7 @@ jobs:
       - name: Build asset manifest
         run: |
           cd assets
-          files=$(find portraits cutin sprites -name '*.png' 2>/dev/null | sort | sed 's/.*/"&"/' | paste -sd, -)
+          files=$(find portraits cutin sprites vrm \( -name '*.png' -o -name '*.vrm' \) 2>/dev/null | sort | sed 's/.*/"&"/' | paste -sd, -)
           echo "window.ASSET_FILES = [${files}];" > manifest.js
           cat manifest.js
       - name: Collect site files

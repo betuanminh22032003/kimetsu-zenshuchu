@@ -4,9 +4,11 @@ Mở `index.html` bằng Chrome/Edge (double-click là chạy, không cần cài
 
 Giao diện song ngữ 日本語 / Tiếng Việt. Font thư pháp (Yuji Syuku, Shippori Mincho, Be Vietnam Pro) tải từ Google Fonts khi có mạng; offline thì dùng font có sẵn của Windows.
 
-## Đồ họa
-Nhân vật được vẽ bằng code theo phong cách anime chibi: viền mực, đổ bóng cel, mắt anime nhiều lớp, tóc từng lọn riêng cho từng nhân vật.
-Muốn thay bằng ảnh thật (chân dung, cut-in, sprite): xem [assets/README.md](assets/README.md).
+## Đồ họa 3D
+- Thế giới 3D (Three.js r147, WebGL): bối cảnh 3D từng ải (rừng tử đằng, phố Asakusa, dinh thự trống, núi nhện, tàu Vô Hạn, phố đèn đỏ, làng rèn, **Vô Hạn Thành với phòng shoji trôi lơ lửng**, Tokyo), ánh sáng, sương mù, đèn lóe theo chiêu, bloom phát sáng.
+- Chiêu thức 3D: vệt chém có sóng nước / lửa / sét bằng shader, **rồng 3D** (生生流転, 日暈の龍, 火雷神, rắn), **hổ lửa** 炎虎, hạt hiệu ứng GPU.
+- Nhân vật: dùng model **VRM** nếu có (xem [assets/README.md](assets/README.md) — tự nặn bằng VRoid Studio miễn phí); chưa có thì hiện bản vẽ 2D anime đứng trong cảnh 3D.
+- Tự hạ chất lượng (tắt bóng → tắt bloom) nếu máy chạy chậm. `?no3d` để về bản 2D.
 
 ## Điều khiển
 | Phím | Tác dụng |

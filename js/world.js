@@ -194,7 +194,9 @@ function drawFx(e) {
     case 'bghost': { ctx.save(); ctx.globalAlpha = 0.25 * (1 - e.t / e.life); drawBoss(ctx, Object.assign({}, e.b, { x: e.x, face: e.face, flash: 0, small: null }), G); ctx.restore(); break; }
   }
 }
-function drawPlayerChar(P) {
+function playerPose(P) { return { t: G.t, run: P.walk, air: !P.ground, swing: P.swing, spin: P.spin, hurt: P.hurtT > 0, sleep: P.sleep > 0 || (P.ch.look.sleepy && P.cast), shadowY: GY - P.y, shout: !!(P.cast && P.cast.kind !== 'normal'), attack: !!P.cast }; }
+function playerAlpha(P) { let a = 1; if (P.buffs.invis) a = 0.22; if (P.inv > 0 && !P.cast && G.t % 6 < 3) a *= 0.5; return a; }
+function drawPlayerChar(P, noBody) {
   for (const g of P.ghosts) {
     ctx.save(); ctx.globalCompositeOperation = 'lighter';
     drawPerson(ctx, P.look, P.ch, g.x, g.y, g.face, { t: G.t, swing: g.swing, spin: g.spin, air: g.y < GY }, (g.life / 18) * 0.35, P.scale);
@@ -207,7 +209,7 @@ function drawPlayerChar(P) {
   if (P.buffs.nagi) { ctx.save(); ctx.globalAlpha = 0.5; ctx.strokeStyle = '#9fd8ff'; ctx.lineWidth = 2; for (let i = 0; i < 3; i++) { ctx.beginPath(); ctx.ellipse(P.x, P.y - 2, 60 + ((G.t + i * 20) % 60) * 2, 12 + ((G.t + i * 20) % 60) * 0.4, 0, 0, TAU); ctx.stroke(); } ctx.restore(); }
   if (P.zen) { ctx.save(); ctx.globalAlpha = 0.3 + Math.sin(G.t * 0.2) * 0.15; ctx.strokeStyle = THEMES[curStyle(P).theme].l; ctx.lineWidth = 2; ctx.beginPath(); ctx.ellipse(P.x, P.y - 75, 50, 90, 0, 0, TAU); ctx.stroke(); ctx.restore(); }
   const pose = { t: G.t, run: P.walk, air: !P.ground, swing: P.swing, spin: P.spin, hurt: P.hurtT > 0, sleep: P.sleep > 0 || (P.ch.look.sleepy && P.cast), shadowY: GY - P.y, shout: !!(P.cast && P.cast.kind !== 'normal'), attack: !!P.cast };
-  drawPerson(ctx, P.look, P.ch, P.x, P.y, P.face, pose, alpha, P.scale);
+  if (!noBody) drawPerson(ctx, P.look, P.ch, P.x, P.y, P.face, pose, alpha, P.scale);
   if (P.sleep > 0) txt('Zzz', P.x + 20, P.y - 170 - Math.sin(G.t * 0.1) * 5, 20, '#c8a0ff', 'center', UIF, 3);
   if (P.poison > 0 && G.t % 10 === 0) G.parts.push({ x: P.x + rnd(-15, 15), y: P.y - rnd(30, 130), vx: 0, vy: -1, life: 25, max: 25, s: 3, c: '#80ff60', k: 'drop', g: 0 });
 }
