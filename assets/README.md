@@ -26,4 +26,8 @@ Nhân vật: `tanjiro nezuko zenitsu inosuke kanao giyu rengoku shinobu tengen m
 
 Quỷ: `temoni susamaru kyogai rui enmu akaza akaza2 daki gyutaro gyokko hantengu doma kokushibo muzan`
 
+> **Chạy ở máy (mở index.html trực tiếp):** thêm tên file vào `assets/manifest.js`, ví dụ
+> `window.ASSET_FILES = ['portraits/tanjiro.png', 'sprites/tanjiro_idle.png'];`
+> Khi push lên GitHub, file này được tự tạo lại nên không cần sửa tay.
+
 > Muốn tắt ảnh để xem bản vẽ code: mở `index.html?noassets`.

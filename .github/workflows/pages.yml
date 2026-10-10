@@ -23,6 +23,12 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: actions/configure-pages@v5
+      - name: Build asset manifest
+        run: |
+          cd assets
+          files=$(find portraits cutin sprites -name '*.png' 2>/dev/null | sort | sed 's/.*/"&"/' | paste -sd, -)
+          echo "window.ASSET_FILES = [${files}];" > manifest.js
+          cat manifest.js
       - name: Collect site files
         run: |
           mkdir _site

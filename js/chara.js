@@ -11,12 +11,14 @@ for (const k in CHARS) CHARS[k].key = k;
 const ASSETS = { portrait: {}, cutin: {}, sprite: {} };
 (function loadAssets() {
   if (location.search.includes('noassets')) return;
-  const keys = Object.keys(CHARS).concat(Object.keys(BOSSES));
-  const tryImg = (path, cb) => { const im = new Image(); im.onload = () => cb(im); im.onerror = () => { }; im.src = path; };
-  for (const k of keys) {
-    tryImg(`assets/portraits/${k}.png`, im => ASSETS.portrait[k] = im);
-    tryImg(`assets/cutin/${k}.png`, im => ASSETS.cutin[k] = im);
-    for (const p of ['idle', 'run', 'jump', 'attack', 'hurt']) tryImg(`assets/sprites/${k}_${p}.png`, im => { (ASSETS.sprite[k] = ASSETS.sprite[k] || {})[p] = im; });
+  // only files listed in assets/manifest.js are loaded (avoids hundreds of 404 probes)
+  const files = (window.ASSET_FILES || []);
+  const load = (path, cb) => { const im = new Image(); im.onload = () => cb(im); im.src = path; };
+  for (const f of files) {
+    let m;
+    if ((m = f.match(/^portraits\/(\w+)\.png$/))) load('assets/' + f, im => ASSETS.portrait[m[1]] = im);
+    else if ((m = f.match(/^cutin\/(\w+)\.png$/))) load('assets/' + f, im => ASSETS.cutin[m[1]] = im);
+    else if ((m = f.match(/^sprites\/(\w+?)_(idle|run|jump|attack|hurt)\.png$/))) { const k = m[1], p = m[2]; load('assets/' + f, im => { (ASSETS.sprite[k] = ASSETS.sprite[k] || {})[p] = im; }); }
   }
 })();
 function drawSprite(c, key, x, y, face, pose, alpha, h) {
