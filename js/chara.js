@@ -699,3 +699,14 @@ const DEMON_PATCH = {
   hantengu: { kimono: '#3a2a1a', haori: 'none', bareLegs: 1, horn: 1, rank: '上肆' },
 };
 for (const k in DEMON_PATCH) Object.assign(DEMON_LOOKS[k], DEMON_PATCH[k]);
+// story-wave demons (built by the same rig; the father spider and goldfish are custom 3D models)
+Object.assign(DEMON_LOOKS, {
+  yahaba: { hair: '#2a2018', style: 'default', haori: 'none', uniform: '#5a4a32', pants: '#3a3022', noWraps: 1, skin: '#e8cfc0', demonEye: 1, noSword: 1, eye: '#e04040', marks: '#a02030' },
+  shitaoni: { hair: '#2a2a30', style: 'default', haori: 'none', skin: '#8a7a9a', shirtless: 1, uniform: '#3a3040', pants: '#3a3040', noWraps: 1, demonEye: 1, noSword: 1, horn: 1, eye: '#ff6080' },
+  spider_mother: { hair: '#ece6f2', style: 'rui', haori: 'none', kimono: '#f2eef6', obi: '#b8a0c8', bareLegs: 1, skin: '#f6eaee', marks: '#9a3a7a', demonEye: 1, noSword: 1, eye: '#d04080' },
+  puppet: { hair: '#2a2a2a', style: 'default', haori: 'none', uniform: '#22222c', pants: '#22222c', skin: '#b8b0a8', noSword: 1, eye: '#666' },
+  sekido: { hair: '#3a3a3a', style: 'default', haori: 'none', kimono: '#4a2a1a', bareLegs: 1, skin: '#c8a080', demonEye: 1, noSword: 1, horn: 1, rank: '上肆', eye: '#ffd040' },
+  karaku: { hair: '#d8d0b0', style: 'default', haori: 'none', kimono: '#2a4a3a', bareLegs: 1, skin: '#e8c8a8', demonEye: 1, noSword: 1, horn: 1, rank: '上肆', eye: '#7ac8ff' },
+  urogi: { hair: '#3a2a1a', style: 'default', haori: 'none', kimono: '#3a3060', bareLegs: 1, skin: '#c8b098', demonEye: 1, noSword: 1, horn: 1, rank: '上肆', eye: '#ff8040' },
+  aizetsu: { hair: '#22222e', style: 'default', haori: 'none', kimono: '#24283a', bareLegs: 1, skin: '#d8c0b0', demonEye: 1, noSword: 1, horn: 1, rank: '上肆', eye: '#80c0ff' },
+});

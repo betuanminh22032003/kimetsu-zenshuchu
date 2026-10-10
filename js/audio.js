@@ -5,7 +5,7 @@
 
 const Audio = (() => {
   let ac = null, master, sfxBus, musBus, noiseBuf;
-  let voiceOn = true, musicOn = true, jaVoice = null;
+  let voiceOn = true, musicOn = true, jaVoice = null, voiceLv = 1, curPrio = 0; // voiceLv: 1 = sparing (default), 2 = every callout
   let musTimer = null, musStep = 0, musMode = 'calm';
 
   function init() {
@@ -67,6 +67,9 @@ const Audio = (() => {
     cutin() { noise(0.4, 3000, 0.4, 'highpass', 0.4, 600); tone(55, 0.6, 'sine', 0.5); },
     select() { tone(660, 0.06, 'square', 0.06); },
   };
+  // the same sound fired many times in one instant just piles up into noise: keep one per 45 ms, and at most 10 a second overall
+  { const last = {}; let win = 0, n = 0;
+    for (const k in sfx) { const f = sfx[k]; sfx[k] = function () { const now = performance.now(); if (now - (last[k] || 0) < 45) return; if (now - win > 1000) { win = now; n = 0; } if (++n > 10 && k !== 'gong' && k !== 'cutin') return; last[k] = now; f.apply(this, arguments); }; } }
 
   // ---- BGM: pentatonic koto + taiko
   const scale = [0, 1, 5, 7, 8, 12, 13, 17]; // miyako-bushi
@@ -136,18 +139,24 @@ const Audio = (() => {
   }
 
   // ---- Japanese voice
-  function say(text, pitch, rate) {
-    if (!voiceOn || !window.speechSynthesis || !text) return;
+  // prio: 0 filler, 1 normal, 2 important (finishers, dialogue). A line never cuts off a more important one still being spoken.
+  function say(text, pitch, rate, prio) {
+    if (!voiceOn || !window.speechSynthesis || !text) return false;
+    prio = prio === undefined ? 1 : prio;
+    if (speechSynthesis.speaking && prio < curPrio) return false;
+    if (speechSynthesis.speaking && prio === curPrio && prio < 2) return false; // don't chop a line for another of the same weight
     try {
-      speechSynthesis.cancel();
-      const u = new SpeechSynthesisUtterance(text);
+      speechSynthesis.cancel(); curPrio = prio;
+      const u = new SpeechSynthesisUtterance(text); u.onend = u.onerror = () => { curPrio = 0; };
       u.lang = 'ja-JP'; if (jaVoice) u.voice = jaVoice;
       u.pitch = Math.max(0.1, Math.min(2, pitch || 1)); u.rate = rate || 1.15; u.volume = 1;
       speechSynthesis.speak(u);
-    } catch (e) { }
+    } catch (e) { return false; }
+    return true;
   }
   return {
     init, sfx, say, hasJa, startMusic, stopMusic, setMusic, pickTrack, clearTrack, trackName: (slot) => custom[slot] ? custom[slot].name : null,
+    get voiceLv() { return voiceOn ? voiceLv : 0; }, set voiceLv(v) { voiceLv = v || 1; this.voiceOn = !!v; },
     get voiceOn() { return voiceOn; }, set voiceOn(v) { voiceOn = v; if (!v && window.speechSynthesis) speechSynthesis.cancel(); },
     get musicOn() { return musicOn; }, set musicOn(v) { musicOn = v; syncCustom(); },
   };

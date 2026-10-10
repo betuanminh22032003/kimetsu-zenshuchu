@@ -12,16 +12,16 @@ if (document.fonts) ['Yuji Syuku', 'Shippori Mincho B1', 'Be Vietnam Pro'].forEa
 
 const COL = { ink: '#0d0b12', ink2: '#17131f', crimson: '#b3122e', crimson2: '#e0324e', gold: '#d9b66a', gold2: '#f3dca0', paper: '#efe4cc', dim: '#9d95ad', wis: '#a68bdc' };
 const STYLE_VN = { water: 'Hơi thở của Nước', sun: 'Hơi thở Mặt Trời', thunder: 'Hơi thở Sấm Sét', beast: 'Hơi thở Dã Thú', flame: 'Hơi thở Lửa', insect: 'Hơi thở Côn Trùng', love: 'Hơi thở Tình Yêu', mist: 'Hơi thở Sương Mù', sound: 'Hơi thở Âm Thanh', serpent: 'Hơi thở Rắn', wind: 'Hơi thở Gió', stone: 'Hơi thở Đá', flower: 'Hơi thở Hoa', blood: 'Huyết Quỷ Thuật' };
-const BOSS_VN = { temoni: 'Quỷ Tay', susamaru: 'Susamaru', kyogai: 'Kyogai', rui: 'Rui', enmu: 'Enmu', akaza: 'Akaza', akaza2: 'Akaza', daki: 'Daki', gyutaro: 'Gyutaro', gyokko: 'Gyokko', hantengu: 'Zohakuten (Hantengu)', doma: 'Douma', kokushibo: 'Kokushibo', muzan: 'Kibutsuji Muzan', mini: 'Quỷ', mini_doma: 'Búp bê băng', dummy: 'Bù nhìn rơm' };
-const TITLE_VN = { '異形の鬼': 'Quỷ dị hình', '十二鬼月を名乗る鬼': 'Tự xưng Thập Nhị Quỷ Nguyệt', '元・下弦の陸': 'Cựu Hạ Huyền Lục', '下弦の伍': 'Hạ Huyền Ngũ', '下弦の壱': 'Hạ Huyền Nhất', '上弦の参': 'Thượng Huyền Tam', '上弦の陸': 'Thượng Huyền Lục', '上弦の伍': 'Thượng Huyền Ngũ', '上弦の肆 半天狗': 'Thượng Huyền Tứ', '上弦の弐': 'Thượng Huyền Nhị', '上弦の壱': 'Thượng Huyền Nhất', '鬼の始祖': 'Thủy tổ loài quỷ', '稽古台': 'Bia tập' };
+const BOSS_VN = { temoni: 'Quỷ Tay', susamaru: 'Susamaru', kyogai: 'Kyogai', rui: 'Rui', enmu: 'Enmu', akaza: 'Akaza', akaza2: 'Akaza', daki: 'Daki', gyutaro: 'Gyutaro', gyokko: 'Gyokko', hantengu: 'Zohakuten (Hantengu)', doma: 'Douma', kokushibo: 'Kokushibo', muzan: 'Kibutsuji Muzan', mini: 'Quỷ', mini_doma: 'Búp bê băng', dummy: 'Bù nhìn rơm', yahaba: 'Yahaba', shitaoni: 'Quỷ Lưỡi', spider_mother: 'Mẹ Nhện', puppet: 'Con rối', spider_father: 'Cha Nhện', enmu_roof: 'Enmu', daki_solo: 'Daki', kingyo: 'Cá vàng', sekido: 'Sekido', karaku: 'Karaku', urogi: 'Urogi', aizetsu: 'Aizetsu', tamayo: 'Tamayo' };
+const TITLE_VN = { '異形の鬼': 'Quỷ dị hình', '十二鬼月を名乗る鬼': 'Tự xưng Thập Nhị Quỷ Nguyệt', '元・下弦の陸': 'Cựu Hạ Huyền Lục', '下弦の伍': 'Hạ Huyền Ngũ', '下弦の壱': 'Hạ Huyền Nhất', '上弦の参': 'Thượng Huyền Tam', '上弦の陸': 'Thượng Huyền Lục', '上弦の伍': 'Thượng Huyền Ngũ', '上弦の肆 半天狗': 'Thượng Huyền Tứ', '上弦の弐': 'Thượng Huyền Nhị', '上弦の壱': 'Thượng Huyền Nhất', '鬼の始祖': 'Thủy tổ loài quỷ', '稽古台': 'Bia tập', '鼓屋敷の鬼': 'Quỷ dinh thự trống', '累の「家族」': '"Gia đình" của Rui', '玉壺の壺': 'Cá trong bình của Gyokko', '上弦の肆 分裂体': 'Phân thân Thượng Huyền Tứ' };
 const BUFF_N = { sense: ['空間識覚', 'Cảm nhận'], evade: ['幻日虹', 'Ảo ảnh'], invis: ['朧', 'Ẩn thân'], guard: ['岩軀の膚', 'Giáp đá'], nagi: ['凪', 'Phong lặng'], slow: ['彼岸朱眼', 'Mắt chậm'] };
 
 let mode = 'title', menuIdx = 0, selIdx = 0, mlIdx = 0, setIdx = 0, gt = 0;
 let dlg = null;
 let progress = 0;
 try { progress = +localStorage.getItem('kny_progress') || 0; } catch (e) { }
-try { const s = JSON.parse(localStorage.getItem('kny_settings') || '{}'); if (s.voice === false) Audio.voiceOn = false; if (s.music === false) Audio.musicOn = false; } catch (e) { }
-function saveSettings() { try { localStorage.setItem('kny_settings', JSON.stringify({ voice: Audio.voiceOn, music: Audio.musicOn })); } catch (e) { } }
+try { const s = JSON.parse(localStorage.getItem('kny_settings') || '{}'); if (s.voice === false) Audio.voiceOn = false; if (s.voiceLv) Audio.voiceLv = s.voiceLv; if (s.music === false) Audio.musicOn = false; } catch (e) { }
+function saveSettings() { try { localStorage.setItem('kny_settings', JSON.stringify({ voice: Audio.voiceOn, voiceLv: Audio.voiceLv, music: Audio.musicOn })); } catch (e) { } }
 function saveProgress() { try { localStorage.setItem('kny_progress', progress); } catch (e) { } }
 
 cv.addEventListener('wheel', e => { Input.wheel += Math.sign(e.deltaY); e.preventDefault(); }, { passive: false });
@@ -254,7 +254,7 @@ function portraitRaw(ctx, L, x, y, r, o) {
   ctx.restore();
 }
 const KN = ['', '一', '二', '三', '四', '五', '六', '七', '八', '九', '十', '十一', '十二', '十三'];
-function demonLook(key) { const b = BOSSES[key]; return b && DEMON_LOOKS[b.look] || null; }
+function demonLook(key) { const b = BOSSES[key]; return b && DEMON_LOOKS[b.look] || (ALLIES[key] && ALLIES[key].look) || null; }
 function sealText(f, st) {
   if (f.kata) return f.kata.replace(/ノ.*$/, '');
   return st.theme === 'sun' ? '日' : st.theme === 'blood' ? '血' : '技';
@@ -291,6 +291,11 @@ function battleActors() {
       draw: (g, ox, oy) => drawBoss(g, Object.assign({}, b, { x: ox, y: oy, small: null }), G) });
   });
   G.bosses.forEach((b, i) => { if (b.def.trueBody && b.small && !b.dead) out.push({ id: 'S' + i, key: 'hantengu_small', lk: 'hantengu_small', boss: 1, x: b.small.x, y: b.small.y, z: (b.small.z || 0) * S3, yaw: yawTo(b.small.vx || 1, b.small.vz || 0), scale: 0.22, face: b.face, look: DEMON_LOOKS.hantengu, pose: { t: G.t, run: G.t * 0.4 }, draw: () => 0 }); });
+  if (G.ally) { // Tamayo, at the slayers' side
+    const A = G.ally, L = ALLIES[A.key].look, pose = { t: G.t, run: A.walk, swing: A.castT > 0 ? -1.3 : 0.9, arm2: A.castT > 0 ? -1.5 : undefined };
+    out.push({ id: 'A', key: A.key, look: L, x: A.x, y: A.y, z: (A.z || 0) * S3, yaw: A.face * 0.95, face: A.face, scale: 1, pose,
+      draw: (g, ox, oy) => drawPerson(g, L, null, ox, oy, A.face, Object.assign({ noShadow: 1 }, pose), 1, 1) });
+  }
   if (!P.down) {
     const pose = playerPose(P), alpha = playerAlpha(P);
     let yaw;
@@ -327,6 +332,7 @@ function renderBattle3D() {
   }
   const P = activeP(); G.cz = P.z || 0;
   if (!P.down) atWorld(P.x, P.y, P.z, () => drawAuras(P));
+  if (G.ally) { const A = G.ally; atWorld(A.x, A.y - 175, A.z, () => { T(ALLIES[A.key].name, 0, 0, { size: 15, font: DISP, col: '#f0c8ff', align: 'center', stroke: 3 }); T('Tamayo', 0, 15, { size: 10, col: '#d8c0e8', align: 'center', stroke: 2 }); }); }
   // off-screen demons: arrow + name at the screen edge
   for (const b of G.bosses) {
     if (b.dead || b.def.minion) continue;
@@ -354,6 +360,7 @@ function renderBattle() {
   }
   for (const p of G.eproj) drawEProj(p);
   const P = activeP();
+  if (G.ally) { const A = G.ally; drawPerson(ctx, ALLIES[A.key].look, null, A.x, A.y, A.face, { t: G.t, run: A.walk, swing: A.castT > 0 ? -1.3 : 0.9 }, 1, 1); }
   if (!P.down) drawPlayerChar(P);
   for (const e of G.fx) drawFx(e);
   for (const p of G.pproj) drawPProj(p);
@@ -392,6 +399,16 @@ function renderBattleOverlay() {
     ctx.fillStyle = COL.crimson; ctx.fillRect(W / 2 - 360, y + h - 6, 720, 2);
     if (b.jp) bi(b.jp, b.vn, W / 2, y + 42, { size: 34, align: 'center', font: DISP, vcol: COL.gold2, vsize: 17, gap: 30, stroke: 4 });
     else T(b.vn, W / 2, y + 32, { size: 18, col: COL.gold2, align: 'center', weight: 600 });
+    ctx.restore();
+  }
+  if (G.subs && G.subs.length && !G.over) { // story lines between waves
+    const l = G.subs[0], sp = SPEAKERS[l[0]], a = Math.min(1, G.subT / 8, (170 - G.subT) / 14), y = H - 236;
+    const nm = sp ? sp.name : l[0], w = Math.max(measure(l[1], 22, JPF, 600), measure(l[2], 14, UIF)) + 60;
+    ctx.save(); ctx.globalAlpha = Math.max(0, a);
+    ink(W / 2 - w / 2, y, w, 64, 'rgba(8,6,12,.8)', 1, 7);
+    T(nm, W / 2 - w / 2 + 14, y - 4, { size: 15, font: DISP, col: CHARS[l[0]] ? '#ffe0a8' : '#ff9aa8', stroke: 3 });
+    T(l[1], W / 2, y + 28, { size: 22, font: JPF, col: '#fff', align: 'center', weight: 600, stroke: 3 });
+    T(l[2], W / 2, y + 51, { size: 14, col: '#cfe2ff', align: 'center' });
     ctx.restore();
   }
   if (G.bigKanji) {
@@ -597,7 +614,7 @@ function drawPause() {
 //  DIALOG
 // ============================================================
 function startDialog(lines, after) { dlg = { lines, i: 0, t: 0, after }; mode = 'dialog'; speakDlg(); }
-function speakDlg() { const l = dlg.lines[dlg.i]; if (!l) return; const sp = SPEAKERS[l[0]]; Audio.say(l[1], sp ? sp.voice : 1, 1.05); }
+function speakDlg() { const l = dlg.lines[dlg.i]; if (!l) return; const sp = SPEAKERS[l[0]]; Audio.say(l[1], sp ? sp.voice : 1, 1.05, 2); }
 function advanceDialog() {
   dlg.i++; dlg.t = 0;
   if (dlg.i >= dlg.lines.length) { const a = dlg.after; dlg = null; a(); }
@@ -764,7 +781,7 @@ function renderSelect() {
 function launchStage(i) {
   startBattle(i);
   Audio.setMusic('calm');
-  startDialog(STAGES[i].intro, () => { mode = 'battle'; const bd = BOSSES[STAGES[i].boss]; Audio.setMusic(bd.final || bd.rank && bd.rank[0] === '上' ? 'boss' : 'battle'); Audio.sfx.gong(); sayLine(activeP().ch.lines.start, activeP().ch.voice); });
+  startDialog(STAGES[i].intro, () => { mode = 'battle'; const bd = BOSSES[STAGES[i].boss]; Audio.setMusic(bd.final || bd.rank && bd.rank[0] === '上' ? 'boss' : 'battle'); Audio.sfx.gong(); sayLine(activeP().ch.lines.start, activeP().ch.voice, 2); });
 }
 const CHAR_KEYS = Object.keys(CHARS);
 function renderSettings() {
@@ -772,7 +789,7 @@ function renderSettings() {
   patternBg('#0d0b14', P_SEIGAIHA(), 0.035); vignette(0.6);
   screenHeader('設定', 'Cài đặt', '設');
   const items = [
-    ['音声（日本語の読み上げ）', 'Giọng đọc tiếng Nhật — thoại & tên chiêu', Audio.voiceOn],
+    ['音声（日本語の読み上げ）', 'Giọng đọc tiếng Nhật — VỪA: thoại + tuyệt kỹ · ĐỦ: đọc mọi tên chiêu', ['voice', Audio.voiceLv]],
     ['音楽', 'Nhạc nền taiko / koto', Audio.musicOn],
     ['全ステージ解放', 'Mở khóa tất cả ải', progress >= STAGES.length - 1],
     ['進行リセット', 'Xóa tiến trình', null],
@@ -784,8 +801,8 @@ function renderSettings() {
     if (clickIn(W / 2 - 400, y, 800, 64)) { if (setIdx === i) Input.pressed.Enter = true; setIdx = i; }
     if (sel) ink(W / 2 - 410, y + 4, 790, 60, 'rgba(179,18,46,.85)', 1, i);
     bi(jp, vn, W / 2 - 370, y + 34, { size: 22, vcol: sel ? '#ffe0b0' : COL.dim, vsize: 13, gap: 20 });
-    const lab = v === 'pick' ? ['選ぶ', 'Chọn file'] : v === null ? ['実行', 'Thực hiện'] : v ? ['有効', 'BẬT'] : ['無効', 'TẮT'];
-    ctx.fillStyle = v === true ? 'rgba(60,160,90,.9)' : 'rgba(255,255,255,.08)'; roundRect(ctx, W / 2 + 230, y + 16, 150, 36, 18); ctx.fill(); ctx.strokeStyle = COL.gold; ctx.lineWidth = 1; ctx.stroke();
+    const lab = v && v[0] === 'voice' ? [['無効', 'TẮT'], ['控えめ', 'VỪA'], ['全部', 'ĐỦ']][v[1]] : v === 'pick' ? ['選ぶ', 'Chọn file'] : v === null ? ['実行', 'Thực hiện'] : v ? ['有効', 'BẬT'] : ['無効', 'TẮT'];
+    ctx.fillStyle = v === true || (v && v[0] === 'voice' && v[1]) ? 'rgba(60,160,90,.9)' : 'rgba(255,255,255,.08)'; roundRect(ctx, W / 2 + 230, y + 16, 150, 36, 18); ctx.fill(); ctx.strokeStyle = COL.gold; ctx.lineWidth = 1; ctx.stroke();
     T(lab[0] + ' · ' + lab[1], W / 2 + 305, y + 40, { size: 15, col: '#fff', align: 'center', font: JPF, weight: 600 });
   });
   const ja = Audio.hasJa();
@@ -796,7 +813,7 @@ function renderSettings() {
   if (pressed('KeyW', 'ArrowUp')) setIdx = (setIdx + items.length - 1) % items.length;
   if (pressed('KeyS', 'ArrowDown')) setIdx = (setIdx + 1) % items.length;
   if (pressed('Enter', 'KeyJ')) {
-    if (setIdx === 0) { Audio.voiceOn = !Audio.voiceOn; if (Audio.voiceOn) Audio.say('全集中・水の呼吸', 1.15); }
+    if (setIdx === 0) { Audio.voiceLv = (Audio.voiceLv + 1) % 3; if (Audio.voiceOn) Audio.say('全集中・水の呼吸', 1.15, 1.15, 2); }
     if (setIdx === 1) Audio.musicOn = !Audio.musicOn;
     if (setIdx === 2) progress = STAGES.length - 1;
     if (setIdx === 3) { progress = 0; selIdx = 0; }

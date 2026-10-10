@@ -91,7 +91,7 @@ function drawBoss(ctx, b, g) {
   if (look === 'hand') { drawHandDemon(ctx, b, t); ctx.restore(); return; }
   if (look === 'gyokko') { drawGyokko(ctx, b, t); ctx.restore(); return; }
   if (look === 'dummy') { drawDummy(ctx, b, t); ctx.restore(); return; }
-  const L = DEMON_LOOKS[look];
+  const L = DEMON_LOOKS[look] || (look === 'spiderdad' ? Object.assign({}, DEMON_LOOKS.minion, { skin: '#d8d4cc', hair: '#eee' }) : Object.assign({}, DEMON_LOOKS.minion, { skin: '#f07030', hair: '#f8f0e0' }));
   // extras behind
   if (look === 'muzan') {
     ctx.save(); ctx.translate(b.x, b.y - 120);

@@ -50,7 +50,7 @@ function makeBoss(key, x) {
   const d = BOSSES[key];
   return {
     key, def: d, x, y: GY, z: 0, face: -1, hp: d.hp, maxhp: d.hp, state: 'move', st: 0, cd: 80 + rnd(0, 60), atk: null,
-    walk: 0, hurt: 0, flash: 0, poison: 0, burn: 0, dead: false, deadT: 0, scale: d.minion ? 1 : (key === 'rui' ? 1.05 : 1.25),
+    walk: 0, hurt: 0, flash: 0, poison: 0, burn: 0, dead: false, deadT: 0, scale: d.scale || (d.minion ? 1 : (key === 'rui' ? 1.05 : 1.25)),
     hw: d.w, hh: d.h, swing: 0.9, revived: 0, buffT: 0, mv: null, acc: 0, pending: 0, small: null,
   };
 }
@@ -64,12 +64,72 @@ function startBattle(si, custom) {
     tilt: 0, tiltT: 0, over: null, overT: 0, lastSay: -999, switchCd: 0, paused: false, bossLine: null,
   };
   if (D3()) { AL = ARENA3D[0]; AR = ARENA3D[1]; } else { AL = 40; AR = W - 40; }
-  G.bosses.push(makeBoss(S.boss, S.boss2 ? 880 : 960));
-  if (S.boss2) { G.bosses.push(makeBoss(S.boss2, 1080)); if (D3()) { G.bosses[0].z = -70; G.bosses[1].z = 70; } }
-  for (let i = 0; i < (S.minions || 0); i++) { const m = makeBoss('mini', 620 + i * 110); if (D3()) m.z = rnd(-150, 150); G.bosses.push(m); }
+  // story waves: some arcs make you fight through the demons met on the way before the arc's boss steps in
+  G.phases = S.phases || []; G.phase = 0; G.waveT = 0; G.subs = []; G.subT = 0;
+  if (G.phases.length) { spawnWave(G.phases[0], 0, 960); G.subs = (G.phases[0].lines || []).slice(); }
+  else spawnMain(S, 960);
+  G.ally = S.ally ? { key: S.ally, x: 120, y: GY, z: 90, face: 1, walk: 0, castT: 0, cd: 300, healCd: 600 } : null;
   G.team.forEach((p, i) => { p.x = 260 - i * 6; });
   if (S.note) banner('', S.note, 300);
   Audio.setMusic(bd.final || bd.rank && bd.rank[0] === '上' ? 'boss' : 'battle');
+}
+
+function spawnMain(S, cx) {
+  const w = (S.phases || []).length, add = (b) => { b.wave = w; G.bosses.push(b); return b; };
+  const b1 = add(makeBoss(S.boss, S.boss2 ? cx - 80 : cx));
+  if (S.boss2) { const b2 = add(makeBoss(S.boss2, cx + 120)); if (D3()) { b1.z = -70; b2.z = 70; } }
+  for (let i = 0; i < (S.minions || 0); i++) { const m = add(makeBoss('mini', cx - 340 + i * 110)); if (D3()) m.z = rnd(-150, 150); }
+}
+function spawnWave(ph, w, cx) {
+  const keys = ph.bosses || [], n = keys.length;
+  keys.forEach((k, i) => { const b = makeBoss(k, cx + (i - (n - 1) / 2) * 170); b.wave = w; if (D3()) b.z = (i - (n - 1) / 2) * 130; G.bosses.push(b); });
+  for (let i = 0; i < (ph.minions || 0); i++) { const m = makeBoss('mini', cx - 120 + i * 110); m.wave = w; if (D3()) m.z = rnd(-150, 150); G.bosses.push(m); }
+}
+function waveCleared() { // the wave's named demons are down (or, for a wave of small fry, all of them)
+  const wb = G.bosses.filter(b => (b.wave || 0) === G.phase), core = wb.filter(b => !b.def.minion);
+  return (core.length ? core : wb).every(b => b.dead);
+}
+const WAVE_NO = ['壱', '弐', '参', '肆', '伍'];
+function nextWave() {
+  G.phase++; G.waveT = 110;
+  for (const b of G.bosses) if (!b.dead && b.def.minion) killBoss(b); // the puppets fall with their puppeteer
+  G.haz.length = 0; G.eproj.length = 0;
+  for (const q of G.team) { if (q.down) continue; q.hp = Math.min(q.maxhp, q.hp + q.maxhp * 0.25); q.br = Math.min(q.maxbr, q.br + 40); }
+  const ph = G.phases[G.phase], bd = BOSSES[G.S.boss];
+  if (ph) banner('第' + WAVE_NO[G.phase] + '幕 ' + ph.t[0], 'Chặng ' + (G.phase + 1) + ' · ' + ph.t[1] + ' — hồi 25% máu', 150);
+  else banner('最終幕 ' + bd.name, 'Chặng cuối · ' + (BOSS_VN[G.S.boss] || bd.name) + ' xuất hiện! — hồi 25% máu', 170);
+}
+function spawnNextWave() {
+  const P = activeP(), dir = P.x < (AL + AR) / 2 ? 1 : -1, cx = clamp(P.x + dir * 620, AL + 200, AR - 200);
+  G.bosses = G.bosses.filter(b => !b.dead);
+  const ph = G.phases[G.phase];
+  if (ph) spawnWave(ph, G.phase, cx); else spawnMain(G.S, cx);
+  for (const b of G.bosses) { b.face = -dir; G.cz = b.z || 0; particles('demon', b.x, b.y - 60, 26, 6, { k: 'smoke' }); b.flash = 20; }
+  G.subs = ((ph ? ph.lines : G.S.last) || []).slice(); G.subT = 0;
+  G.shake = 14; Audio.sfx.gong();
+}
+// Tamayo: keeps behind the slayer, clouds the demons' senses with her blood art and tends the wounded
+function updateAlly(A) {
+  const P = activeP(), d3 = D3();
+  const gx = P.x - P.face * 150, gz = (P.z || 0) + 90, dx = gx - A.x, dz = gz - A.z;
+  if (Math.abs(dx) > 30) { A.x += Math.sign(dx) * Math.min(Math.abs(dx), 6.5); A.walk += 0.25; }
+  if (d3 && Math.abs(dz) > 20) A.z += Math.sign(dz) * Math.min(Math.abs(dz), 4.5);
+  const e = nearestEnemy(A); A.face = e ? Math.sign(e.x - A.x) || A.face : P.face;
+  if (A.castT > 0) A.castT--;
+  if (G.waveT || G.over) return;
+  if (--A.cd <= 0) { // 惑血「視覚夢幻の香」: a flower-patterned scent that makes the demons see things
+    A.cd = 660; A.castT = 40;
+    const foes = aliveEnemies(); for (const b of foes) { b.confT = 300; G.cz = b.z || 0; particles('flower', b.x, b.y - b.hh * 0.7, 18, 4, { k: 'petal', g: -0.01 }); }
+    G.cz = A.z; particles('flower', A.x, A.y - 90, 30, 6, { k: 'petal', g: -0.01 });
+    addText(A.x, A.y - 190, '惑血「視覚夢幻の香」', '#f0a8ff', 22);
+    if (foes.length) banner('', 'Tamayo · 惑血 — lũ quỷ bị ảo giác, đánh trật hướng trong 5 giây!', 110);
+    Audio.say('わくち、しかくむげんのこう', 1.05, 1.1, 1); Audio.sfx.breath();
+  }
+  if (--A.healCd <= 0) { // her medicine
+    const hurt = G.team.filter(q => !q.down && q.hp < q.maxhp * 0.7);
+    if (hurt.length) { A.healCd = 900; A.castT = 30; for (const q of hurt) { q.hp = Math.min(q.maxhp, q.hp + q.maxhp * 0.15); } G.cz = P.z || 0; particles('flower', P.x, P.y - 80, 20, 4, { k: 'petal', g: -0.05 }); addText(P.x, P.y - 170, '珠世の薬 +15%', '#b8ffcf', 20); Audio.sfx.pickup(); }
+    else A.healCd = 120;
+  }
 }
 
 // ---------------- HELPERS ----------------
@@ -114,6 +174,10 @@ const FIN = {
   akaza2: { fin: (b, g, P) => !b.revived || (P && P.key === 'tanjiro' && g.theme === 'sun') },
   kokushibo: { fin: (b, g, P) => P && (P.key === 'gyomei' || P.key === 'sanemi') && b.hitBy && b.hitBy.muichiro },
   muzan: { dawn: (b, g, P) => P && P.key === 'tanjiro' && g.kind === 'combo13' ? 4 : 0 },
+  yahaba: { fin: (b, g, P) => P && P.key === 'tanjiro' },
+  spider_mother: { fin: (b, g, P) => P && P.key === 'tanjiro' && g.form === '干天の慈雨' },
+  spider_father: { fin: (b, g, P) => P && P.key === 'giyu' },
+  daki_solo: { fin: (b, g, P) => P && P.key === 'tengen' },
 };
 const finLocked = (b) => { const r = FIN[b.key]; return !!(r && r.fin && !b.finOpen && !G.S.training); };
 function finFloor(b) { return b.maxhp * 0.1; }
@@ -216,8 +280,8 @@ function checkBossDeath(b) {
     b.revived = 1; b.hp = b.maxhp * 0.35;
     banner('頸を斬っても…再生する！？', 'Chém cổ rồi mà vẫn tái sinh!? Đánh tiếp!', 150); Audio.sfx.gong(); return;
   }
-  if (G.S.boss2 && !d.minion) {
-    const other = G.bosses.find(o => o !== b && !o.def.minion);
+  if (G.S.boss2 && !d.minion && (b.key === G.S.boss || b.key === G.S.boss2)) {
+    const other = G.bosses.find(o => o !== b && (o.key === G.S.boss || o.key === G.S.boss2));
     if (!b.pending) { b.pending = 240; b.hp = 0; }
     if (other && (other.pending || other.dead)) { killBoss(b); killBoss(other); }
     else banner('もう一体の頸も斬れ！', 'Nhanh! Chém cổ con còn lại trong 4 giây!', 120);
@@ -295,9 +359,9 @@ function switchTo(i, forced) {
   particles('mist', P.x, P.y - 70, 20, 4, { k: 'smoke' });
   addText(P.x, P.y - 170, P.ch.name + ' · ' + P.ch.vn.split(' — ')[0], '#fff', 18);
   Audio.sfx.select();
-  sayLine(P.ch.lines.start, P.ch.voice);
+  sayLine(P.ch.lines.start, P.ch.voice, 2);
 }
-function sayLine(text, pitch) { if (G) G.lastSay = G.t; Audio.say(text, pitch); }
+function sayLine(text, pitch, prio) { if (Audio.say(text, pitch, undefined, prio) && G) G.lastSay = G.t; }
 
 // ---------------- FX ----------------
 function fxSlash(P, r, a0, a1, w, theme, o) {
@@ -757,7 +821,12 @@ function callout(P, f, st) {
   const kana = (st.noZen ? '' : 'ぜんしゅうちゅう、') + (lab === '日の呼吸' ? 'ひのこきゅう' : st.kana) + '、' + (f.kataKana ? f.kataKana + '、' : '') + f.kana;
   G.callouts.push({ sub: pre, kata: f.kata, jp: f.name, vn: f.vn, t: 0, dur: f.big ? 150 : 95, theme: st.theme, big: !!f.big });
   if (G.callouts.length > 2) G.callouts.shift();
-  sayLine(kana, P.ch.voice);
+  // voice: at the default level only finishers and the odd technique (one every ~6 s) are read out, and only the
+  // technique's own name; at full level every technique, still never more often than every 1.5 s
+  const lv = Audio.voiceLv, gap = G.t - (G.lastSay || -999);
+  if (!lv) return;
+  if (f.big) sayLine(kana, P.ch.voice, 2);
+  else if (lv === 2 ? gap > 90 : gap > 360) sayLine(lv === 2 ? kana : (f.kataKana ? f.kataKana + '、' : '') + f.kana, P.ch.voice, 1);
 }
 function runCast(P) {
   const c = P.cast;
@@ -850,7 +919,7 @@ function handleSelectionInput() {
     P.styleIdx = (P.styleIdx + 1) % P.ch.styles.length; Audio.sfx.select();
     const s2 = curStyle(P);
     addText(P.x, P.y - 180, s2.jp + (s2.theme === 'sun' ? ' · Hơi thở Mặt Trời' : ' · Hơi thở của Nước'), '#ffd080', 22);
-    if (s2.theme === 'sun') { particles('sun', P.x, P.y - 80, 30, 6); Audio.say('ひのかみかぐら', P.ch.voice); }
+    if (s2.theme === 'sun') { particles('sun', P.x, P.y - 80, 30, 6); if (Audio.voiceLv === 2) sayLine('ひのかみかぐら', P.ch.voice, 1); }
   }
   if (G.palette) {
     PALETTE_KEYS.forEach((code, i) => { if (pressed(code) && i < n) { P.formIdx[P.styleIdx] = i; Audio.sfx.select(); } });
@@ -878,7 +947,7 @@ function updateBoss(b) {
   const poisonF = Math.max(0, 1 - b.poison / 20);
   if (b.noRegen > 0) b.noRegen--;
   if (b.finWin > 0) b.finWin--;
-  else b.hp = Math.min(b.maxhp, b.hp + d.regen * (G.dawnMax ? 1 : 0.3) * poisonF * (b.regenBurst > 0 ? 6 : 1)); // demons heal, but slowly enough to be outfought
+  else b.hp = Math.min(b.maxhp, b.hp + d.regen * (G.dawnMax ? 1 : 0.3) * poisonF * (b.regenBurst > 0 ? 6 : 1) * (G.S.drug && b.key === G.S.boss ? 0.55 : 1)); // demons heal (Muzan: Tamayo's drug slows it), but slowly enough to be outfought
   if (b.regenBurst > 0 && b.noRegen > 0) b.hp = Math.min(b.maxhp, b.hp + d.regen * 4); // dawn-stage forced regeneration still works
   if (b.regenBurst > 0) b.regenBurst--;
   if (finLocked(b) || (FIN[b.key] && FIN[b.key].small && !b.finOpen)) { if (b.hp <= finFloor(b) * 1.15 || (b.small && b.small.hp <= 1)) { b.finT = (b.finT || 0) + 1; if (b.finT > 5400) b.finOpen = true; } } // 90s stuck: any blow may finish
@@ -889,8 +958,10 @@ function updateBoss(b) {
   if (b.small && b.small.hp > 0) { const s = b.small; s.x += s.vx; if (s.x < AL + 20 || s.x > AR - 20 || Math.random() < 0.01) s.vx *= -1; if (Math.abs(s.x - P.x) < 120) s.vx = Math.sign(s.x - P.x) * 4.5; s.x = clamp(s.x, AL, AR);
     if (D3()) { if (Math.random() < 0.02) s.vz = rnd(-3, 3); if (Math.abs(s.x - P.x) < 160 && Math.abs((s.z || 0) - P.z) < 120) s.vz = Math.sign((s.z || 0) - P.z || 1) * 3.5; const zr = zRange(); s.z = clamp((s.z || 0) + (s.vz || 0), zr[0], zr[1]); } }
   const phase2 = b.hp < b.maxhp * 0.5;
-  const tx = P.buffs.invis ? (b.fakeX || (b.fakeX = rnd(200, 1100))) : P.x;
-  if (!P.buffs.invis) b.fakeX = 0;
+  if (b.confT > 0) { b.confT--; if (G.t % 10 === 0) { G.cz = b.z || 0; particles('flower', b.x + rnd(-20, 20), b.y - b.hh - 10, 1, 1, { k: 'petal', g: -0.01 }); } }
+  const lost = P.buffs.invis || b.confT > 0;
+  const tx = lost ? (b.fakeX || (b.fakeX = clamp(P.x + (Math.random() < 0.5 ? -1 : 1) * rnd(260, 520), AL + 60, AR - 60))) : P.x;
+  if (!lost) b.fakeX = 0;
   const spd = (b.buffT > 0 ? 1.6 : 1) * (phase2 ? 1.2 : 1);
   if (b.state === 'move') {
     b.swing = 0.9 + Math.sin(G.t * 0.05) * 0.1;
@@ -899,8 +970,8 @@ function updateBoss(b) {
     if (Math.abs(dx) > want + 30) { b.x += Math.sign(dx) * d.speed * spd; b.walk += 0.2; }
     else if (Math.abs(dx) < want - 80 && !d.minion && !(b.noRegen > 90)) { b.x -= Math.sign(dx) * d.speed * 0.45; b.walk += 0.15; } // backs off only when not under pressure
     if (D3() && d.speed) { // close the depth gap too (demons stalk you around the arena)
-      const tz = P.buffs.invis ? (b.fakeZ === undefined ? (b.fakeZ = rnd(-180, 180)) : b.fakeZ) : P.z, dz = tz - b.z;
-      if (!P.buffs.invis) b.fakeZ = undefined;
+      const tz = lost ? (b.fakeZ === undefined ? (b.fakeZ = rnd(-180, 180)) : b.fakeZ) : P.z, dz = tz - b.z;
+      if (!lost) b.fakeZ = undefined;
       if (Math.abs(dz) > 14) { b.z += Math.sign(dz) * Math.min(Math.abs(dz), d.speed * spd * 0.75); if (Math.abs(dx) <= want + 30) b.walk += 0.2; }
     }
     b.cd -= spd;
@@ -915,8 +986,9 @@ function updateBoss(b) {
     b.st++;
     b.swing = lerp(0.9, -2.0, b.st / b.atk.tele);
     const nh = G.haz.length;
-    if (b.st === 1) onTele(b, b.atk, P);
-    if (b.st >= b.atk.tele) { execAttack(b, b.atk, P); b.state = 'recover'; b.st = 0; }
+    const aim = b.confT > 0 && b.fakeX ? Object.assign({}, P, { x: b.fakeX, z: b.fakeZ !== undefined ? b.fakeZ : P.z }) : P; // a phantom target while confused
+    if (b.st === 1) onTele(b, b.atk, aim);
+    if (b.st >= b.atk.tele) { execAttack(b, b.atk, aim); b.state = 'recover'; b.st = 0; }
     for (let i = nh; i < G.haz.length; i++) { const h = G.haz[i]; h.bk = b.key; h.bx = b.x; h.bz = b.z || 0; } // who cast it (the 3D look is per demon)
   } else if (b.state === 'recover') {
     b.st++;
@@ -945,7 +1017,8 @@ function updateBoss(b) {
 function bossCallout(b, a) {
   if (!a.n) return;
   G.bossLine = { s: a.n, t: 0, b };
-  if (G.t - G.lastSay > 70) Audio.say(a.n.replace(/・/g, '、'), SPEAKERS[b.key] ? SPEAKERS[b.key].voice : 0.8, 1.2);
+  const gap = Audio.voiceLv === 2 ? 150 : 360; // demons name their blood arts too, but not every single time
+  if (G.t - G.lastSay > 70 && G.t - (G.lastBossSay || -999) > gap && Audio.say(a.n.replace(/・/g, '、'), SPEAKERS[b.key] ? SPEAKERS[b.key].voice : 0.8, 1.2, 1)) G.lastBossSay = G.t;
 }
 function onTele(b, a, P) {
   bossCallout(b, a); Audio.sfx.tele();
@@ -1187,6 +1260,15 @@ function battleStep() {
     }
   }
   // win / lose
-  if (!G.over && G.bosses.filter(b => !b.def.minion).every(b => b.dead)) { G.over = 'win'; G.overT = 0; sayLine(P.ch.lines.win, P.ch.voice); }
+  if (G.waveT > 0 && --G.waveT === 0) spawnNextWave();
+  if (G.ally) updateAlly(G.ally);
+  if (G.subs && G.subs.length && !G.over) { // short story lines between waves, spoken and subtitled
+    if (G.subT === 0) { const l = G.subs[0], sp = SPEAKERS[l[0]]; Audio.say(l[1], sp ? sp.voice : 1, 1.08, 2); }
+    if (++G.subT > 170) { G.subs.shift(); G.subT = 0; }
+  }
+  if (!G.over && !G.waveT && waveCleared()) {
+    if (G.phase < G.phases.length) nextWave();
+    else { G.over = 'win'; G.overT = 0; sayLine(P.ch.lines.win, P.ch.voice, 2); }
+  }
   if (G.over) G.overT++;
 }

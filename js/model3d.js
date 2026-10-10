@@ -549,6 +549,33 @@ const CHIBI3D = (() => {
       const sk = part(new T3.TorusGeometry(0.2, 0.022, 6, 20, Math.PI * 1.15), toon('#c01030', { emissive: col('#400008') }), 0.06, hd, [0.1, -0.1, 0]); sk.userData.dyn = 1; sk.children.forEach(m => m.userData.dyn = 1);
       extras.push((t) => { sk.rotation.z = Math.sin(t * 0.08) * 0.3; });
     }
+    // Hantengu's emotions each carry their own weapon; Yahaba has eyes in his palms
+    if (key === 'sekido') { // 錫杖: a ringed priest's staff that calls lightning
+      const sw = joint(J.handR, 0, -0.04, 0); anchors.push(sw);
+      part(new T3.CylinderGeometry(0.018, 0.018, 1.5, 6), tc('#5a3a1a'), 0.06, sw, [0, -0.2, 0]);
+      const top = part(new T3.TorusGeometry(0.1, 0.014, 6, 16), M.gold, 0.06, sw, [0, 0.6, 0]);
+      for (let i = 0; i < 4; i++) part(new T3.TorusGeometry(0.035, 0.008, 4, 10), M.gold, 0, top, [Math.cos(i * 1.6) * 0.09, Math.sin(i * 1.6) * 0.09, 0]);
+    }
+    if (key === 'karaku') { // 八つ手の団扇: a huge fatsia-leaf fan
+      const sw = joint(J.handR, 0, -0.04, 0); anchors.push(sw);
+      part(new T3.CylinderGeometry(0.015, 0.015, 0.4, 6), tc('#6a4a2a'), 0.06, sw, [0, 0.1, 0]);
+      const leaf = new T3.Shape(); for (let i = 0; i <= 16; i++) { const a = Math.PI * 0.1 + i / 16 * Math.PI * 0.8, r = i % 2 ? 0.24 : 0.42; leaf[i ? 'lineTo' : 'moveTo'](Math.cos(a) * r, Math.sin(a) * r); } leaf.lineTo(0, 0);
+      part(new T3.ShapeGeometry(leaf), toon('#3a7a3a', { side: T3.DoubleSide }), 0.03, sw, [0, 0.28, 0], [0, Math.PI / 2, 0]);
+    }
+    if (key === 'urogi') { // feathered wings
+      const wm = toon('#5a4a3a', { side: T3.DoubleSide });
+      for (const sd of [-1, 1]) { const wj = joint(J.spine, sd * 0.1, 0.22, -0.12); anchors.push(wj); const w = new T3.Shape(); w.moveTo(0, 0); w.quadraticCurveTo(0.35, 0.45, 0.85, 0.3); w.lineTo(0.7, 0.12); w.lineTo(0.8, 0.0); w.lineTo(0.6, -0.08); w.lineTo(0.62, -0.22); w.quadraticCurveTo(0.3, -0.15, 0, 0);
+        const wg = part(new T3.ShapeGeometry(w, 8), wm, 0.03, wj, [0, 0, 0], [0, sd > 0 ? -0.5 : Math.PI + 0.5, 0.2]); wg.userData.dyn = 1; extras.push((t) => { wj.rotation.y = sd * Math.sin(t * 0.35) * 0.35; }); }
+    }
+    if (key === 'aizetsu') { // 十文字槍: a cross-bladed spear
+      const sw = joint(J.handR, 0, -0.04, 0); anchors.push(sw);
+      part(new T3.CylinderGeometry(0.016, 0.016, 1.6, 6), tc('#2a2a3a'), 0.06, sw, [0, 0.1, 0]);
+      part(new T3.ConeGeometry(0.035, 0.28, 4), tc('#d8dce8'), 0.05, sw, [0, 1.04, 0]);
+      part(new T3.BoxGeometry(0.34, 0.03, 0.012), tc('#d8dce8'), 0.05, sw, [0, 0.9, 0]);
+    }
+    if (key === 'yahaba') for (const hd of [J.handR, J.handL]) { // the eyes in his palms
+      part(new T3.SphereGeometry(0.035, 10, 8), tc('#ffffff'), 0.06, hd, [0, -0.03, 0.035]); part(new T3.SphereGeometry(0.018, 8, 6), new T3.MeshBasicMaterial({ color: 0xc01020 }), 0, hd, [0, -0.03, 0.065]);
+    }
     if (key === 'kokushibo') {
       const sw = joint(J.handR, 0, -0.05, 0); anchors.push(sw);
       part(new T3.BoxGeometry(0.05, 1.5, 0.02), tc('#7a1a2a'), 0.05, sw, [0, -0.75, 0]);
@@ -661,7 +688,60 @@ const CHIBI3D = (() => {
     optimize(S.root, S.anchors);
     return Object.assign(S, { height: 1.8, custom: 2, wob, tick(t, a) { wob.rotation.z = a.hurt ? Math.sin(t * 1.3) * 0.08 : 0; } });
   }
-  const CUSTOM = { hand: buildHand, gyokko: buildGyokko, dummy: buildDummy };
+  // Rui's "father": a hulking pale body with a spider's head — six red eyes, mandibles, a shock of white hair
+  function buildSpiderDad() {
+    const S = shell(), { toon, part, joint, turn } = S;
+    const sk = toon('#d8d4cc'), sk2 = toon('#b8b2a8'), hairM = toon('#f2f0ea'), red = toon('#d01830', { emissive: col('#600010') }), dark = toon('#2a2024');
+    const hip = joint(turn, 0, 1.05, 0);
+    part(new T3.SphereGeometry(0.42, 18, 14), sk2, 0.04, hip, [0, 0, 0]).scale.set(1.15, 0.8, 0.9);
+    part(new T3.BoxGeometry(0.9, 0.22, 0.62), dark, 0.04, hip, [0, -0.08, 0]); // loincloth
+    const chest = joint(hip, 0, 0.25, 0);
+    part(new T3.SphereGeometry(0.62, 22, 16), sk, 0.035, chest, [0, 0.45, 0]).scale.set(1.15, 0.95, 0.8);
+    for (const s2 of [-1, 1]) part(new T3.SphereGeometry(0.26, 12, 10), sk2, 0.04, chest, [s2 * 0.27, 0.62, 0.33]).scale.set(1, 0.7, 0.5); // pecs
+    const legs = [];
+    for (const s2 of [-1, 1]) { const l = joint(hip, s2 * 0.3, -0.05, 0); part(new T3.CapsuleGeometry(0.17, 0.55, 4, 10), sk, 0.04, l, [0, -0.42, 0]); part(new T3.SphereGeometry(0.17, 10, 8), sk2, 0.04, l, [0, -0.86, 0.07]).scale.set(1, 0.6, 1.4); legs.push(l); }
+    const arms = [];
+    for (const s2 of [-1, 1]) {
+      const sh = joint(chest, s2 * 0.72, 0.72, 0); part(new T3.SphereGeometry(0.24, 12, 10), sk, 0.04, sh);
+      part(new T3.CapsuleGeometry(0.15, 0.5, 4, 10), sk, 0.04, sh, [0, -0.38, 0]);
+      const el = joint(sh, 0, -0.72, 0); part(new T3.CapsuleGeometry(0.14, 0.5, 4, 10), sk2, 0.04, el, [0, -0.32, 0]);
+      part(new T3.SphereGeometry(0.17, 10, 8), sk, 0.04, el, [0, -0.7, 0]).scale.set(1, 1.1, 0.8);
+      for (let k = 0; k < 4; k++) part(new T3.ConeGeometry(0.03, 0.14, 5), dark, 0, el, [-0.08 + k * 0.055, -0.86, 0.05], [Math.PI, 0, 0]);
+      arms.push([sh, el, s2]);
+    }
+    const head = joint(chest, 0, 1.2, 0.05);
+    part(new T3.SphereGeometry(0.36, 20, 16), sk, 0.04, head, [0, 0.05, 0]).scale.set(1.05, 0.9, 1);
+    for (let i = 0; i < 9; i++) { const a = -1.2 + i * 0.3; part(new T3.ConeGeometry(0.07, 0.42, 6), hairM, 0.05, head, [Math.sin(a) * 0.28, 0.32, -0.12 + Math.cos(a) * 0.05], [-0.5, 0, -a * 0.9]); }
+    for (const [x, y, r] of [[-0.12, 0.08, 0.075], [0.12, 0.08, 0.075], [-0.24, 0.16, 0.045], [0.24, 0.16, 0.045], [-0.07, 0.22, 0.04], [0.07, 0.22, 0.04]]) part(new T3.SphereGeometry(r, 10, 8), red, 0.08, head, [x, y, 0.3 - Math.abs(x) * 0.35]);
+    const jaws = [];
+    for (const s2 of [-1, 1]) { const j = joint(head, s2 * 0.1, -0.15, 0.26); part(new T3.ConeGeometry(0.05, 0.24, 6), dark, 0.05, j, [0, -0.1, 0.03], [Math.PI - 0.3, 0, s2 * 0.25]); jaws.push([j, s2]); }
+    optimize(S.root, S.anchors);
+    return Object.assign(S, { height: 2.6, custom: 1, tick(t, p) {
+      const run = p.run || 0, sw = p.swing !== undefined ? p.swing : 0.9;
+      legs.forEach((l, i) => { l.rotation.x = Math.sin(run + i * Math.PI) * 0.5; });
+      arms.forEach(([sh, el, s2], i) => { sh.rotation.x = i ? -(sw - 0.9) * 0.9 : Math.sin(run) * 0.4; sh.rotation.z = s2 * (0.35 + (p.shout ? 0.5 : 0)); el.rotation.x = -0.4 - (i ? Math.max(0, -sw) * 0.4 : 0); });
+      jaws.forEach(([j, s2]) => { j.rotation.z = s2 * (0.15 + Math.abs(Math.sin(t * (p.shout ? 0.5 : 0.08))) * 0.3); });
+      head.rotation.z = Math.sin(t * 0.03) * 0.06; chest.rotation.y = Math.sin(run * 0.5) * 0.08;
+    } });
+  }
+  // Gyokko's goldfish: a fat red-gold fish on stubby legs, with a long veil tail
+  function buildKingyo() {
+    const S = shell(), { toon, part, joint, turn } = S;
+    const body = toon('#f06428'), belly = toon('#fff0d8'), fin = toon('#ff9a50', { transparent: true, opacity: 0.85, side: T3.DoubleSide }), eye = toon('#ffffff'), pup = toon('#101010'), leg = toon('#e8b0a0');
+    const legs = []; for (const s2 of [-1, 1]) { const l = joint(turn, s2 * 0.12, 0.34, 0); part(new T3.CapsuleGeometry(0.05, 0.2, 3, 8), leg, 0.05, l, [0, -0.17, 0]); legs.push(l); }
+    const b = joint(turn, 0, 0.62, 0);
+    part(new T3.SphereGeometry(0.32, 20, 16), body, 0.04, b).scale.set(1.25, 0.95, 0.8);
+    part(new T3.SphereGeometry(0.24, 14, 10), belly, 0.03, b, [0.06, -0.1, 0.12]).scale.set(1.1, 0.8, 0.8);
+    for (const s2 of [-1, 1]) { part(new T3.SphereGeometry(0.09, 10, 8), eye, 0.05, b, [0.24, 0.12, s2 * 0.18]); part(new T3.SphereGeometry(0.045, 8, 6), pup, 0, b, [0.31, 0.13, s2 * 0.2]); }
+    part(new T3.TorusGeometry(0.06, 0.02, 6, 12), toon('#8a1a10'), 0.04, b, [0.38, -0.04, 0], [0, Math.PI / 2, 0]); // mouth
+    const sh = new T3.Shape(); sh.moveTo(0, 0); sh.bezierCurveTo(-0.3, 0.35, -0.6, 0.3, -0.75, 0.05); sh.lineTo(-0.55, 0); sh.lineTo(-0.75, -0.08); sh.bezierCurveTo(-0.6, -0.3, -0.3, -0.35, 0, 0);
+    const tail = joint(b, -0.36, 0.02, 0); part(new T3.ShapeGeometry(sh, 10), fin, 0, tail);
+    const dsh = new T3.Shape(); dsh.moveTo(0.18, 0); dsh.quadraticCurveTo(0, 0.28, -0.22, 0.02); dsh.lineTo(0.18, 0);
+    part(new T3.ShapeGeometry(dsh, 8), fin, 0, b, [0, 0.27, 0]);
+    optimize(S.root, S.anchors);
+    return Object.assign(S, { height: 1.0, custom: 1, tick(t, p) { const run = p.run || 0; legs.forEach((l, i) => { l.rotation.x = Math.sin(run * 1.4 + i * Math.PI) * 0.6; }); tail.rotation.y = Math.sin(t * 0.25) * 0.5; b.position.y = 0.62 + Math.abs(Math.sin(run * 1.4)) * 0.04; } });
+  }
+  const CUSTOM = { hand: buildHand, gyokko: buildGyokko, dummy: buildDummy, spiderdad: buildSpiderDad, kingyo: buildKingyo };
 
   // ---------------- material state: hit flash / fade ----------------
   function setFx(M, flash, alpha) {

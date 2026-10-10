@@ -28,10 +28,21 @@ Giao diện song ngữ 日本語 / Tiếng Việt. Font thư pháp (Yuji Syuku, 
 | 1…0 / Tab | Đổi nhân vật trong đội |
 | Esc | Tạm dừng (M: về chọn ải) |
 
-## 13 ải theo anime
-最終選別 (手鬼) → 浅草 (朱紗丸) → 鼓屋敷 (響凱) → 那田蜘蛛山 (累) → 無限列車 (魘夢) → 猗窩座 (cầm cự tới bình minh)
-→ 遊郭 (堕姫 & 妓夫太郎 — phải chém cả hai trong 4s) → 刀鍛冶の里 (玉壺) → (半天狗 — chém bản thể nhỏ 「恨」)
-→ 無限城: 童磨 → 猗窩座 tái đấu → 黒死牟 → **最終決戦: 鬼舞辻無惨** (đánh tới bình minh, 拾参ノ型 đẩy nhanh thanh 夜明け).
+## 13 ải theo anime — chia chặng theo cốt truyện
+Nhiều ải phải vượt qua các con quỷ gặp trên đường trước khi trùm xuất hiện (hết mỗi chặng hồi 25% máu, có thoại ngắn):
+- 最終選別: quỷ núi Fujikasane → **手鬼**
+- 浅草: **矢琶羽** (mũi tên) → **朱紗丸** · có **珠世 Tamayo** chiến đấu cùng: 惑血「視覚夢幻の香」 làm quỷ ảo giác đánh trật hướng, thuốc hồi máu cho đội
+- 鼓屋敷: **舌鬼** → **響凱**
+- 那田蜘蛛山: **母蜘蛛** (điều khiển con rối bằng tơ) → **父蜘蛛** (khổng lồ, đầu nhện) → **累**
+- 無限列車: **魘夢** trên nóc tàu → 魘夢 hợp nhất với đoàn tàu
+- 猗窩座 (cầm cự tới bình minh)
+- 遊郭: **堕姫** một mình → 堕姫 & **妓夫太郎** (phải chém cả hai trong 4s)
+- 刀鍛冶の里: **金魚** của Gyokko → **玉壺**
+- 半天狗: **積怒 & 可楽** → **空喜 & 哀絶** → **憎珀天** (chém bản thể nhỏ 「恨」)
+- 無限城: 童磨 → 猗窩座 tái đấu → 黒死牟
+- **最終決戦: 鬼舞辻無惨** — thuốc của Tamayo làm Muzan hồi máu chậm một nửa; đánh tới bình minh, 拾参ノ型 đẩy nhanh thanh 夜明け.
+
+Giọng đọc (Cài đặt): **VỪA** (mặc định) chỉ đọc thoại, tuyệt kỹ và thỉnh thoảng một tên chiêu; **ĐỦ** đọc mọi tên chiêu; **TẮT**. Câu quan trọng không bị câu khác cắt ngang, tiếng hiệu ứng trùng nhau được gộp lại.
 
 ## Thức (theo Kimetsu no Yaiba Wiki, chỉ chiêu gốc manga/anime)
 - 炭治郎: 水の呼吸 壱〜拾ノ型 (10) + ヒノカミ神楽 12 thức + 拾参ノ型 + 円舞一閃

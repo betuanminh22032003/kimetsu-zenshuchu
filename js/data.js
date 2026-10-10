@@ -405,6 +405,66 @@ const BOSSES = {
       { n: '', type: 'circle', tele: 40, dmg: 40, cd: 140, self: 1, r: 300, blood: 1 },
     ],
   },
+  // ---- story waves: the demons met on the way to each arc's boss
+  yahaba: { name: '矢琶羽', kana: 'やはば', title: '十二鬼月を名乗る鬼', hp: 800, regen: 0.05, speed: 1.6, w: 80, h: 170, look: 'yahaba',
+    atks: [
+      { n: '血鬼術 紅潔の矢印', type: 'lines', tele: 45, dmg: 16, cd: 80, count: 3, style: 'arrow' },
+      { n: '', type: 'proj', tele: 30, dmg: 12, cd: 80, count: 3, speed: 9, size: 14, color: '#ff4848', shape: 'orb', homing: 0.06 },
+      { n: '', type: 'melee', tele: 25, dmg: 14, cd: 60, range: 140 },
+    ] },
+  shitaoni: { name: '舌鬼', kana: 'したおに', title: '鼓屋敷の鬼', hp: 800, regen: 0.05, speed: 1.5, w: 90, h: 180, look: 'shitaoni',
+    atks: [
+      { n: '', type: 'lines', tele: 40, dmg: 15, cd: 70, count: 2, style: 'tongue' },
+      { n: '', type: 'melee', tele: 25, dmg: 16, cd: 60, range: 160 },
+      { n: '', type: 'dash', tele: 30, dmg: 16, cd: 90 },
+    ] },
+  spider_mother: { name: '母蜘蛛', kana: 'ははぐも', title: '累の「家族」', hp: 900, regen: 0.05, speed: 1.4, w: 70, h: 160, look: 'spider_mother',
+    atks: [
+      { n: '操り糸', type: 'summon', tele: 40, cd: 300, minion: 'puppet', count: 2 },
+      { n: '', type: 'lines', tele: 45, dmg: 15, cd: 75, count: 3, style: 'thread' },
+      { n: '', type: 'proj', tele: 30, dmg: 12, cd: 80, count: 4, speed: 9, size: 10, color: '#f0f0ff', shape: 'thread', spread: 1 },
+    ] },
+  puppet: { name: '操り人形', kana: '', hp: 150, regen: 0, speed: 1.6, w: 50, h: 140, look: 'puppet', minion: 1,
+    atks: [{ n: '', type: 'melee', tele: 30, dmg: 10, cd: 70, range: 100 }] },
+  spider_father: { name: '父蜘蛛', kana: 'ちちぐも', title: '累の「家族」', hp: 1500, regen: 0.1, speed: 1.3, w: 130, h: 260, look: 'spiderdad', scale: 1.65,
+    atks: [
+      { n: '', type: 'melee', tele: 32, dmg: 24, cd: 70, range: 230, multi: 2 },
+      { n: '俺の家族に近づくな', type: 'dash', tele: 34, dmg: 26, cd: 100 },
+      { n: '', type: 'shock', tele: 34, dmg: 20, cd: 110 },
+    ] },
+  enmu_roof: { name: '魘夢', kana: 'えんむ', title: '下弦の壱', hp: 800, regen: 0.1, speed: 1.4, w: 80, h: 170, look: 'enmu', rank: '下壱',
+    atks: [
+      { n: '血鬼術 強制昏倒催眠の囁き', type: 'sleep', tele: 60, dmg: 0, cd: 300 },
+      { n: '', type: 'proj', tele: 35, dmg: 13, cd: 80, count: 3, speed: 8, size: 20, color: '#c080d0', shape: 'mouth', homing: 0.07 },
+      { n: '', type: 'arms', tele: 40, dmg: 14, cd: 90, count: 3, flesh: 1 },
+    ] },
+  daki_solo: { name: '堕姫', kana: 'だき', title: '上弦の陸', hp: 1200, regen: 0.2, speed: 2.4, w: 70, h: 180, look: 'daki', rank: '上陸',
+    atks: [
+      { n: '血鬼術 八重帯斬り', type: 'lines', tele: 40, dmg: 18, cd: 75, count: 4, style: 'obi' },
+      { n: '', type: 'proj', tele: 30, dmg: 15, cd: 70, count: 3, speed: 12, size: 26, color: '#d04070', shape: 'obi' },
+    ] },
+  kingyo: { name: '金魚', kana: 'きんぎょ', title: '玉壺の壺', hp: 240, regen: 0, speed: 1.5, w: 60, h: 100, look: 'kingyo', minion: 1, scale: 0.6,
+    atks: [{ n: '', type: 'proj', tele: 35, dmg: 9, cd: 90, count: 5, speed: 11, size: 8, color: '#e0e0a0', shape: 'needle', spread: 1 }] },
+  sekido: { name: '積怒', kana: 'せきど', title: '上弦の肆 分裂体', hp: 900, regen: 0.15, speed: 1.3, w: 80, h: 170, look: 'sekido', rank: '上肆',
+    atks: [
+      { n: '錫杖・雷', type: 'lines', tele: 40, dmg: 18, cd: 85, count: 3, style: 'bolt' },
+      { n: '', type: 'melee', tele: 26, dmg: 18, cd: 60, range: 170 },
+    ] },
+  karaku: { name: '可楽', kana: 'からく', title: '上弦の肆 分裂体', hp: 900, regen: 0.15, speed: 1.7, w: 80, h: 170, look: 'karaku', rank: '上肆',
+    atks: [
+      { n: '八つ手の団扇', type: 'proj', tele: 30, dmg: 14, cd: 75, count: 4, speed: 13, size: 26, color: '#ccc', shape: 'wind', spread: 1 },
+      { n: '', type: 'circle', tele: 45, dmg: 22, cd: 140, self: 1, r: 220 },
+    ] },
+  urogi: { name: '空喜', kana: 'うろぎ', title: '上弦の肆 分裂体', hp: 900, regen: 0.15, speed: 2.2, w: 80, h: 170, look: 'urogi', rank: '上肆',
+    atks: [
+      { n: '超音波', type: 'shock', tele: 32, dmg: 18, cd: 85 },
+      { n: '', type: 'dash', tele: 26, dmg: 20, cd: 80, triple: 1 },
+    ] },
+  aizetsu: { name: '哀絶', kana: 'あいぜつ', title: '上弦の肆 分裂体', hp: 900, regen: 0.15, speed: 1.9, w: 80, h: 170, look: 'aizetsu', rank: '上肆',
+    atks: [
+      { n: '激涙刺突', type: 'melee', tele: 24, dmg: 18, cd: 60, range: 240, multi: 4 },
+      { n: '', type: 'lines', tele: 35, dmg: 18, cd: 80, count: 3, style: 'spear' },
+    ] },
   dummy: {
     name: '巻藁', kana: 'まきわら', title: '稽古台', hp: 5000, regen: 30, speed: 0, w: 70, h: 180, look: 'dummy', training: 1, atks: [],
   },
@@ -419,7 +479,9 @@ const BOSSES = {
 // dlg: [speaker key | boss key, jp, vn]
 const STAGES = [
   {
-    id: 1, arc: '最終選別', arcVn: 'Tuyển Chọn Cuối Cùng', place: '藤襲山', bg: 'wisteria', team: ['tanjiro'], boss: 'temoni', minions: 3,
+    id: 1, arc: '最終選別', arcVn: 'Tuyển Chọn Cuối Cùng', place: '藤襲山', bg: 'wisteria', team: ['tanjiro'], boss: 'temoni',
+    phases: [{ minions: 3, t: ['藤襲山の鬼', 'Quỷ núi Fujikasane'], lines: [['tanjiro', '鬼の匂いだ…！ 囲まれている', 'Mùi quỷ...! Mình bị bao vây rồi.']] }],
+    last: [['temoni', 'また来たな 鱗滝の弟子が', 'Lại tới nữa rồi, đệ tử của Urokodaki.']],
     intro: [
       ['temoni', '可愛い狐が来た…', 'Lại một con cáo nhỏ dễ thương tới nữa...'],
       ['temoni', '鱗滝の弟子だろう？ 今は明治何年だ？', 'Đệ tử của Urokodaki phải không? Giờ là năm Meiji thứ mấy?'],
@@ -430,7 +492,9 @@ const STAGES = [
     outro: [['tanjiro', '神様… どうか この人が今度生まれてくる時は 鬼になんてなりませんように', 'Thần linh ơi... xin cho người này kiếp sau đừng trở thành quỷ nữa.']],
   },
   {
-    id: 2, arc: '浅草', arcVn: 'Asakusa — Quỷ Tay Cầu', place: '珠世の屋敷', bg: 'town', team: ['tanjiro', 'nezuko'], boss: 'susamaru',
+    id: 2, arc: '浅草', arcVn: 'Asakusa — Quỷ Tay Cầu', place: '珠世の屋敷', bg: 'town', team: ['tanjiro', 'nezuko'], boss: 'susamaru', ally: 'tamayo',
+    phases: [{ bosses: ['yahaba'], t: ['矢琶羽', 'Yahaba'], lines: [['yahaba', '鬼狩りめ… 矢印で捻り潰してやる', 'Thợ săn quỷ... ta sẽ bẻ nát ngươi bằng mũi tên.'], ['tamayo', '炭治郎さん 私が援護します', 'Tanjiro, tôi sẽ yểm trợ cậu.']] }],
+    last: [['susamaru', '矢琶羽を…！ 遊びは終わりじゃ', 'Dám hạ Yahaba...! Hết chơi rồi!']],
     intro: [
       ['susamaru', 'キャハハハ！ 耳に花札のような飾りの鬼狩りは お前じゃのう', 'Kyahahaha! Thợ săn quỷ đeo hoa tai hanafuda là ngươi đúng không!'],
       ['susamaru', '遊びましょう！ 遊びましょう！', 'Chơi nào! Chơi nào!'],
@@ -441,6 +505,8 @@ const STAGES = [
   },
   {
     id: 3, arc: '鼓屋敷', arcVn: 'Dinh Thự Trống', place: '鼓屋敷', bg: 'mansion', team: ['tanjiro', 'zenitsu', 'inosuke'], boss: 'kyogai',
+    phases: [{ bosses: ['shitaoni'], t: ['舌鬼', 'Quỷ Lưỡi'], lines: [['shitaoni', '稀血… 稀血の匂いだ', 'Máu hiếm... mùi máu hiếm...'], ['zenitsu', 'ぎゃああ！ 舌が長いぃぃ！', 'ÁAAA! Cái lưỡi dài quáaaa!']] }],
+    last: [['kyogai', '小生の獲物を…', 'Con mồi của tiểu sinh...']],
     intro: [
       ['kyogai', '小生の…血鬼術…', 'Huyết quỷ thuật... của tiểu sinh...'],
       ['inosuke', '猪突猛進！ 猪突猛進！', 'Lợn rừng lao tới! Lợn rừng lao tới!'],
@@ -451,6 +517,11 @@ const STAGES = [
   },
   {
     id: 4, arc: '那田蜘蛛山', arcVn: 'Núi Natagumo', place: '那田蜘蛛山', bg: 'spider', team: ['tanjiro', 'nezuko', 'inosuke', 'zenitsu', 'giyu', 'shinobu'], boss: 'rui',
+    phases: [
+      { bosses: ['spider_mother'], t: ['母蜘蛛', 'Mẹ Nhện'], lines: [['spider_mother', '早く殺さないと… 累に叱られる', 'Phải giết nhanh... không thì Rui sẽ mắng.'], ['tanjiro', '糸で 隊士を操っている…！', 'Bà ta dùng tơ điều khiển các kiếm sĩ...!']] },
+      { bosses: ['spider_father'], t: ['父蜘蛛', 'Cha Nhện'], lines: [['spider_father', '俺の家族に 近づくなァァ！！', 'KHÔNG ĐƯỢC LẠI GẦN GIA ĐÌNH TAAA!!'], ['inosuke', 'デカすぎだろォ！？', 'To quá vậy hảaa!?']] },
+    ],
+    last: [['rui', '僕の家族を…よくも', 'Dám động vào gia đình ta...']],
     intro: [
       ['rui', '僕たち家族の静かな暮らしを 邪魔するな', 'Đừng làm phiền cuộc sống yên bình của gia đình ta.'],
       ['tanjiro', '本物の絆を ニセモノと言うな！', 'Đừng gọi sợi dây gắn kết thật sự là đồ giả!'],
@@ -461,6 +532,8 @@ const STAGES = [
   },
   {
     id: 5, arc: '無限列車', arcVn: 'Chuyến Tàu Vô Tận', place: '無限列車', bg: 'train', team: ['tanjiro', 'rengoku', 'inosuke', 'zenitsu', 'nezuko'], boss: 'enmu',
+    phases: [{ bosses: ['enmu_roof'], t: ['列車の屋根', 'Trên nóc tàu'], lines: [['enmu', 'あれぇ 起きちゃったの？', 'Ơ kìa, tỉnh dậy rồi sao?']] }],
+    last: [['enmu', 'もう 俺はこの列車と融合した！ 二百人の人質だ', 'Ta đã hợp nhất với đoàn tàu! Hai trăm con tin đó!'], ['rengoku', '竈門少年！ 頸を探せ！', 'Thiếu niên Kamado! Tìm cái cổ!']],
     intro: [
       ['enmu', 'ねんねんころり… こんころり', 'Ngủ đi ngủ đi... ngủ ngoan nào...'],
       ['enmu', 'お眠り', 'Ngủ đi.'],
@@ -483,6 +556,8 @@ const STAGES = [
   },
   {
     id: 7, arc: '遊郭編', arcVn: 'Phố Đèn Đỏ — Daki & Gyutaro', place: '吉原遊郭', bg: 'yukaku', team: ['tengen', 'tanjiro', 'zenitsu', 'inosuke', 'nezuko'], boss: 'daki', boss2: 'gyutaro',
+    phases: [{ bosses: ['daki_solo'], t: ['堕姫', 'Daki'], lines: [['daki', 'この私に逆らうの？ 醜いわね', 'Dám chống lại ta sao? Xấu xí thật.']] }],
+    last: [['daki', 'お兄ちゃああん！！', 'ANH ƠIIII!!'], ['gyutaro', '妹を泣かせたなァ… 取り立てるぜ', 'Dám làm em gái ta khóc hả... ta đòi nợ đây.']],
     intro: [
       ['daki', '不細工ね お前', 'Xấu xí quá, ngươi.'],
       ['gyutaro', '取り立てるぜ 俺はなぁ', 'Ta sẽ đòi nợ đấy, ta mà.'],
@@ -493,6 +568,8 @@ const STAGES = [
   },
   {
     id: 8, arc: '刀鍛冶の里編', arcVn: 'Làng Rèn Kiếm — Gyokko', place: '刀鍛冶の里', bg: 'village', team: ['muichiro'], boss: 'gyokko',
+    phases: [{ bosses: ['kingyo', 'kingyo', 'kingyo'], t: ['壺の金魚', 'Cá vàng trong bình'], lines: [['muichiro', '金魚…？ 気持ち悪い', 'Cá vàng...? Kinh tởm.']] }],
+    last: [['gyokko', '私の可愛い金魚を よくも！', 'Dám giết lũ cá vàng đáng yêu của ta!']],
     intro: [
       ['gyokko', 'ヒョッヒョッ 私の壺の芸術を見よ！', 'Hyo hyo! Hãy chiêm ngưỡng nghệ thuật bình gốm của ta!'],
       ['muichiro', '俺は 時透無一郎だ', 'Ta là Tokito Muichiro.'],
@@ -502,6 +579,11 @@ const STAGES = [
   },
   {
     id: 9, arc: '刀鍛冶の里編', arcVn: 'Làng Rèn Kiếm — Hantengu', place: '刀鍛冶の里', bg: 'village', team: ['tanjiro', 'mitsuri', 'nezuko'], boss: 'hantengu',
+    phases: [
+      { bosses: ['sekido', 'karaku'], t: ['積怒・可楽', 'Sekido & Karaku'], lines: [['karaku', 'カカカッ 楽しいのう', 'Ka ka ka! Vui thật đấy!'], ['sekido', '腹立たしい…', 'Thật đáng giận...']] },
+      { bosses: ['urogi', 'aizetsu'], t: ['空喜・哀絶', 'Urogi & Aizetsu'], lines: [['urogi', 'カカッ 愉快じゃ 愉快じゃ', 'Kaka! Khoái chí, khoái chí!'], ['aizetsu', '悲しい…', 'Thật đáng buồn...']] },
+    ],
+    last: [['hantengu', '憎い… 憎い…', 'Căm ghét... căm ghét...'], ['tanjiro', '鬼が 合体した…！？', 'Lũ quỷ... hợp thể rồi!?']],
     intro: [
       ['hantengu', '何故 弱い者いじめをするのか', 'Vì sao các ngươi lại bắt nạt kẻ yếu?'],
       ['mitsuri', '私 キュンキュンしちゃう！ 本気で行くね！', 'Tim tớ đập thình thịch rồi! Tớ nghiêm túc đây!'],
@@ -546,9 +628,11 @@ const STAGES = [
       ['muzan', 'しつこい', 'Dai dẳng thật.'],
       ['muzan', '私に殺されることは 大災に遭ったのと同じだと思え', 'Hãy coi việc bị ta giết như gặp phải thiên tai.'],
       ['tanjiro', '無惨！！ お前は存在してはいけない生き物だ！', 'MUZAN!! Ngươi là sinh vật không được phép tồn tại!'],
+      ['tamayo', '無惨 あなたの体には もう私の薬が回っている', 'Muzan, thuốc của ta đã ngấm khắp người ngươi rồi.'],
       ['gyomei', '夜明けまで 奴をここに留めろ！', 'Giữ hắn ở lại đây cho tới bình minh!'],
     ],
-    note: 'Cầm cự và tấn công tới BÌNH MINH. Đánh trúng Muzan đẩy nhanh thanh 夜明け. 拾参ノ型 cực mạnh!',
+    drug: 1, // Tamayo's drug: Muzan regenerates at about half speed
+    note: 'Cầm cự tới BÌNH MINH. Thuốc của Tamayo làm Muzan hồi máu chậm một nửa. Đánh trúng Muzan đẩy nhanh thanh 夜明け!',
     outro: [
       ['tanjiro', '夜明けだ…！', 'Bình minh rồi...!'],
       ['muzan', '太陽が…！ ギャアアア！！', 'Mặt trời...! GYAAAA!!'],
@@ -557,6 +641,16 @@ const STAGES = [
   },
 ];
 
+// ---------------- ALLIES ----------------
+// Tamayo: a demon who left Muzan — a physician. She fights at your side in Asakusa, and her drug weakens Muzan at the end.
+const ALLIES = {
+  tamayo: { name: '珠世', kana: 'たまよ', vn: 'Tamayo', voice: 1.05,
+    look: { hair: '#120c16', style: 'daki', kanzashi: 1, haori: 'none', kimono: '#3c2250', obi: '#d8b878', skin: '#f8e8e0', eye: '#c27ad8', noSword: 1, blush: 1 } },
+};
+
 const SPEAKERS = Object.assign({}, ...Object.keys(CHARS).map(k => ({ [k]: { name: CHARS[k].name, voice: CHARS[k].voice } })), ...Object.keys(BOSSES).map(k => ({ [k]: { name: BOSSES[k].name, voice: 0.8, boss: 1 } })));
 SPEAKERS.akaza.voice = 0.9; SPEAKERS.daki.voice = 1.5; SPEAKERS.susamaru.voice = 1.6; SPEAKERS.rui.voice = 1.3; SPEAKERS.doma.voice = 1.1;
 SPEAKERS.muzan.voice = 0.7; SPEAKERS.kokushibo.voice = 0.5; SPEAKERS.temoni.voice = 0.5; SPEAKERS.gyokko.voice = 1.3; SPEAKERS.hantengu.voice = 1.2; SPEAKERS.hantengu.name = '半天狗';
+SPEAKERS.tamayo = { name: ALLIES.tamayo.name, voice: ALLIES.tamayo.voice };
+SPEAKERS.daki_solo.voice = 1.5; SPEAKERS.spider_mother.voice = 1.4; SPEAKERS.spider_father.voice = 0.3; SPEAKERS.enmu_roof.voice = SPEAKERS.enmu.voice; SPEAKERS.yahaba.voice = 0.9; SPEAKERS.shitaoni.voice = 0.6;
+SPEAKERS.sekido.voice = 0.6; SPEAKERS.karaku.voice = 1.0; SPEAKERS.urogi.voice = 1.5; SPEAKERS.aizetsu.voice = 0.8;

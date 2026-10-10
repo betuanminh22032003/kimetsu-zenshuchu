@@ -539,10 +539,10 @@ const R3D = (() => {
   // Every hazard knows who cast it (h.bk), so each demon has its own colour, crest and shapes:
   // Rui's silk, Daki's obi, Muzan's thorned tentacles, Kokushibo's moons, Douma's ice, Hantengu's
   // wood dragons and lightning, Akaza's compass shockwaves, Gyokko's water pot, Gyutaro's sickles.
-  const HAZ_THEME = { thread: 'normal', moon: 'moon', whip: 'blood', obi: 'love', claw: 'stone', arrow: 'demon', frost: 'mist', storm: 'water', bolt: 'thunder' };
-  const HCOL = { thread: '#f4f4ff', moon: '#c8a8ff', whip: '#ff1838', obi: '#ff4c8a', claw: '#e0a060', arrow: '#ff3030', bolt: '#fff070', frost: '#bfe8ff', storm: '#7ad0ff' };
-  const DCOL = { temoni: '#8fd060', susamaru: '#ff5040', kyogai: '#e0a060', rui: '#f2f2ff', enmu: '#c080ff', akaza: '#5ac8ff', akaza2: '#5ac8ff', daki: '#ff4c8a', gyutaro: '#ff2448', gyokko: '#3aa8ff', hantengu: '#ffe060', doma: '#bfe8ff', mini_doma: '#bfe8ff', kokushibo: '#b48cff', muzan: '#ff1838' };
-  const DCREST = { temoni: '鬼', susamaru: '毬', kyogai: '鼓', rui: '糸', enmu: '夢', akaza: '破', akaza2: '破', daki: '帯', gyutaro: '鎌', gyokko: '壺', hantengu: '雷', doma: '氷', mini_doma: '氷', kokushibo: '月', muzan: '無' };
+  const HAZ_THEME = { thread: 'normal', moon: 'moon', whip: 'blood', obi: 'love', claw: 'stone', arrow: 'demon', frost: 'mist', storm: 'water', bolt: 'thunder', tongue: 'love' };
+  const HCOL = { thread: '#f4f4ff', moon: '#c8a8ff', whip: '#ff1838', obi: '#ff4c8a', claw: '#e0a060', arrow: '#ff3030', bolt: '#fff070', frost: '#bfe8ff', storm: '#7ad0ff', tongue: '#ff7090' };
+  const DCOL = { temoni: '#8fd060', susamaru: '#ff5040', kyogai: '#e0a060', rui: '#f2f2ff', enmu: '#c080ff', akaza: '#5ac8ff', akaza2: '#5ac8ff', daki: '#ff4c8a', gyutaro: '#ff2448', gyokko: '#3aa8ff', hantengu: '#ffe060', doma: '#bfe8ff', mini_doma: '#bfe8ff', kokushibo: '#b48cff', muzan: '#ff1838', yahaba: '#ff4848', shitaoni: '#ff7090', spider_mother: '#f0e8ff', puppet: '#e8e8ff', spider_father: '#ff4050', enmu_roof: '#c080ff', daki_solo: '#ff4c8a', kingyo: '#ffb040', sekido: '#ffe060', karaku: '#a8f0c8', urogi: '#ffb070', aizetsu: '#90c8ff' };
+  const DCREST = { temoni: '鬼', susamaru: '毬', kyogai: '鼓', rui: '糸', enmu: '夢', akaza: '破', akaza2: '破', daki: '帯', gyutaro: '鎌', gyokko: '壺', hantengu: '雷', doma: '氷', mini_doma: '氷', kokushibo: '月', muzan: '無', yahaba: '矢', shitaoni: '舌', spider_mother: '糸', puppet: '糸', spider_father: '父', enmu_roof: '夢', daki_solo: '帯', kingyo: '魚', sekido: '怒', karaku: '楽', urogi: '喜', aizetsu: '哀' };
   function hazCol(h) { const a = h.a || {}; return a.ice ? '#cfefff' : a.moon ? '#c8a8ff' : a.water ? '#48a8ff' : a.blood ? '#ff1838' : a.poison ? '#ff2448' : HCOL[h.style] || DCOL[h.bk] || '#ff4040'; }
   const geoC = {};
   const sgeo = (k, f) => { if (!geoC[k]) { geoC[k] = f(); geoC[k].userData.shared = true; } return geoC[k]; };
@@ -615,13 +615,14 @@ const R3D = (() => {
       band(w * 2.4, actMat(c, 20)).material.uniforms.uA.value = 0.55;
       const t = obiTex(), m = B(new T3.Mesh(new T3.PlaneGeometry(L, w * 1.5, 160, 1), tmat(0xffffff, { map: t, side: T3.DoubleSide, emissive: new T3.Color('#401020') })));
       t.repeat.set(L / 0.9, 1); m.castShadow = true; U.obi = m; U.obiX = Float32Array.from({ length: m.geometry.attributes.position.count }, (_, i) => m.geometry.attributes.position.getX(i));
-    } else if (s === 'whip') { // Muzan: a thorned flesh tentacle lashing out of the dark
-      band(w * 2.2, actMat('#ff1838', 20)).material.uniforms.uA.value = 0.6;
+    } else if (s === 'whip' || s === 'tongue') { // Muzan: a thorned flesh tentacle lashing out of the dark (the tongue demon: a long wet tongue)
+      const tg = s === 'tongue';
+      band(w * 2.2, actMat(tg ? '#ff7090' : '#ff1838', 20)).material.uniforms.uA.value = 0.6;
       const sd = Math.random() * 6, pts = []; for (let i = 0; i <= 40; i++) { const x = -hl + L * i / 40; pts.push(new T3.Vector3(x, Math.sin(x * 1.1 + sd) * 0.14, Math.cos(x * 0.7 + sd) * 0.18)); }
       const geo = taperTube(pts, 160, 0.11, 7, (u) => { const k = base > 0 ? u : 1 - u; return 0.25 + 0.75 * k; });
-      const tm = tmat('#2a0408', { emissive: new T3.Color('#4a0010') }); B(new T3.Mesh(geo, tm)).castShadow = true;
+      const tm = tg ? tmat('#d0607a', { emissive: new T3.Color('#401020') }) : tmat('#2a0408', { emissive: new T3.Color('#4a0010') }); B(new T3.Mesh(geo, tm)).castShadow = true;
       const thm = tmat('#9a1028', { emissive: new T3.Color('#500010') });
-      for (let i = 0; i < 26; i++) { const x = rnd(-hl * 0.5, hl * 0.5), t = B(new T3.Mesh(coneG(), thm)); t.position.set(x, Math.sin(x * 1.1 + sd) * 0.14, Math.cos(x * 0.7 + sd) * 0.18); t.rotation.set(rnd(-1, 1), 0, (Math.random() < 0.5 ? 1 : -1) * rnd(0.6, 1.4)); t.scale.setScalar(rnd(0.5, 1)); }
+      for (let i = 0; i < (tg ? 0 : 26); i++) { const x = rnd(-hl * 0.5, hl * 0.5), t = B(new T3.Mesh(coneG(), thm)); t.position.set(x, Math.sin(x * 1.1 + sd) * 0.14, Math.cos(x * 0.7 + sd) * 0.18); t.rotation.set(rnd(-1, 1), 0, (Math.random() < 0.5 ? 1 : -1) * rnd(0.6, 1.4)); t.scale.setScalar(rnd(0.5, 1)); }
     } else if (s === 'moon') { // Kokushibo: crescent moons of every size riding the cut
       band(w * 2.6, actMat(c, 20)); band(Math.max(0.03, w * 0.35), amat('#ffffff', 0.95));
       U.cres = []; for (let i = 0; i < 16; i++) { const big = i < 6, m = B(new T3.Mesh(big ? crescG() : sgeo('moonlet', () => new T3.TorusGeometry(1, 0.08, 4, 14, 2.4)), amat(big ? '#d8c0ff' : '#fff4ff', big ? 0.8 : 0.95)));
@@ -712,7 +713,7 @@ const R3D = (() => {
         flash(h.src, GY - 40, a.whip ? 'blood' : 'moon', 4); break; }
       case 'shock': {
         const col = DCOL[h.bk] || '#a0dcff'; U.col = col;
-        if (h.bk === 'hantengu') { // 狂圧鳴波: rings of crushing sound
+        if (h.bk === 'hantengu' || h.bk === 'urogi') { // 狂圧鳴波 / Urogi's screech: rings of crushing sound
           U.rings = []; for (let i = 0; i < 4; i++) { const m = add(new T3.Mesh(sgeo('sring', () => new T3.TorusGeometry(1, 0.04, 4, 32)), amat(i % 2 ? '#fff6c0' : col, 0.8))); m.rotation.y = Math.PI / 2; m.userData.k = i / 4; U.rings.push(m); }
         } else { // a ground rupture: a wave front and a trail of rock (or blood) spikes
           const m = add(new T3.Mesh(new T3.ConeGeometry(0.32, 1, 12, 1, true), amat(col, 0.6))); m.position.y = 0.5; U.front = m;
