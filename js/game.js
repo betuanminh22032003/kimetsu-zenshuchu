@@ -5,13 +5,17 @@
 
 // ---------------- INPUT ----------------
 const Input = { keys: {}, pressed: {}, wheel: 0, click: null };
+// numeric keypad works like the number row: Numpad1-0 fire forms 1-10, - + / * fire forms 11-14, Enter confirms
+const NUMPAD = { NumpadSubtract: 'Minus', NumpadAdd: 'Equal', NumpadDivide: 'BracketLeft', NumpadMultiply: 'BracketRight', NumpadEnter: 'Enter', NumpadDecimal: 'Period' };
+const keyCode = c => /^Numpad\d$/.test(c) ? 'Digit' + c.slice(6) : NUMPAD[c] || c;
 addEventListener('keydown', e => {
-  if (!Input.keys[e.code]) Input.pressed[e.code] = true;
-  Input.keys[e.code] = true;
+  const code = keyCode(e.code);
+  if (!Input.keys[code]) Input.pressed[code] = true;
+  Input.keys[code] = true;
   if (['Space', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'Tab'].includes(e.code)) e.preventDefault();
   Audio.init();
 });
-addEventListener('keyup', e => { Input.keys[e.code] = false; });
+addEventListener('keyup', e => { Input.keys[keyCode(e.code)] = false; });
 addEventListener('blur', () => { Input.keys = {}; });
 const pressed = (...ks) => ks.some(k => Input.pressed[k]);
 const held = (...ks) => ks.some(k => Input.keys[k]);
