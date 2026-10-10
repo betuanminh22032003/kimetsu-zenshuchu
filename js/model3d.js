@@ -682,8 +682,9 @@ const CHIBI3D = (() => {
     M.root.position.set((a.x - 640) * 0.01, (GY - a.y) * 0.01, a.z || 0);
     // facing = a real 3D turn (not a mirror), so kanji/asymmetric outfits stay correct; eased for a quick pivot
     M.root.scale.set(s, s, s);
-    const tgt = M.custom === 2 ? 0.3 : (a.face < 0 ? -0.62 : 0.62);
-    M.turnA = M.turnA === undefined ? tgt : M.turnA + (tgt - M.turnA) * Math.min(1, dt * 18);
+    const tgt = M.custom === 2 ? 0.3 : a.yaw !== undefined ? a.yaw : (a.face < 0 ? -0.62 : 0.62);
+    if (M.turnA === undefined) M.turnA = tgt;
+    else { let d = tgt - M.turnA; d = Math.atan2(Math.sin(d), Math.cos(d)); M.turnA += d * Math.min(1, dt * 16); } // shortest-arc turn
     M.turn.rotation.y = M.turnA;
     setFx(M, a.flash, a.alpha === undefined ? 1 : a.alpha);
     if (M.custom) { M.tick(t, p); return; }
@@ -707,7 +708,7 @@ const CHIBI3D = (() => {
     if (J.sword2) J.sword2.rotation.set(0.15, 0, 0);
     const lean = p.lean || 0;
     J.spine.rotation.set((p.run ? 0.22 : 0.04) + (p.shout ? 0.1 : 0) + lean * 0.25, 0, 0);
-    J.head.rotation.set(-(p.run ? 0.12 : 0) - lean * 0.15, -0.28 * Math.sign(M.turnA || 1), 0);
+    J.head.rotation.set(-(p.run ? 0.12 : 0) - lean * 0.15, a.yaw !== undefined ? 0 : -0.28 * Math.sign(M.turnA || 1), 0);
     // cloth + hair motion
     const fl = (p.run ? 0.25 : 0) + (p.air ? 0.35 : 0) + Math.sin(t * 0.15) * 0.03;
     if (J.haori) { J.haori.rotation.x = -fl * 0.6; J.haori.scale.z = 0.8 + fl * 0.4; }

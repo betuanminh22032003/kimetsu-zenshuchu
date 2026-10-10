@@ -13,7 +13,7 @@ const R3D = (() => {
   const S = 0.01;
   const toX = x => (x - 640) * S, toY = y => (GY - y) * S;
   const FOV = 30, D = 3.6 / Math.tan(FOV / 2 * Math.PI / 180), CAMY = toY(360);
-  let renderer, scene, camera, composer, bloom, glc, hemi, moonLight, stageGroup, stageKey = null, stageAnim = [];
+  let renderer, scene, camera, composer, bloom, grade, glc, hemi, moonLight, stageGroup, stageKey = null, stageAnim = [];
   let backdrop, flashLights = [], flashIdx = 0, time = 0, sunSprite;
   const fxMeshes = new Map();
   const billboards = {}, shadows = {};
@@ -72,6 +72,26 @@ const R3D = (() => {
       col = mix(col, vec3(1.), mk.r * .0);
       float eye = mk.g; col = mix(col, vec3(1.4, 1.3, 1.), eye);
       gl_FragColor = vec4(col, clamp(smoothstep(.12, .45, f) + eye, 0., 1.) * uA); }`;
+  const GRADE_FS = `uniform sampler2D tDiffuse; uniform vec2 uRes; uniform float uTime; uniform float uVig; uniform float uGrain; uniform vec3 uLift; uniform vec3 uGain; uniform float uSat; uniform float uCon; uniform float uAA; varying vec2 vUv;
+    const vec3 LU = vec3(.299, .587, .114);
+    vec3 fxaa(vec2 uv){ vec2 px = 1. / uRes;
+      vec3 nw = texture2D(tDiffuse, uv + vec2(-1., -1.) * px).rgb, ne = texture2D(tDiffuse, uv + vec2(1., -1.) * px).rgb, sw = texture2D(tDiffuse, uv + vec2(-1., 1.) * px).rgb, se = texture2D(tDiffuse, uv + vec2(1., 1.) * px).rgb, m = texture2D(tDiffuse, uv).rgb;
+      float lnw = dot(nw, LU), lne = dot(ne, LU), lsw = dot(sw, LU), lse = dot(se, LU), lm = dot(m, LU);
+      float mn = min(lm, min(min(lnw, lne), min(lsw, lse))), mx = max(lm, max(max(lnw, lne), max(lsw, lse)));
+      vec2 dir = vec2(-((lnw + lne) - (lsw + lse)), (lnw + lsw) - (lne + lse));
+      float red = max((lnw + lne + lsw + lse) * .03125, 1. / 128.), rcp = 1. / (min(abs(dir.x), abs(dir.y)) + red);
+      dir = clamp(dir * rcp, -8., 8.) * px;
+      vec3 a = .5 * (texture2D(tDiffuse, uv + dir * (1. / 3. - .5)).rgb + texture2D(tDiffuse, uv + dir * (2. / 3. - .5)).rgb);
+      vec3 b = a * .5 + .25 * (texture2D(tDiffuse, uv - dir * .5).rgb + texture2D(tDiffuse, uv + dir * .5).rgb);
+      float lb = dot(b, LU); return (lb < mn || lb > mx) ? a : b; }
+    void main(){
+      vec3 c = uAA > .5 ? fxaa(vUv) : texture2D(tDiffuse, vUv).rgb;
+      c = c * uGain + uLift * (1. - c);
+      float l = dot(c, LU); c = mix(vec3(l), c, uSat); c = (c - .5) * uCon + .5;
+      vec2 q = (vUv - .5) * vec2(1.15, 1.); c *= 1. - uVig * dot(q, q) * 1.7;
+      float n = fract(sin(dot(floor(vUv * uRes) + fract(uTime) * 91.7, vec2(12.9898, 78.233))) * 43758.5453); c += (n - .5) * uGrain;
+      gl_FragColor = vec4(clamp(c, 0., 1.), 1.);
+    }`;
   const THEME_ID = { water: 1, sun: 2, flame: 2, blood: 2, demon: 2, thunder: 3, wind: 4, mist: 5 };
   const col3 = h => new T3.Color(h);
 
@@ -153,9 +173,9 @@ const R3D = (() => {
       const add = PADD[p.k] || (!p.k) ? 0 : 1;
       const s = sys[add], i = n[add];
       if (i >= s.userData.max) continue;
-      if (p._z === undefined) p._z = p.k === 'smoke' ? Math.random() * 0.6 - 0.8 : Math.random() * 1.2 - 0.3;
+      if (p._z === undefined) p._z = p.z !== undefined ? (Math.random() - 0.5) * 0.7 : p.k === 'smoke' ? Math.random() * 0.6 - 0.8 : Math.random() * 1.2 - 0.3;
       const a = s.geometry.attributes;
-      a.position.array[i * 3] = toX(p.x); a.position.array[i * 3 + 1] = toY(p.y); a.position.array[i * 3 + 2] = p._z;
+      a.position.array[i * 3] = toX(p.x); a.position.array[i * 3 + 1] = toY(p.y); a.position.array[i * 3 + 2] = p._z + (p.z || 0) * S;
       tmpC.set(p.c || '#fff'); a.color.array[i * 3] = tmpC.r; a.color.array[i * 3 + 1] = tmpC.g; a.color.array[i * 3 + 2] = tmpC.b;
       const life = p.max ? p.life / p.max : 1;
       const big = p.k === 'smoke' ? p.s * (2 - life) * 2.2 : p.k === 'note' || p.k === 'heart' ? p.s * 4 : p.k === 'butterfly' ? 14 : p.k === 'petal' || p.k === 'leaf' ? p.s * 3.2 : p.s * 3.2;
@@ -174,15 +194,15 @@ const R3D = (() => {
     glc = document.getElementById('gl');
     if (!glc) return;
     renderer = new T3.WebGLRenderer({ canvas: glc, antialias: false, preserveDrawingBuffer: location.search.includes('debug'), powerPreference: 'high-performance' });
-    renderer.setPixelRatio(1);
+    renderer.setPixelRatio(1); renderer.info.autoReset = false;
     renderer.setSize(W, H, false);
-    renderer.shadowMap.enabled = true; renderer.shadowMap.type = T3.PCFShadowMap; renderer.shadowMap.autoUpdate = true;
+    renderer.shadowMap.enabled = true; renderer.shadowMap.type = T3.PCFSoftShadowMap; renderer.shadowMap.autoUpdate = true;
     scene = new T3.Scene();
     camera = new T3.PerspectiveCamera(FOV, W / H, 0.1, 500);
     camera.position.set(0, CAMY, D);
     hemi = new T3.HemisphereLight(0x8090c0, 0x1a1420, 1.0); scene.add(hemi);
     moonLight = new T3.DirectionalLight(0xc0ccff, 0.9); moonLight.position.set(-8, 14, 10);
-    moonLight.castShadow = true; moonLight.shadow.mapSize.set(512, 512); Object.assign(moonLight.shadow.camera, { left: -10, right: 10, top: 8, bottom: -3, near: 1, far: 50 });
+    moonLight.castShadow = true; moonLight.shadow.mapSize.set(1024, 1024); moonLight.shadow.bias = -0.0008; moonLight.shadow.normalBias = 0.02; Object.assign(moonLight.shadow.camera, { left: -13, right: 13, top: 11, bottom: -5, near: 1, far: 60 });
     scene.add(moonLight);
     for (let i = 0; i < 4; i++) { const l = new T3.PointLight(0xffffff, 0, 9, 2); l.userData.life = 0; scene.add(l); flashLights.push(l); }
     makeAtlas();
@@ -191,6 +211,10 @@ const R3D = (() => {
     composer.addPass(new T3.RenderPass(scene, camera));
     bloom = new T3.UnrealBloomPass(new T3.Vector2(W / 2, H / 2), 0.9, 0.55, 0.9);
     composer.addPass(bloom);
+    // final pass: FXAA + filmic grade + vignette + grain
+    grade = new T3.ShaderPass({ uniforms: { tDiffuse: { value: null }, uRes: { value: new T3.Vector2(W, H) }, uTime: { value: 0 }, uVig: { value: 0.32 }, uGrain: { value: 0.028 }, uLift: { value: new T3.Vector3(0.012, 0.014, 0.03) }, uGain: { value: new T3.Vector3(1.04, 1.03, 1.02) }, uSat: { value: 1.08 }, uCon: { value: 1.06 }, uAA: { value: 1 } },
+      vertexShader: RIBBON_VS, fragmentShader: GRADE_FS });
+    composer.addPass(grade);
     stageGroup = new T3.Group(); scene.add(stageGroup);
     // VRM manifest
     // VRM manifest: the loader libraries (~250KB) are only fetched when a .vrm model is actually listed
@@ -243,10 +267,15 @@ const R3D = (() => {
     for (let i = 0; i < n; i++) { place(o, i); o.updateMatrix(); m.setMatrixAt(i, o.matrix); }
     m.castShadow = false; m.receiveShadow = false; stageGroup.add(m); return m;
   }
+  let world = null;
   function buildStage(key) {
     stageKey = key; seed = 7 + key.length * 131;
-    while (stageGroup.children.length) { const c = stageGroup.children.pop(); c.traverse(o => { if (o.geometry) o.geometry.dispose(); }); }
-    stageAnim = [];
+    while (stageGroup.children.length) { const c = stageGroup.children.pop(); c.traverse(o => { if (o.geometry && !o.geometry.userData.shared) o.geometry.dispose(); if (o.material && !o.isSprite) [].concat(o.material).forEach(m => m.dispose()); }); }
+    stageAnim = []; world = null;
+    if (typeof WORLD3D !== 'undefined' && WORLD3D) { // fully 3D procedural environment
+      world = WORLD3D.build(key, { scene, group: stageGroup, camera, renderer, hemi, sun: moonLight, q: api.quality });
+      world.setQuality(api.quality); return;
+    }
     const cfg = STAGE_CFG[key] || STAGE_CFG.wisteria;
     scene.background = new T3.Color(cfg.sky);
     scene.fog = new T3.Fog(cfg.fog, 16, cfg.indoor ? 60 : 85);
@@ -368,7 +397,11 @@ const R3D = (() => {
   };
 
   // ---------------- 3D projectiles (player) ----------------
-  const PROJ3D = { tiger: 1, crescent: 1, claws: 1 };
+  const PROJ3D = { tiger: 1, crescent: 1, claws: 1, flail: 1, meteor: 1, axe: 1, blade: 1 };
+  const spikeBall = (r) => { const g = new T3.Group(), m = new T3.MeshToonMaterial({ color: 0x7a7e84 }), sp = new T3.MeshToonMaterial({ color: 0xa0a6ae });
+    g.add(new T3.Mesh(new T3.IcosahedronGeometry(r, 1), m));
+    for (let i = 0; i < 14; i++) { const d = new T3.Vector3(Math.sin(i * 2.4) * Math.cos(i * 1.1), Math.cos(i * 2.4), Math.sin(i * 1.7)).normalize(); const c = new T3.Mesh(new T3.ConeGeometry(r * 0.28, r * 0.8, 5), sp); c.position.copy(d.clone().multiplyScalar(r * 1.05)); c.quaternion.setFromUnitVectors(new T3.Vector3(0, 1, 0), d); g.add(c); }
+    g.traverse(o => { o.castShadow = true; }); return g; };
   api.handlesProj = k => !!PROJ3D[k];
   const projMeshes = new Map();
   function fireMat(theme, mask) {
@@ -378,7 +411,21 @@ const R3D = (() => {
   }
   function makeProj(p) {
     const g = new T3.Group(); g.frustumCulled = false;
-    if (p.k === 'tiger') {
+    if (p.k === 'flail' || p.k === 'meteor') {
+      const R = (p.k === 'meteor' ? 46 : 22) * S, ball = spikeBall(R); g.add(ball); g.userData.ball = ball;
+      if (p.k === 'flail') { const ch = new T3.Mesh(new T3.CylinderGeometry(0.012, 0.012, 1, 5), new T3.MeshToonMaterial({ color: 0x9a9aa0 })); ch.frustumCulled = false; scene.add(ch); g.userData.chain = ch; }
+      else { const tr = new T3.Mesh(new T3.CylinderGeometry(R * 0.9, R * 0.3, 3, 14, 1, true), new T3.MeshBasicMaterial({ color: 0xffb070, transparent: true, opacity: 0.4, blending: T3.AdditiveBlending, depthWrite: false, side: T3.DoubleSide })); tr.position.y = 1.6; g.add(tr); }
+    } else if (p.k === 'axe') {
+      const m = new T3.MeshToonMaterial({ color: 0x8a8e94 }), hm = new T3.MeshToonMaterial({ color: 0x5a3a1a });
+      const sh = new T3.Shape(); sh.moveTo(0, -0.1); sh.quadraticCurveTo(0.6, -0.5, 0.7, 0); sh.quadraticCurveTo(0.6, 0.5, 0, 0.1); sh.closePath();
+      const hd = new T3.Mesh(new T3.ExtrudeGeometry(sh, { depth: 0.06, bevelEnabled: false }), m); hd.position.z = -0.03; const hl = new T3.Mesh(new T3.BoxGeometry(0.64, 0.1, 0.08), hm); hl.position.x = -0.28;
+      const spin = new T3.Group(); spin.add(hd, hl); g.add(spin); g.userData.spin = spin;
+    } else if (p.k === 'blade') {
+      const m = new T3.MeshToonMaterial({ color: 0xaab0c0, emissive: 0x202430 }), spin = new T3.Group();
+      for (const s2 of [1, -1]) { const b = new T3.Mesh(new T3.BoxGeometry(0.44, 0.06, 0.02), m); b.position.x = s2 * 0.22; spin.add(b); }
+      const ring = new T3.Mesh(new T3.TorusGeometry(0.44, 0.012, 4, 32), new T3.MeshBasicMaterial({ color: col3((THEMES[p.theme] || THEMES.normal).l), transparent: true, opacity: 0.7, blending: T3.AdditiveBlending, depthWrite: false }));
+      spin.add(ring); g.add(spin); g.userData.spin = spin;
+    } else if (p.k === 'tiger') {
       const head = new T3.Mesh(new T3.PlaneGeometry(1, 1), fireMat('flame', tigerTex)); head.scale.set(2.6, 2.6, 1); g.add(head);
       for (let i = 0; i < 5; i++) { const f = new T3.Mesh(new T3.PlaneGeometry(1, 1), fireMat('flame', flameTex)); f.userData.k = i; g.add(f); }
       flash(p.x, p.y, 'flame', 5);
@@ -390,8 +437,15 @@ const R3D = (() => {
   }
   function updateProj(g, p) {
     const a = Math.min(1, p.life / 12);
+    if (g.userData.ball) {
+      g.position.set(toX(p.x), toY(p.y), 0); g.userData.ball.rotation.set(p.t * 0.2, p.t * 0.3, 0);
+      const ch = g.userData.chain; if (ch && p.P) { const hx = toX(p.P.x + p.P.face * 20), hy = toY(p.P.y - 85), hz = (p.P.z || 0) * S, bx = toX(p.x), by = toY(p.y), bz = (p.z || 0) * S, len = Math.hypot(bx - hx, by - hy, bz - hz) || 0.01;
+        ch.position.set((hx + bx) / 2, (hy + by) / 2, (hz + bz) / 2); ch.scale.set(1, len, 1); ch.quaternion.setFromUnitVectors(new T3.Vector3(0, 1, 0), new T3.Vector3((bx - hx) / len, (by - hy) / len, (bz - hz) / len)); }
+      return;
+    }
+    if (g.userData.spin) { g.position.set(toX(p.x), toY(p.y), 0); g.userData.spin.rotation.z = -p.t * (p.k === 'blade' ? 0.6 : 0.5) * (p.face || 1); return; }
     if (p.k === 'tiger') {
-      g.position.set(toX(p.x), toY(p.y), 0.5); g.scale.set(p.face * (p.r / 120), p.r / 120, 1);
+      g.position.set(toX(p.x), toY(p.y), 0.5); g.userData.zfix = 0.5; g.scale.set(p.face * (p.r / 120), p.r / 120, 1);
       g.children.forEach((m, i) => { m.material.uniforms.uTime.value = time; m.material.uniforms.uA.value = a;
         if (i > 0) { const k = m.userData.k; m.position.set(-0.9 - k * 0.55, Math.sin(time * 6 + k) * 0.25, -0.05 * k); const sc = 1.7 - k * 0.22; m.scale.set(sc * 1.4, sc, 1); } });
       flashLights[0].position.set(toX(p.x), toY(p.y), 1.5); flashLights[0].intensity = 4; flashLights[0].color.set('#ff8020'); flashLights[0].userData.life = 0.5; flashLights[0].userData.power = 4;
@@ -407,8 +461,8 @@ const R3D = (() => {
   }
   function syncProj(list) {
     const seen = new Set();
-    for (const p of list) { if (!PROJ3D[p.k]) continue; let g = projMeshes.get(p); if (!g) { g = makeProj(p); projMeshes.set(p, g); } updateProj(g, p); seen.add(p); }
-    for (const [p, g] of projMeshes) if (!seen.has(p)) { disposeFx(g); projMeshes.delete(p); }
+    for (const p of list) { if (!PROJ3D[p.k]) continue; let g = projMeshes.get(p); if (!g) { g = makeProj(p); projMeshes.set(p, g); } updateProj(g, p); if (g.userData.zfix) g.position.z = (p.z || 0) * S + g.userData.zfix; else g.position.z = (p.z || 0) * S; seen.add(p); }
+    for (const [p, g] of projMeshes) if (!seen.has(p)) { if (g.userData.chain) disposeFx(g.userData.chain); disposeFx(g); projMeshes.delete(p); }
   }
 
   // ---------------- 3D demon attacks: enemy projectiles + hazards ----------------
@@ -471,7 +525,7 @@ const R3D = (() => {
   }
   function updateEProj(g, p) {
     g.visible = !(p.delay > 0);
-    g.position.set(toX(p.x), toY(p.y), 0.3);
+    g.position.set(toX(p.x), toY(p.y), (p.z || 0) * S + 0.05);
     const ang = Math.atan2(p.vy || 0, p.vx || 0.0001);
     if (g.userData.dir) g.rotation.z = -ang;
     if (g.userData.spin) g.rotation.z = -(p.t || 0) * g.userData.spin;
@@ -517,9 +571,6 @@ const R3D = (() => {
     scene.add(g); return g;
   }
   function updateHaz(g, h) {
-    const tele = h.delay > 0;
-    g.visible = !tele;
-    if (tele) return;
     const a = clamp(1 - h.t / h.life, 0, 1), U = g.userData;
     switch (h.type) {
       case 'line': {
@@ -546,18 +597,58 @@ const R3D = (() => {
         g.position.set(toX(cx), toY(GY - 36), 0.3); U.body.scale.set(rx, 34 * S, 0.5); U.core.scale.set(Math.max(0.01, rx - 0.2), 8 * S, 0.3); U.body.material.opacity = a * 0.6; U.core.material.opacity = a * 0.85; break; }
       case 'shock': g.position.set(toX(h.x), 0, 0.2); g.scale.setScalar(0.8 + Math.sin(time * 30) * 0.15); break;
     }
+    if (h.type === 'line') g.position.z = (h.z || 0) * S; else g.position.z += (h.z || 0) * S;
+  }
+  // ---- 3D telegraphs (warnings before an attack lands)
+  const dashTex = () => cTex('dash', 64, 8, (c) => { c.fillStyle = '#fff'; c.fillRect(0, 0, 40, 8); });
+  const HCOL = { thread: '#f4f4ff', moon: '#d0b0ff', whip: '#c01030', obi: '#ff4c8a', claw: '#d09050', arrow: '#ff3030', bolt: '#fff070', frost: '#bfe8ff', storm: '#8fd8ff' };
+  function groundRing(c, op) { const m = new T3.Mesh(new T3.RingGeometry(0.9, 1, 48).rotateX(-Math.PI / 2), amat(c, op || 0.8)); m.frustumCulled = false; return m; }
+  function makeTele(h) {
+    const g = new T3.Group(), U = g.userData, add = (m) => { m.frustumCulled = false; g.add(m); return m; };
+    switch (h.type) {
+      case 'line': { const t = dashTex(); t.wrapS = T3.RepeatWrapping; t.repeat.set(80, 1); U.rib = add(new T3.Mesh(ribbonGeo(2), new T3.MeshBasicMaterial({ map: t, color: HCOL[h.style] || '#ff4040', transparent: true, depthWrite: false, side: T3.DoubleSide, fog: false, blending: T3.AdditiveBlending })));
+        const ang = Math.atan2(h.y2 - h.y1, h.x2 - h.x1), nx = -Math.sin(ang) * 2.5, ny = Math.cos(ang) * 2.5; setRibbon(U.rib.geometry, (i, u) => { const x = lerp(h.x1, h.x2, u), y = lerp(h.y1, h.y2, u); return [toX(x + nx), toY(y + ny), 0, toX(x - nx), toY(y - ny), 0]; }); break; }
+      case 'circle': { const c = hazCol(h); U.ring = add(new T3.Mesh(new T3.TorusGeometry(1, 0.025, 4, 48), amat(c, 0.7))); U.disc = add(new T3.Mesh(new T3.CircleGeometry(1, 40), amat(c, 0.18))); U.gr = add(groundRing(c, 0.7)); break; }
+      case 'arm': U.gr = add(groundRing('#ff3030', 0.8)); U.fill = add(new T3.Mesh(new T3.CircleGeometry(1, 32).rotateX(-Math.PI / 2), amat('#ff3030', 0.3))); break;
+      case 'rainmark': U.gr = add(groundRing('#ff6060', 0.85)); { const l = add(new T3.Mesh(new T3.BoxGeometry(0.03, 0.24, 0.03), amat('#ff6060', 0.85))); l.position.y = 0.18; } break;
+      case 'cage': { const pos = []; for (let i = 0; i < 16; i++) { const a = i / 16 * TAU; pos.push(Math.cos(a), Math.sin(a), 0, Math.cos(a) * 10, Math.sin(a) * 10, 0); } for (let k = 0; k < 3; k++) for (let i = 0; i < 16; i++) { const a0 = i / 16 * TAU, a1 = (i + 1) / 16 * TAU, r = 1 + k * 0.625; pos.push(Math.cos(a0) * r, Math.sin(a0) * r, 0, Math.cos(a1) * r, Math.sin(a1) * r, 0); }
+        U.lines = add(new T3.Mesh(stripGeo(pos, 0.02), amat('#f4f4ff', 0.75))); break; }
+      case 'sweep': U.band = add(new T3.Mesh(new T3.PlaneGeometry(W * S, 6).rotateX(-Math.PI / 2), amat('#ff2020', 0.3))); U.wall = add(new T3.Mesh(new T3.PlaneGeometry(W * S, 0.7), amat('#ff2020', 0.25))); break;
+      default: return null;
+    }
+    scene.add(g); return g;
+  }
+  function updateTele(g, h) {
+    const U = g.userData, blink = (G.t % 8) < 4, z = (h.z || 0) * S;
+    switch (h.type) {
+      case 'line': g.position.set(0, 0, z); U.rib.material.opacity = blink ? 0.75 : 0.3; break;
+      case 'circle': { const x = h.follow ? h.follow.x : h.x, p = 1 - h.delay / h.a.tele, r = h.r * S; U.ring.position.set(toX(x), toY(h.y), z); U.ring.scale.setScalar(r); U.disc.position.set(toX(x), toY(h.y), z); U.disc.scale.setScalar(Math.max(0.01, r * p)); U.gr.position.set(toX(x), 0.03, z); U.gr.scale.setScalar(r); U.gr.material.opacity = blink ? 0.8 : 0.4; break; }
+      case 'arm': { const r = (h.w / 2 + 6) * S; U.gr.position.set(toX(h.x), 0.03, z); U.gr.scale.setScalar(r); U.fill.position.set(toX(h.x), 0.025, z); U.fill.scale.setScalar(r); U.gr.material.opacity = blink ? 0.9 : 0.35; break; }
+      case 'rainmark': g.position.set(toX(h.x), 0.03, z); g.scale.setScalar(0.32); g.children.forEach(m => m.material.opacity = blink ? 0.9 : 0.35); break;
+      case 'cage': g.position.set(toX(h.x), toY(h.y), z); U.lines.scale.setScalar((h.r || h.r0) * S); break;
+      case 'sweep': U.band.position.set(0, 0.03, z); U.wall.position.set(0, 0.35, z + 0.6); U.band.material.opacity = blink ? 0.4 : 0.15; U.wall.material.opacity = blink ? 0.3 : 0.1; break;
+    }
   }
   function syncEnemy(eproj, haz) {
     const seen = new Set();
     for (const p of eproj) { let g = eMeshes.get(p); if (!g) { g = makeEProj(p); eMeshes.set(p, g); } updateEProj(g, p); seen.add(p); }
     for (const [p, g] of eMeshes) if (!seen.has(p)) { disposeFx(g); eMeshes.delete(p); }
     const seenH = new Set();
-    for (const h of haz) { let g = hMeshes.get(h); if (g === undefined) { g = makeHaz(h); hMeshes.set(h, g); } if (g) updateHaz(g, h); seenH.add(h); }
-    for (const [h, g] of hMeshes) if (!seenH.has(h)) { if (g) disposeFx(g); hMeshes.delete(h); }
+    for (const h of haz) {
+      let o = hMeshes.get(h); if (!o) { o = {}; hMeshes.set(h, o); }
+      if (h.delay > 0) { if (o.tele === undefined) o.tele = makeTele(h); if (o.tele) updateTele(o.tele, h); }
+      else {
+        if (o.tele) { disposeFx(o.tele); o.tele = null; }
+        if (o.act === undefined) o.act = makeHaz(h);
+        if (o.act) updateHaz(o.act, h);
+      }
+      seenH.add(h);
+    }
+    for (const [h, o] of hMeshes) if (!seenH.has(h)) { if (o.tele) disposeFx(o.tele); if (o.act) disposeFx(o.act); hMeshes.delete(h); }
   }
 
   // ---------------- 3D technique effects ----------------
-  const FX3D = { slash: 1, ring: 1, streak: 1, thrust: 1, bolt: 1, flashline: 1, dragon: 1, whip: 1, bghost: 1 };
+  const FX3D = { slash: 1, ring: 1, streak: 1, thrust: 1, bolt: 1, flashline: 1, dragon: 1, whip: 1, bghost: 1, chain: 1, compass: 1, sleepaura: 1 };
   api.handles = t => !!FX3D[t];
   function flash(x, y, theme, power) {
     const l = flashLights[flashIdx++ % flashLights.length];
@@ -565,6 +656,18 @@ const R3D = (() => {
   }
   function makeFxMesh(e) {
     switch (e.type) {
+      case 'chain': { const m = new T3.Mesh(new T3.CylinderGeometry(0.012, 0.012, 1, 5), new T3.MeshToonMaterial({ color: 0xaaaaaa })); m.frustumCulled = false; scene.add(m); return m; }
+      case 'compass': { // Akaza's Destructive Death: Compass Needle — snowflake array on the ground
+        const g = new T3.Group(), mat = new T3.MeshBasicMaterial({ color: 0x7ad0ff, transparent: true, opacity: 0.7, blending: T3.AdditiveBlending, depthWrite: false, side: T3.DoubleSide });
+        const segs = []; for (let i = 0; i < 12; i++) { const a = i / 12 * TAU; segs.push(Math.cos(a) * 0.2, Math.sin(a) * 0.2, 0, Math.cos(a) * 1.3, Math.sin(a) * 1.3, 0); segs.push(Math.cos(a) * 1.0, Math.sin(a) * 1.0, 0, Math.cos(a + 0.15) * 0.8, Math.sin(a + 0.15) * 0.8, 0, Math.cos(a + 0.15) * 0.8, Math.sin(a + 0.15) * 0.8, 0, Math.cos(a - 0.15) * 0.8, Math.sin(a - 0.15) * 0.8, 0, Math.cos(a - 0.15) * 0.8, Math.sin(a - 0.15) * 0.8, 0, Math.cos(a) * 1.0, Math.sin(a) * 1.0, 0); }
+        const sg = []; for (let i = 0; i < segs.length; i += 6) { const [x1, y1, , x2, y2] = segs.slice(i, i + 6), an = Math.atan2(y2 - y1, x2 - x1), nx = -Math.sin(an) * 0.02, ny = Math.cos(an) * 0.02; sg.push(x1 + nx, y1 + ny, 0, x1 - nx, y1 - ny, 0, x2 + nx, y2 + ny, 0, x1 - nx, y1 - ny, 0, x2 - nx, y2 - ny, 0, x2 + nx, y2 + ny, 0); }
+        const geo = new T3.BufferGeometry(); geo.setAttribute('position', new T3.Float32BufferAttribute(sg, 3));
+        const flake = new T3.Mesh(geo, mat); flake.rotation.x = -Math.PI / 2; g.add(flake);
+        const ring = new T3.Mesh(new T3.RingGeometry(1.27, 1.32, 64).rotateX(-Math.PI / 2), mat); g.add(ring); g.userData.flake = flake; g.userData.mat = mat;
+        g.traverse(o => { o.frustumCulled = false; }); scene.add(g); return g; }
+      case 'sleepaura': { const g = new T3.Group(), mat = new T3.MeshBasicMaterial({ color: 0xc080ff, transparent: true, opacity: 0.6, blending: T3.AdditiveBlending, depthWrite: false });
+        for (let i = 0; i < 3; i++) g.add(new T3.Mesh(new T3.TorusGeometry(1, 0.012, 4, 40), mat));
+        g.traverse(o => { o.frustumCulled = false; }); scene.add(g); return g; }
       case 'slash': case 'ring': case 'streak': case 'thrust': case 'whip': case 'bolt': case 'flashline': {
         const N = e.type === 'slash' || e.type === 'ring' ? 40 : e.type === 'whip' ? 20 : e.type === 'bolt' ? 12 : 4;
         const th = e.type === 'bolt' ? 'thunder' : e.theme;
@@ -595,6 +698,9 @@ const R3D = (() => {
     const mat = m.material;
     if (mat && mat.uniforms) mat.uniforms.uTime.value = time;
     switch (e.type) {
+      case 'chain': { const P = e.P; if (!P) return; const hx = toX(P.x), hy = toY(P.y - 85), bx = toX(e.x), by = toY(e.y), len = Math.hypot(bx - hx, by - hy) || 0.01; m.position.set((hx + bx) / 2, (hy + by) / 2, 0); m.scale.set(1, len, 1); m.rotation.set(0, 0, Math.atan2(by - hy, bx - hx) - Math.PI / 2); e.z = P.z; return; }
+      case 'compass': { const b = e.b; m.visible = !!b && !b.dead; if (!b) return; m.position.set(toX(b.x), 0.04, 0); e.z = b.z; m.userData.flake.rotation.z = e.t * 0.01; m.userData.mat.opacity = 0.7 * Math.min(1, (e.life - e.t) / 30); return; }
+      case 'sleepaura': { const b = e.b; if (!b) return; m.position.set(toX(b.x), toY(b.y - 100), 0); e.z = b.z; m.children.forEach((r, i) => { const k = (((e.t * 3 + i * 40) % 120) + 20) * S; r.scale.setScalar(k); }); return; }
       case 'slash': {
         const head = e.a0 + (e.a1 - e.a0) * Math.min(1, e.prog), tail = e.a0 + (e.a1 - e.a0) * Math.max(0, e.prog - 0.9);
         const tilt = (e._tilt === undefined ? (e._tilt = (Math.random() - 0.5) * 0.9) : e._tilt);
@@ -673,7 +779,7 @@ const R3D = (() => {
       if (!FX3D[e.type]) continue;
       let m = fxMeshes.get(e);
       if (!m) { m = makeFxMesh(e); if (!m) continue; fxMeshes.set(e, m); }
-      updateFxMesh(m, e); seen.add(e);
+      updateFxMesh(m, e); m.position.z = (e.z || 0) * S; seen.add(e);
     }
     for (const [e, m] of fxMeshes) if (!seen.has(e)) { disposeFx(m); fxMeshes.delete(e); }
     api.stats.fx = fxMeshes.size;
@@ -770,7 +876,7 @@ const R3D = (() => {
     for (const a of actors) {
       const sh = blob(a.id); used.add(a.id);
       const air = Math.max(0, GY - a.y) * S;
-      sh.visible = true; sh.position.set(toX(a.x), 0.02, 0.05); const ss = (a.boss ? 1.5 : 0.9) * (a.scale || 1) * Math.max(0.35, 1 - air * 0.4); sh.scale.set(ss * 1.4, ss * 0.6, 1);
+      sh.visible = true; sh.position.set(toX(a.x), 0.02, (a.z || 0) + 0.01); const ss = (a.boss ? 1.2 : 0.8) * (a.scale || 1) * Math.max(0.35, 1 - air * 0.4); sh.scale.set(ss * 1.2, ss * 0.9, 1);
       sh.material.opacity = (a.alpha === undefined ? 1 : a.alpha) * Math.max(0.2, 1 - air * 0.5);
       const E = api.vrm[a.key];
       if (E && !a.custom) { poseVRM(E, a, dt); usedV.add(a.key); if (billboards[a.id]) billboards[a.id].mesh.visible = false; continue; }
@@ -831,12 +937,18 @@ const R3D = (() => {
   function setQuality(q) {
     api.quality = q;
     renderer.shadowMap.enabled = q >= 2; bloom.enabled = q >= 1;
+    if (world) world.setQuality(q);
     scene.traverse(o => { if (o.material) o.material.needsUpdate = true; });
   }
   api.setQuality = setQuality;
+  api.cam = { fx: 0, fy: CAMY, fz: 0, dist: D, pitch: 0, yaw: 0, fov: FOV };
+  // game coords (x, y, depth z in px) -> screen px, for HUD labels anchored in the world
+  const _pv = new T3.Vector3();
+  api.project = (x, y, z) => { _pv.set(toX(x), toY(y), (z || 0) * S).project(camera); return [(_pv.x + 1) / 2 * W, (1 - _pv.y) / 2 * H, _pv.z]; };
+  api.scaleAt = (x, y, z) => { const a = api.project(x, y, z), b = api.project(x + 100, y, z); return Math.hypot(b[0] - a[0], b[1] - a[1]) / 100; };
   api.render = function (G, actors, opts) {
     if (!api.ok) return;
-    const now = performance.now(), raw = now - last, dt = Math.min(0.05, raw / 1000); last = now;
+    const now = performance.now(), raw = now - last, dt = Math.min(0.05, raw / 1000); last = now; renderer.info.reset();
     if (!api.lockQuality && raw < 200) { // frame pacing based auto-quality
       if (raw > 24) { slowAcc++; fastAcc = 0; } else if (raw < 15) { fastAcc++; slowAcc = 0; }
       if (slowAcc > 90 && api.quality > 0) { setQuality(api.quality - 1); slowAcc = 0; }
@@ -847,19 +959,42 @@ const R3D = (() => {
     if (key !== stageKey) buildStage(key);
     for (const f of stageAnim) f();
     // dawn lighting
-    if (G.dawnMax) {
+    if (world) { if (G.dawnMax) world.dawn(clamp(G.dawn / G.dawnMax, 0, 1)); }
+    else if (G.dawnMax) {
       const d = clamp(G.dawn / G.dawnMax, 0, 1), cfg = STAGE_CFG[key];
       hemi.color.set(cfg.hemi[0]).lerp(new T3.Color(0xffb070), d * 0.8); hemi.intensity = cfg.hemi[2] + d * 0.6;
       scene.fog.color.set(cfg.fog).lerp(new T3.Color(0xd08060), d * 0.7);
       if (backdrop) backdrop.material.color.setRGB(1, 1 - d * 0.15, 1 - d * 0.35);
       if (sunSprite) { sunSprite.visible = d > 0.55; sunSprite.position.y = -4 + (d - 0.55) * 40; }
     }
-    // camera: shake + tilt (matches 2D overlay transform)
+    // camera: true 3D. In battle an elevated action camera follows the fight (distance from the fighters'
+    // separation in x AND depth), swings round on special moves and orbits the fallen demon; menus/dialog
+    // use the classic frontal framing. All parameters ease, so transitions are smooth.
+    const V = api.cam;
+    let T = { fx: 0, fy: CAMY, fz: 0, dist: D, pitch: 0, yaw: 0, fov: FOV };
+    if (opts && opts.cam && G.team && G.bosses) {
+      const P = G.team[G.ai], foes = G.bosses.filter(b => !b.dead && !b.pending);
+      const b = foes.length ? foes.reduce((a, c) => Math.hypot(c.x - P.x, (c.z || 0) - P.z) < Math.hypot(a.x - P.x, (a.z || 0) - P.z) ? c : a) : null;
+      T = { fx: toX(P.x), fy: 1.25, fz: (P.z || 0) * S, dist: 9.5, pitch: 0.24, yaw: 0, fov: 40 };
+      if (b) { const sep = Math.hypot(b.x - P.x, ((b.z || 0) - P.z) * 1.6); T.fx = toX((P.x + b.x) / 2); T.fz = ((P.z || 0) + (b.z || 0)) / 2 * S; T.dist = clamp(8 + sep * 0.0085, 8.6, 15.5); T.yaw = clamp(((b.z || 0) - P.z) * S * Math.sign(b.x - P.x || 1) * -0.08, -0.22, 0.22); }
+      if (P.y < GY - 150) { T.fy = 1.25 + (GY - P.y) * S * 0.5; T.dist += 1.2; }
+      if (G.cutin && G.cutin.P) { const C = G.cutin.P; T = { fx: toX(C.x + C.face * 50), fy: 1.15, fz: (C.z || 0) * S, dist: 5.6, pitch: 0.1, yaw: C.face * (0.55 + G.cutin.t * 0.004), fov: 36 }; }
+      if (G.over === 'win' && !b) { const k = G.bosses.find(x => !x.def.minion); if (k) T = { fx: toX(k.x), fy: 1.3, fz: (k.z || 0) * S, dist: 8, pitch: 0.18, yaw: Math.sin(time * 0.25) * 0.6, fov: 38 }; }
+      T.fx = clamp(T.fx, -4.2, 4.2);
+    }
+    const ek = 1 - Math.exp(-dt * (G.cutin ? 6 : 3));
+    for (const k in T) V[k] += (T[k] - V[k]) * ek;
+    if (Math.abs(camera.fov - V.fov) > 0.01) { camera.fov = V.fov; camera.updateProjectionMatrix(); }
     const sx = G.shake > 0.5 ? rnd(-G.shake, G.shake) : 0, sy = G.shake > 0.5 ? rnd(-G.shake, G.shake) : 0;
-    camera.position.set(-sx * S, CAMY + sy * S, D);
-    camera.rotation.set(0, 0, G.tiltT > 0 ? G.tilt * 0.12 * Math.sin(Math.PI * G.tiltT / 120) : 0);
+    const cp = Math.cos(V.pitch);
+    camera.position.set(V.fx + Math.sin(V.yaw) * cp * V.dist, V.fy + Math.sin(V.pitch) * V.dist, V.fz + Math.cos(V.yaw) * cp * V.dist);
+    camera.lookAt(V.fx, V.fy, V.fz);
+    camera.position.x -= sx * S; camera.position.y += sy * S;
+    if (G.tiltT > 0) camera.rotateZ(G.tilt * 0.12 * Math.sin(Math.PI * G.tiltT / 120));
+    camera.updateMatrixWorld();
     api.lastShake = [sx, sy];
     if (api.camOverride) { const o = api.camOverride; camera.position.set(...o.pos); camera.lookAt(...o.look); }
+    if (world) world.update(time, camera);
     // flash lights
     for (const l of flashLights) { if (l.userData.life > 0) { l.userData.life -= dt * 3; l.intensity = Math.max(0, l.userData.life) * l.userData.power; } else l.intensity = 0; }
     if (G.flashScreen && G.flashScreen.t < 2) flash(activeP ? activeP().x : 640, 420, 'sun', 6);
@@ -870,7 +1005,9 @@ const R3D = (() => {
     syncEnemy(G.eproj || [], G.haz || []);
     updateParticles((G.parts || []).concat(G.amb || []));
     bloom.strength = 0.85 + (G.flashScreen ? 0.5 : 0);
+    grade.uniforms.uTime.value = time; grade.uniforms.uAA.value = api.quality >= 1 ? 1 : 0;
     composer.render(dt);
+    api.stats.calls = renderer.info.render.calls; api.stats.tris = renderer.info.render.triangles;
   };
   api.loadVRM = loadVRM;
   api.clear = function () {

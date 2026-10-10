@@ -18,13 +18,20 @@ const held = (...ks) => ks.some(k => Input.keys[k]);
 
 let G = null;
 const AL = 40, AR = W - 40;
+// ---- 3D arena depth: every entity has z (game px, + = toward the camera). Only active with the 3D renderer.
+const DZ = 50;
+const D3 = () => typeof R3D !== 'undefined' && R3D.ok && !(G && G.S && G.S.flat);
+const zRange = () => (G && G.S && G.S.bg === 'train') ? [-95, 95] : [-200, 200];
+// arrays that stamp new entries with the depth of whoever is acting (G.cz), so FX/particles/hazards land at the right z
+class ZArr extends Array { push(...a) { const z = G ? G.cz || 0 : 0; for (const it of a) if (it && typeof it === 'object' && it.z === undefined) it.z = z; return super.push(...a); } }
+const zarr = () => new ZArr();
 const easeOut = u => 1 - Math.pow(1 - clamp(u, 0, 1), 2);
 
 // ---------------- ENTITIES ----------------
 function makePlayer(key) {
   const ch = CHARS[key];
   return {
-    key, ch, look: ch.look, x: 280, y: GY, vx: 0, vy: 0, face: 1, ground: true,
+    key, ch, look: ch.look, x: 280, y: GY, z: 0, vx: 0, vy: 0, vz: 0, face: 1, ground: true,
     hp: ch.hp, maxhp: ch.hp, br: ch.br, maxbr: ch.br, styleIdx: 0, formIdx: ch.styles.map(() => 0),
     cast: null, hurtT: 0, inv: 0, buffs: {}, down: false, dashT: 0, dashCd: 0, walk: 0, zen: false,
     poison: 0, sleep: 0, swing: undefined, spin: 0, ghosts: [], scale: ch.scale || 1,
@@ -37,7 +44,7 @@ const activeP = () => G.team[G.ai];
 function makeBoss(key, x) {
   const d = BOSSES[key];
   return {
-    key, def: d, x, y: GY, face: -1, hp: d.hp, maxhp: d.hp, state: 'move', st: 0, cd: 80 + rnd(0, 60), atk: null,
+    key, def: d, x, y: GY, z: 0, face: -1, hp: d.hp, maxhp: d.hp, state: 'move', st: 0, cd: 80 + rnd(0, 60), atk: null,
     walk: 0, hurt: 0, flash: 0, poison: 0, burn: 0, dead: false, deadT: 0, scale: d.minion ? 1 : (key === 'rui' ? 1.05 : 1.25),
     hw: d.w, hh: d.h, swing: 0.9, revived: 0, buffT: 0, mv: null, acc: 0, pending: 0, small: null,
   };
@@ -47,13 +54,13 @@ function startBattle(si, custom) {
   const S = custom || STAGES[si];
   const bd = BOSSES[S.boss];
   G = {
-    si, S, t: 0, team: S.team.map(makePlayer), ai: 0, bosses: [], fx: [], parts: [], amb: [], eproj: [], pproj: [], haz: [], texts: [],
+    si, S, t: 0, team: S.team.map(makePlayer), ai: 0, bosses: [], fx: zarr(), parts: zarr(), amb: zarr(), eproj: zarr(), pproj: zarr(), haz: zarr(), texts: zarr(), cz: 0,
     shake: 0, hitstop: 0, slow: 1, slowT: 0, cutin: null, banner: null, callouts: [], dawn: 0, dawnMax: bd.dawn || 0,
     tilt: 0, tiltT: 0, over: null, overT: 0, lastSay: -999, switchCd: 0, paused: false, bossLine: null,
   };
   G.bosses.push(makeBoss(S.boss, S.boss2 ? 880 : 960));
-  if (S.boss2) G.bosses.push(makeBoss(S.boss2, 1080));
-  for (let i = 0; i < (S.minions || 0); i++) G.bosses.push(makeBoss('mini', 620 + i * 110));
+  if (S.boss2) { G.bosses.push(makeBoss(S.boss2, 1080)); if (D3()) { G.bosses[0].z = -70; G.bosses[1].z = 70; } }
+  for (let i = 0; i < (S.minions || 0); i++) { const m = makeBoss('mini', 620 + i * 110); if (D3()) m.z = rnd(-150, 150); G.bosses.push(m); }
   G.team.forEach((p, i) => { p.x = 260 - i * 6; });
   if (S.note) banner('', S.note, 300);
   Audio.setMusic(bd.final || bd.rank && bd.rank[0] === '上' ? 'boss' : 'battle');
@@ -79,7 +86,7 @@ const playerRect = P => [P.x - 16, P.y - 140 * P.scale, 32, 140 * P.scale];
 function aliveEnemies() { return G.bosses.filter(b => !b.dead && !b.pending); }
 function nearestEnemy(P) {
   let best = null, bd = 1e9;
-  for (const b of aliveEnemies()) { const d = Math.abs(b.x - P.x); if (d < bd) { bd = d; best = b; } }
+  for (const b of aliveEnemies()) { const d = Math.abs(b.x - P.x) + Math.abs((b.z || 0) - (P.z || 0)) * 1.4; if (d < bd) { bd = d; best = b; } }
   return best;
 }
 
@@ -89,18 +96,20 @@ function newGrp(P, dmg, c, extra) {
   return Object.assign({ hit: new Set(), dmg, P, theme: c ? c.th : 'normal', poison: f.poison, mercy: f.mercy, heavy: dmg >= 60, burn: f.burn }, extra || {});
 }
 function strike(grp, x, y, r) {
+  const zc = G.cz || 0, d3 = D3();
   for (const b of G.bosses) {
     if (b.dead) continue;
-    if (b.small && b.small.hp > 0 && !grp.hit.has(b.small) && Math.hypot(b.small.x - x, b.small.y - 14 - y) < r + 20) {
+    if (b.small && b.small.hp > 0 && !grp.hit.has(b.small) && Math.hypot(b.small.x - x, b.small.y - 14 - y) < r + 20 && (!d3 || Math.abs((b.small.z || 0) - zc) < DZ + r * 0.4)) {
       grp.hit.add(b.small); hitSmall(b, grp, x, y);
     }
     if (grp.hit.has(b)) continue;
+    if (d3 && Math.abs((b.z || 0) - zc) > DZ + r * 0.4 + b.hw * 0.3) continue; // out of the attack's depth band
     const [rx, ry, rw, rh] = bossRect(b);
     if (circleRect(x, y, r, rx, ry, rw, rh)) { grp.hit.add(b); damageEnemy(b, grp, clamp(x, rx, rx + rw), clamp(y, ry, ry + rh)); }
   }
 }
 function damageEnemy(b, grp, hx, hy) {
-  const P = grp.P;
+  const P = grp.P, cz0 = G.cz; G.cz = b.z || 0;
   let d = grp.dmg * rnd(0.9, 1.1), crit = false;
   if (P && P.buffs.sense && Math.random() < 0.4) { d *= 1.8; crit = true; }
   if (P && P.buffs.invis) { d *= 2; crit = true; P.buffs.invis = 0; }
@@ -119,9 +128,10 @@ function damageEnemy(b, grp, hx, hy) {
   G.shake = Math.max(G.shake, grp.heavy ? 12 : 4);
   grp.heavy ? Audio.sfx.bigHit() : Audio.sfx.hit();
   if (b.hp <= 0) checkBossDeath(b);
+  G.cz = cz0;
 }
 function hitSmall(b, grp, x, y) {
-  const d = grp.dmg * 2.5;
+  const d = grp.dmg * 2.5; G.cz = b.small.z || 0;
   b.small.hp -= d; b.hp -= d;
   addText(b.small.x, b.small.y - 40, Math.round(d) + '!!', '#ff6080', 30);
   particles('demon', b.small.x, b.small.y - 14, 20, 7);
@@ -139,7 +149,7 @@ function checkBossDeath(b) {
   }
   if (d.trueBody && !(b.small && b.small.hp <= 0)) {
     b.hp = b.maxhp * 0.12;
-    if (!b.small) b.small = { x: b.x < W / 2 ? W - 120 : 120, y: GY, hp: 360, vx: 3 };
+    if (!b.small) b.small = { x: b.x < W / 2 ? W - 120 : 120, y: GY, z: D3() ? rnd(-150, 150) : 0, hp: 360, vx: 3, vz: 0 };
     banner('本体を探せ！', 'Đó không phải bản thể! Chém con quỷ nhỏ 「恨」!', 150); return;
   }
   if (d.neckRegen && !b.revived) {
@@ -157,7 +167,7 @@ function checkBossDeath(b) {
 }
 function killBoss(b) {
   if (b.dead) return;
-  b.dead = true; b.deadT = 0; b.pending = 0;
+  b.dead = true; b.deadT = 0; b.pending = 0; G.cz = b.z || 0;
   if (!b.def.minion) {
     G.hitstop = 24; G.shake = 26;
     G.bigKanji = { s: '斬', t: 0 };
@@ -176,6 +186,7 @@ function playerVulnerable(P) {
 function hurtPlayer(P, dmg, sx, opts) {
   if (!playerVulnerable(P)) return false;
   if (P.buffs.guard) dmg *= 0.3;
+  G.cz = P.z || 0;
   P.hp -= dmg; P.inv = 45; P.hurtT = 16; P.cast = null; P.swing = undefined; P.spin = 0;
   P.vx = Math.sign(P.x - sx || 1) * 6; P.vy = -5;
   if (opts && opts.poison) P.poison = 360;
@@ -197,7 +208,7 @@ function switchTo(i, forced) {
   if (i === G.ai || i >= G.team.length || G.team[i].down) return;
   if (!forced && G.switchCd > 0) return;
   const old = activeP(), P = G.team[i];
-  P.x = old.x; P.y = old.y; P.face = old.face; P.vx = P.vy = 0; P.cast = null; P.hurtT = 0; P.inv = 40; P.sleep = old.sleep;
+  P.x = old.x; P.y = old.y; P.z = old.z; P.face = old.face; P.vx = P.vy = P.vz = 0; P.cast = null; P.hurtT = 0; P.inv = 40; P.sleep = old.sleep;
   G.ai = i; G.switchCd = 40;
   particles('mist', P.x, P.y - 70, 20, 4, { k: 'smoke' });
   addText(P.x, P.y - 170, P.ch.name + ' · ' + P.ch.vn.split(' — ')[0], '#fff', 18);
@@ -225,8 +236,9 @@ function fxBolt(x1, y1, x2, y2, life) { G.fx.push({ type: 'bolt', x1, y1, x2, y2
 function updateFx() {
   for (const e of G.fx) {
     e.t++;
+    G.cz = e.z || 0;
     if (e.type === 'slash') {
-      if (e.P) { e.cx = e.P.x + e.dx; e.cy = e.P.y + e.dy; }
+      if (e.P) { e.cx = e.P.x + e.dx; e.cy = e.P.y + e.dy; e.z = e.P.z; }
       e.prog = e.t / e.sweep; e.fade = (e.t < e.sweep ? 1 : 1 - (e.t - e.sweep) / e.fadeT) * e.alpha;
       if (e.grp && e.t <= e.sweep + 1) {
         const head = Math.min(1, e.prog);
@@ -237,7 +249,7 @@ function updateFx() {
         if (e.t % 2 === 0) { const a = e.a0 + (e.a1 - e.a0) * head; particles(e.theme, e.cx + Math.cos(a) * e.r, e.cy + Math.sin(a) * e.r * e.sq, 2, 3); }
       }
     } else if (e.type === 'whip') {
-      const P = e.P; const u = clamp((e.t - 2) / 8, 0, 1);
+      const P = e.P; e.z = P.z; G.cz = P.z; const u = clamp((e.t - 2) / 8, 0, 1);
       const base = e.sweep ? lerp(-1.4, 0.7, u) : 0.05;
       const A = P.face > 0 ? base : Math.PI - base;
       const L = e.len * (e.sweep ? 1 : easeOut(u));
@@ -624,7 +636,15 @@ function themeSfx(th) {
 }
 
 // ---------------- CASTING ----------------
+// soft lock-on: attacks turn toward the nearest demon and drift into its depth lane
+function aimAt(P) {
+  P.vz = 0; P.az = undefined;
+  if (!D3()) return;
+  const e = nearestEnemy(P); if (!e) return;
+  if (Math.abs(e.x - P.x) < 760 && Math.abs((e.z || 0) - P.z) < 300) { P.az = e.z || 0; if (Math.abs(e.x - P.x) > 24) P.face = Math.sign(e.x - P.x); }
+}
 function beginNormal(P, combo) {
+  aimAt(P);
   const c = { kind: 'normal', combo: combo % 3, th: P.ch.kick ? 'blood' : curStyle(P).theme, t: 0, dur: 15 };
   KINDS.normal.start(P, c); P.cast = c;
 }
@@ -638,6 +658,7 @@ function tryCast(P) {
   else beginCast(P, f, st);
 }
 function beginCast(P, f, st) {
+  aimAt(P);
   const c = { kind: f.kind, f, th: st.theme, t: 0, dur: 20 };
   P.vx = 0;
   KINDS[f.kind].start(P, c);
@@ -670,11 +691,13 @@ function runCast(P) {
 function physics(P, noGrav) {
   if (!noGrav) { P.vy = Math.min(18, P.vy + 0.75); }
   P.x += P.vx; P.y += P.vy;
+  if (D3()) { P.z += P.vz || 0; const zr = zRange(); P.z = clamp(P.z, zr[0], zr[1]); }
   if (G.tiltT > 0) P.x += G.tilt * 2.2;
   if (P.y >= GY) { P.y = GY; P.vy = 0; P.ground = true; } else P.ground = false;
   P.x = clamp(P.x, AL, AR);
 }
 function updatePlayer(P) {
+  G.cz = P.z || 0;
   if (P.inv > 0) P.inv--;
   if (P.dashCd > 0) P.dashCd--;
   for (const k in P.buffs) if (P.buffs[k] > 0) P.buffs[k]--;
@@ -690,24 +713,28 @@ function updatePlayer(P) {
     if (P.sleep <= 0) { P.sleep = 0; banner('目覚めた！', 'Đã tỉnh giấc!', 80); Audio.sfx.gong(); }
     P.vx *= 0.8; physics(P); return;
   }
-  if (P.cast) { runCast(P); const c = P.cast; physics(P, c && c.noGrav); if (c && c.noGrav) P.vy = 0; return; }
-  if (P.hurtT > 0) { P.hurtT--; P.vx *= 0.9; physics(P); return; }
+  if (P.cast) { if (P.az !== undefined) P.vz = clamp((P.az - P.z) * 0.2, -9, 9); runCast(P); const c = P.cast; physics(P, c && c.noGrav); if (c && c.noGrav) P.vy = 0; return; }
+  if (P.hurtT > 0) { P.hurtT--; P.vx *= 0.9; P.vz *= 0.85; physics(P); return; }
   if (P.dashT > 0) {
-    P.dashT--; P.x += P.face * 15; P.vy = Math.min(P.vy, 2); ghost(P); physics(P, true); P.vx = 0;
+    const dd = P.dashDir || [P.face, 0];
+    P.dashT--; P.x += dd[0] * 15; P.vz = dd[1] * 13; P.vy = Math.min(P.vy, 2); ghost(P); physics(P, true); P.vx = 0;
     if (P.dashT === 0) P.vy = 0;
     return;
   }
   const mv = (held('KeyD', 'ArrowRight') ? 1 : 0) - (held('KeyA', 'ArrowLeft') ? 1 : 0);
+  const mz = D3() ? (held('KeyS', 'ArrowDown') ? 1 : 0) - (held('KeyW', 'ArrowUp') ? 1 : 0) : 0; // 8-direction movement in 3D
   if (held('KeyL') && P.ground) {
-    P.zen = true; P.vx = 0; P.br = Math.min(P.maxbr, P.br + 0.75);
+    P.zen = true; P.vx = 0; P.vz = 0; P.br = Math.min(P.maxbr, P.br + 0.75);
     if (G.t % 3 === 0) particles(curStyle(P).theme, P.x + rnd(-30, 30), P.y - rnd(20, 140), 1, 1, { g: -0.06 });
     if (G.t % 50 === 0) Audio.sfx.breath();
   } else {
-    P.vx = mv * P.ch.speed * (P.buffs.slowed ? 0.6 : 1);
-    if (mv) { P.face = mv; P.walk += 0.32; } else P.walk = 0;
+    const len = Math.hypot(mv, mz) || 1, sp = P.ch.speed * (P.buffs.slowed ? 0.6 : 1);
+    P.vx = mv / len * sp; P.vz = mz / len * sp * 0.85;
+    if (mv) P.face = mv;
+    if (mv || mz) P.walk += 0.32; else P.walk = 0;
   }
-  if (pressed('KeyW', 'Space', 'ArrowUp') && P.ground) { P.vy = -15.5; }
-  if (pressed('ShiftLeft', 'ShiftRight', 'KeyI') && P.dashCd <= 0) { P.dashT = 11; P.dashCd = 34; P.inv = Math.max(P.inv, 13); if (mv) P.face = mv; Audio.sfx.wind(); }
+  if ((D3() ? pressed('Space') : pressed('KeyW', 'Space', 'ArrowUp')) && P.ground) { P.vy = -15.5; }
+  if (pressed('ShiftLeft', 'ShiftRight', 'KeyI') && P.dashCd <= 0) { const l = Math.hypot(mv, mz); P.dashDir = l ? [mv / l, mz / l] : [P.face, 0]; P.dashT = 11; P.dashCd = 34; P.inv = Math.max(P.inv, 13); if (mv) P.face = mv; Audio.sfx.wind(); }
   if (pressed('KeyJ')) beginNormal(P, 0);
   else if (pressed('KeyK')) tryCast(P);
   P.br = Math.min(P.maxbr, P.br + 0.09);
@@ -755,7 +782,8 @@ function updateBoss(b) {
   if (b.poison > 0) { b.hp -= b.poison * 0.035; b.poison = Math.max(0, b.poison - 0.008); if (G.t % 12 === 0) G.parts.push({ x: b.x + rnd(-20, 20), y: b.y - rnd(40, b.hh), vx: 0, vy: -1, life: 30, max: 30, s: 4, c: '#b070ff', k: 'drop', g: -0.02 }); if (b.hp <= 0) checkBossDeath(b); }
   if (b.burn > 0) { b.burn--; b.hp -= 0.25; if (G.t % 4 === 0) particles('blood', b.x + rnd(-25, 25), b.y - rnd(20, b.hh), 1, 2, { g: -0.1 }); if (b.hp <= 0) checkBossDeath(b); }
   if (b.flash > 0) b.flash--; if (b.hurt > 0) b.hurt--; if (b.buffT > 0) b.buffT--;
-  if (b.small && b.small.hp > 0) { const s = b.small; s.x += s.vx; if (s.x < AL + 20 || s.x > AR - 20 || Math.random() < 0.01) s.vx *= -1; if (Math.abs(s.x - P.x) < 120) s.vx = Math.sign(s.x - P.x) * 4.5; s.x = clamp(s.x, AL, AR); }
+  if (b.small && b.small.hp > 0) { const s = b.small; s.x += s.vx; if (s.x < AL + 20 || s.x > AR - 20 || Math.random() < 0.01) s.vx *= -1; if (Math.abs(s.x - P.x) < 120) s.vx = Math.sign(s.x - P.x) * 4.5; s.x = clamp(s.x, AL, AR);
+    if (D3()) { if (Math.random() < 0.02) s.vz = rnd(-3, 3); if (Math.abs(s.x - P.x) < 160 && Math.abs((s.z || 0) - P.z) < 120) s.vz = Math.sign((s.z || 0) - P.z || 1) * 3.5; const zr = zRange(); s.z = clamp((s.z || 0) + (s.vz || 0), zr[0], zr[1]); } }
   const phase2 = b.hp < b.maxhp * 0.5;
   const tx = P.buffs.invis ? (b.fakeX || (b.fakeX = rnd(200, 1100))) : P.x;
   if (!P.buffs.invis) b.fakeX = 0;
@@ -766,8 +794,13 @@ function updateBoss(b) {
     const want = d.minion ? 50 : 200;
     if (Math.abs(dx) > want + 30) { b.x += Math.sign(dx) * d.speed * spd; b.walk += 0.2; }
     else if (Math.abs(dx) < want - 80 && !d.minion) { b.x -= Math.sign(dx) * d.speed * 0.6; b.walk += 0.15; }
+    if (D3() && d.speed) { // close the depth gap too (demons stalk you around the arena)
+      const tz = P.buffs.invis ? (b.fakeZ === undefined ? (b.fakeZ = rnd(-180, 180)) : b.fakeZ) : P.z, dz = tz - b.z;
+      if (!P.buffs.invis) b.fakeZ = undefined;
+      if (Math.abs(dz) > 14) { b.z += Math.sign(dz) * Math.min(Math.abs(dz), d.speed * spd * 0.75); if (Math.abs(dx) <= want + 30) b.walk += 0.2; }
+    }
     b.cd -= spd;
-    if (d.teleport && Math.random() < 0.004) { particles('water', b.x, b.y - 80, 20, 5); b.x = clamp(P.x + rnd(-400, 400), AL + 60, AR - 60); particles('water', b.x, b.y - 80, 20, 5); }
+    if (d.teleport && Math.random() < 0.004) { particles('water', b.x, b.y - 80, 20, 5); b.x = clamp(P.x + rnd(-400, 400), AL + 60, AR - 60); if (D3()) b.z = clamp(P.z + rnd(-140, 140), ...zRange()); G.cz = b.z; particles('water', b.x, b.y - 80, 20, 5); }
     if (b.cd <= 0) {
       const pool = d.atks.concat(phase2 && d.p2 ? d.p2 : []);
       if (!pool.length) { b.cd = 600; return; }
@@ -783,22 +816,23 @@ function updateBoss(b) {
     b.st++;
     b.swing = lerp(-2.0, 1.2, Math.min(1, b.st / 6));
     if (b.mv) {
-      b.x += b.mv.vx; b.mv.n--;
+      b.x += b.mv.vx; b.z += b.mv.vz || 0; b.mv.n--;
       const [rx, ry, rw, rh] = bossRect(b), [px, py, pw, ph] = playerRect(P);
-      if (rx < px + pw && rx + rw > px && ry < py + ph && ry + rh > py && !b.mv.hit) { if (hurtPlayer(P, b.mv.dmg, b.x, b.atk)) b.mv.hit = 1; }
+      if (rx < px + pw && rx + rw > px && ry < py + ph && ry + rh > py && !b.mv.hit && (!D3() || Math.abs(b.z - P.z) < DZ + 22)) { if (hurtPlayer(P, b.mv.dmg, b.x, b.atk)) b.mv.hit = 1; }
       if (G.t % 2 === 0) G.fx.push({ type: 'bghost', b, x: b.x, y: b.y, face: b.face, t: 0, life: 10 });
       if (b.mv.n <= 0) {
-        if (b.mv.again > 0) { const a = b.mv.again - 1; b.face = Math.sign(P.x - b.x) || b.face; b.mv = { vx: b.face * 22, n: 14, dmg: b.mv.dmg, again: a }; }
+        if (b.mv.again > 0) { const a = b.mv.again - 1; b.face = Math.sign(P.x - b.x) || b.face; b.mv = { vx: b.face * 22, vz: D3() ? (P.z - b.z) / 14 : 0, n: 14, dmg: b.mv.dmg, again: a }; }
         else b.mv = null;
       }
     }
     if (b.st >= 34 && !b.mv) { b.state = 'move'; b.cd = b.atk.cd * (phase2 ? 0.75 : 1) * (d.minion ? 1.5 : 1); }
   }
   b.x = clamp(b.x, AL + 20, AR - 20);
+  if (D3()) { const zr = zRange(); b.z = clamp(b.z, zr[0], zr[1]); }
   // contact
   if (!d.minion || true) {
     const [rx, ry, rw, rh] = bossRect(b), [px, py, pw, ph] = playerRect(P);
-    if (rx + 10 < px + pw && rx + rw - 10 > px && ry < py + ph && ry + rh > py && G.t % 30 === 0) hurtPlayer(P, 6, b.x);
+    if (rx + 10 < px + pw && rx + rw - 10 > px && ry < py + ph && ry + rh > py && G.t % 30 === 0 && (!D3() || Math.abs(b.z - P.z) < DZ + 10)) hurtPlayer(P, 6, b.x);
   }
 }
 
@@ -813,7 +847,7 @@ function onTele(b, a, P) {
   switch (a.type) {
     case 'lines': {
       for (let i = 0; i < a.count; i++) {
-        let ang, cx = P.x + rnd(-120, 120), cy = P.y - rnd(20, 160);
+        let ang, cx = P.x + rnd(-120, 120), cy = P.y - rnd(20, 160); G.cz = P.z + (a.count > 2 && D3() ? rnd(-70, 70) : 0);
         if (a.horiz) { ang = rnd(-0.1, 0.1); cy = P.y - rnd(30, 100); }
         else if (a.vert) { ang = Math.PI / 2 + rnd(-0.15, 0.15); cx = P.x + (i - 1) * 110 + rnd(-30, 30); }
         else if (a.style === 'claw') ang = Math.PI / 4 * (Math.random() < 0.5 ? 1 : 3) + rnd(-0.2, 0.2);
@@ -824,31 +858,31 @@ function onTele(b, a, P) {
       break;
     }
     case 'storm': {
-      for (let i = 0; i < 14; i++) addLine(rnd(100, W - 100), GY - rnd(30, 300), rnd(0, Math.PI), T + i * 5, Object.assign({}, a, { style: a.moon ? 'moon' : a.whip ? 'whip' : 'storm' }), b);
+      for (let i = 0; i < 14; i++) { G.cz = D3() ? clamp(P.z + rnd(-160, 160), ...zRange()) : 0; addLine(rnd(100, W - 100), GY - rnd(30, 300), rnd(0, Math.PI), T + i * 5, Object.assign({}, a, { style: a.moon ? 'moon' : a.whip ? 'whip' : 'storm' }), b); }
       break;
     }
     case 'circle': {
       const x = a.self ? b.x : P.x, y = a.self ? b.y - 80 : GY - 60;
-      G.haz.push({ type: 'circle', x, y, r: a.r || 140, delay: T, life: 14, dmg: a.dmg, a, src: b.x, follow: a.self ? b : null });
+      G.haz.push({ type: 'circle', x, y, z: a.self ? b.z : P.z, r: a.r || 140, delay: T, life: 14, dmg: a.dmg, a, src: b.x, follow: a.self ? b : null });
       break;
     }
     case 'arms': {
       for (let i = 0; i < a.count; i++) {
         const x = clamp(P.x + (i - (a.count - 1) / 2) * 90 + rnd(-20, 20), AL, AR);
-        G.haz.push({ type: 'arm', x, w: a.dragon ? 80 : 60, h: a.dragon ? 260 : 200, delay: T + i * 4, life: 30, dmg: a.dmg, a, src: b.x });
+        G.haz.push({ type: 'arm', x, z: D3() ? clamp(P.z + (i % 2 ? 1 : -1) * rnd(0, 60), ...zRange()) : 0, w: a.dragon ? 80 : 60, h: a.dragon ? 260 : 200, delay: T + i * 4, life: 30, dmg: a.dmg, a, src: b.x });
       }
       break;
     }
     case 'rain': {
-      for (let i = 0; i < a.count; i++) G.haz.push({ type: 'rainmark', x: clamp(P.x + rnd(-260, 260), AL, AR), delay: T + i * 4, life: 1, dmg: a.dmg, a, src: b.x });
+      for (let i = 0; i < a.count; i++) G.haz.push({ type: 'rainmark', x: clamp(P.x + rnd(-260, 260), AL, AR), z: D3() ? clamp(P.z + rnd(-130, 130), ...zRange()) : 0, delay: T + i * 4, life: 1, dmg: a.dmg, a, src: b.x });
       break;
     }
     case 'cage': {
-      G.haz.push({ type: 'cage', x: P.x, y: P.y - 70, r0: a.tight ? 220 : 300, delay: T, life: 14, dmg: a.dmg, a, src: b.x });
+      G.haz.push({ type: 'cage', x: P.x, y: P.y - 70, z: P.z, r0: a.tight ? 220 : 300, delay: T, life: 14, dmg: a.dmg, a, src: b.x });
       break;
     }
     case 'sweep': {
-      G.haz.push({ type: 'sweep', dir: b.face, delay: T, life: 18, dmg: a.dmg, a, src: b.x, y0: GY - 75 });
+      G.haz.push({ type: 'sweep', dir: b.face, z: b.z, delay: T, life: 18, dmg: a.dmg, a, src: b.x, y0: GY - 75 });
       break;
     }
     case 'compass': b.buffT = 420; G.fx.push({ type: 'compass', b, t: 0, life: 420 }); break;
@@ -863,7 +897,7 @@ function addLine(cx, cy, ang, delay, a, b) {
 function execAttack(b, a, P) {
   switch (a.type) {
     case 'melee': {
-      b.mv = { vx: b.face * 9, n: 10, dmg: 0, hit: 1 };
+      b.mv = { vx: b.face * 9, vz: D3() ? (P.z - b.z) / 16 : 0, n: 10, dmg: 0, hit: 1 };
       const n = a.multi || 1;
       for (let i = 0; i < n; i++) G.haz.push({ type: 'zone', x: b.x + b.face * a.range * 0.55, y: b.y - 90, r: a.range * 0.55, delay: 4 + i * 6, life: 5, dmg: a.dmg, a, src: b.x, follow: b, off: a.range * 0.55 });
       Audio.sfx.heavy();
@@ -876,20 +910,22 @@ function execAttack(b, a, P) {
         if (a.spread) ang += (i - (a.count - 1) / 2) * 0.16; else ang += rnd(-0.12, 0.12);
         if (a.ground) ang = b.face > 0 ? 0 : Math.PI;
         const delay = a.spread ? 0 : i * 6;
-        G.eproj.push({ x: ox, y: a.ground ? GY - 40 - i * 50 : oy, vx: Math.cos(ang) * a.speed, vy: Math.sin(ang) * a.speed, r: a.size, dmg: a.dmg, shape: a.shape, color: a.color, life: 160, delay, homing: a.homing || 0, bounce: a.bounce, poison: a.poison, t: 0 });
+        const vx = Math.cos(ang) * a.speed, tt = Math.max(12, Math.abs(P.x - ox) / Math.max(2, Math.abs(vx)));
+        const vz = D3() ? (P.z - b.z) / tt + (a.spread ? (i - (a.count - 1) / 2) * 0.7 : rnd(-0.3, 0.3)) : 0;
+        G.eproj.push({ x: ox, y: a.ground ? GY - 40 - i * 50 : oy, vx, vy: Math.sin(ang) * a.speed, vz, r: a.size, dmg: a.dmg, shape: a.shape, color: a.color, life: 160, delay, homing: a.homing || 0, bounce: a.bounce, poison: a.poison, t: 0 });
       }
       Audio.sfx.swing();
       break;
     }
-    case 'dash': b.face = Math.sign(P.x - b.x) || b.face; b.mv = { vx: b.face * 22, n: 16, dmg: a.dmg, again: a.triple ? 2 : 0 }; Audio.sfx.wind(); break;
+    case 'dash': b.face = Math.sign(P.x - b.x) || b.face; b.mv = { vx: b.face * 22, vz: D3() ? (P.z - b.z) / 16 : 0, n: 16, dmg: a.dmg, again: a.triple ? 2 : 0 }; Audio.sfx.wind(); break;
     case 'shock':
       for (const s of [-1, 1]) G.haz.push({ type: 'shock', x: b.x, vx: s * 10, delay: 0, life: 110, dmg: a.dmg, a, src: b.x });
       G.shake = 12; Audio.sfx.boom(); break;
     case 'summon':
-      for (let i = 0; i < a.count; i++) { const m = makeBoss(a.minion, clamp(b.x + rnd(-200, 200), AL, AR)); G.bosses.push(m); particles('mist', m.x, m.y - 50, 20, 4, { k: 'smoke' }); }
+      for (let i = 0; i < a.count; i++) { const m = makeBoss(a.minion, clamp(b.x + rnd(-200, 200), AL, AR)); if (D3()) m.z = clamp(b.z + rnd(-150, 150), ...zRange()); G.cz = m.z; G.bosses.push(m); particles('mist', m.x, m.y - 50, 20, 4, { k: 'smoke' }); }
       break;
     case 'sleep':
-      for (let i = 0; i < 3; i++) G.eproj.push({ x: b.x + b.face * 30, y: b.y - 120, vx: b.face * 4 + rnd(-1, 1), vy: rnd(-3, 1), r: 18, dmg: 0, shape: 'sleep', color: '#c080ff', life: 260, delay: i * 14, homing: 0.12, sleep: 1, t: 0 });
+      for (let i = 0; i < 3; i++) G.eproj.push({ x: b.x + b.face * 30, y: b.y - 120, vx: b.face * 4 + rnd(-1, 1), vy: rnd(-3, 1), vz: D3() ? (P.z - b.z) / 60 : 0, r: 18, dmg: 0, shape: 'sleep', color: '#c080ff', life: 260, delay: i * 14, homing: 0.12, sleep: 1, t: 0 });
       break;
   }
 }
@@ -908,27 +944,30 @@ function nagiCut(P, x, y) {
 }
 function updateHazards() {
   const P = activeP();
-  const pc = [P.x, P.y - 70];
+  const pc = [P.x, P.y - 70], d3 = D3(), pz = P.z || 0;
   for (const h of G.haz) {
+    G.cz = h.z || 0;
+    if (h.follow && h.follow.z !== undefined) h.z = h.follow.z;
     if (h.delay > 0) { h.delay--; if (h.type === 'cage') h.r = lerp(80, h.r0, h.delay / h.a.tele); continue; }
     h.t = (h.t || 0) + 1;
     if (h.t === 1) {
       if (h.type === 'line') { Audio.sfx.swing(); if (h.style === 'bolt') Audio.sfx.thunder(); }
       if (h.type === 'circle') { G.shake = Math.max(G.shake, 12); Audio.sfx.boom(); particles(h.a.ice ? 'mist' : h.a.moon ? 'moon' : 'demon', h.x, h.y, 30, 9, { k: h.a.ice ? 'ice' : undefined }); }
       if (h.type === 'arm' && h.a.dragon) Audio.sfx.heavy();
-      if (h.type === 'rainmark') { G.eproj.push({ x: h.x, y: -40, vx: 0, vy: 20, r: h.a.shape === 'moonbeam' ? 30 : 16, dmg: h.dmg, shape: h.a.shape, color: '#ddf', life: 60, t: 0, fall: 1 }); }
+      if (h.type === 'rainmark') { G.eproj.push({ x: h.x, y: -40, z: h.z || 0, vx: 0, vy: 20, r: h.a.shape === 'moonbeam' ? 30 : 16, dmg: h.dmg, shape: h.a.shape, color: '#ddf', life: 60, t: 0, fall: 1 }); }
       if (h.type === 'sweep') { Audio.sfx.heavy(); G.shake = 14; }
     }
     if (h.done) continue;
     let hit = false;
+    const dz = d3 ? Math.abs(pz - (h.z || 0)) : 0;
     switch (h.type) {
-      case 'line': hit = segDist(pc[0], pc[1], h.x1, h.y1, h.x2, h.y2) < h.w / 2 + 18; break;
-      case 'circle': if (h.follow) { h.x = h.follow.x; } hit = Math.hypot(pc[0] - h.x, pc[1] - h.y) < h.r; break;
-      case 'zone': if (h.follow) { h.x = h.follow.x + h.follow.face * h.off; h.src = h.follow.x; } hit = Math.hypot(pc[0] - h.x, pc[1] - h.y) < h.r; if (h.t === 1) fxAt(h.x, h.y, h.r, h.follow && h.follow.face > 0 ? -1.6 : Math.PI + 1.6, h.follow && h.follow.face > 0 ? 1.4 : Math.PI - 1.4, 18, 'demon', { sweep: 4, fade: 8 }); break;
-      case 'arm': { const ht = h.h * Math.min(1, h.t / 6); hit = Math.abs(P.x - h.x) < h.w / 2 + 12 && P.y > GY - ht; break; }
-      case 'cage': hit = Math.hypot(pc[0] - h.x, pc[1] - h.y) < 80; break;
-      case 'sweep': hit = P.y > GY - 70 && h.t < 10; break;
-      case 'shock': h.x += h.vx; hit = Math.abs(P.x - h.x) < 26 && P.y > GY - 56; if (h.x < 0 || h.x > W) h.life = 0; break;
+      case 'line': hit = segDist(pc[0], pc[1], h.x1, h.y1, h.x2, h.y2) < h.w / 2 + 18 && dz < DZ * 0.8 + h.w * 0.5; break;
+      case 'circle': if (h.follow) { h.x = h.follow.x; } hit = Math.hypot(pc[0] - h.x, pc[1] - h.y, dz) < h.r; break;
+      case 'zone': if (h.follow) { h.x = h.follow.x + h.follow.face * h.off; h.src = h.follow.x; } hit = Math.hypot(pc[0] - h.x, pc[1] - h.y, dz * 1.2) < h.r; if (h.t === 1) fxAt(h.x, h.y, h.r, h.follow && h.follow.face > 0 ? -1.6 : Math.PI + 1.6, h.follow && h.follow.face > 0 ? 1.4 : Math.PI - 1.4, 18, 'demon', { sweep: 4, fade: 8 }); break;
+      case 'arm': { const ht = h.h * Math.min(1, h.t / 6); hit = Math.abs(P.x - h.x) < h.w / 2 + 12 && P.y > GY - ht && dz < h.w / 2 + 12; break; }
+      case 'cage': hit = Math.hypot(pc[0] - h.x, pc[1] - h.y, dz) < 80; break;
+      case 'sweep': hit = P.y > GY - 70 && h.t < 10 && dz < 300; break;
+      case 'shock': h.x += h.vx; hit = Math.abs(P.x - h.x) < 26 && P.y > GY - 56 && dz < 40; if (h.x < 0 || h.x > W) h.life = 0; break;
     }
     if (hit && h.dmg) {
       if (nagiCut(P, pc[0], pc[1]) && h.type !== 'cage') { h.done = true; continue; }
@@ -938,8 +977,10 @@ function updateHazards() {
   G.haz = G.haz.filter(h => h.delay > 0 || (h.t || 0) < h.life);
 
   for (const p of G.eproj) {
+    G.cz = p.z || 0;
     if (p.delay > 0) { p.delay--; continue; }
     p.t++;
+    if (d3) { if (p.homing) p.vz = lerp(p.vz || 0, (pz - p.z) * 0.06, Math.min(1, p.homing * 2)); p.z += p.vz || 0; }
     if (p.homing) { const a = Math.atan2(pc[1] - p.y, pc[0] - p.x); const sp = Math.hypot(p.vx, p.vy); const cur = Math.atan2(p.vy, p.vx); let da = a - cur; while (da > Math.PI) da -= TAU; while (da < -Math.PI) da += TAU; const na = cur + clamp(da, -p.homing, p.homing); p.vx = Math.cos(na) * sp; p.vy = Math.sin(na) * sp; }
     if (p.bounce) { p.vy += 0.35; if (p.y > GY - p.r) { p.y = GY - p.r; p.vy *= -0.8; } }
     p.x += p.vx; p.y += p.vy;
@@ -947,7 +988,7 @@ function updateHazards() {
     p.life--;
     if (p.x < -100 || p.x > W + 100 || p.y < -200 || p.y > H + 50) p.life = 0;
     const [rx, ry, rw, rh] = playerRect(P);
-    if (circleRect(p.x, p.y, p.r * 0.8, rx, ry, rw, rh)) {
+    if (circleRect(p.x, p.y, p.r * 0.8, rx, ry, rw, rh) && (!d3 || Math.abs((p.z || 0) - pz) < p.r * 0.8 + 34)) {
       if (P.cast && P.cast.block) { p.life = 0; particles(P.cast.th, p.x, p.y, 10, 5); Audio.sfx.hit(); continue; }
       if (nagiCut(P, p.x, p.y)) { p.life = 0; continue; }
       if (p.sleep) { if (playerVulnerable(P)) { P.sleep = 1; P.cast = null; p.life = 0; banner('夢の中… 自分の頸を斬れ！', 'Bị ru ngủ! Bấm J liên tục để tự tỉnh dậy!', 150); } continue; }
@@ -958,8 +999,11 @@ function updateHazards() {
 }
 
 function updatePProj() {
+  const d3 = D3();
   for (const p of G.pproj) {
+    G.cz = p.z || 0;
     p.t++;
+    if (d3 && !p.fall) { const e = nearestEnemy(p.P || activeP()); if (e) p.z += clamp(((e.z || 0) - p.z) * 0.1, -7, 7); G.cz = p.z; }
     if (p.boomer) { p.vx -= p.face * 0.9; p.y += Math.sin(p.t * 0.2) * 0.5; if (p.t % 12 === 0) p.grp = newGrp(p.P, p.grp.dmg, p.c, { heavy: true }); if (p.t > 20 && Math.abs(p.x - p.P.x) < 40) p.life = 0; }
     if (p.fall) {
       if (p.y >= GY - 40) {
@@ -1004,8 +1048,9 @@ function battleStep() {
 
   for (const b of G.bosses) {
     b.acc += G.slow;
-    while (b.acc >= 1) { b.acc -= 1; updateBoss(b); }
+    while (b.acc >= 1) { b.acc -= 1; G.cz = b.z || 0; updateBoss(b); }
   }
+  G.cz = P.z || 0;
   G.bosses = G.bosses.filter(b => !(b.dead && b.def.minion && b.deadT > 90));
   G.hazAcc = (G.hazAcc || 0) + G.slow;
   while (G.hazAcc >= 1) { G.hazAcc -= 1; if (!G.over) updateHazards(); }

@@ -259,36 +259,54 @@ function screenHeader(jp, vn, sealT, right) {
 // ============================================================
 //  BATTLE
 // ============================================================
+// 3D facing: turn toward where you run; when standing/attacking, square up to the nearest demon
+function yawTo(dx, dz) { return Math.atan2(dx, dz); }
 function battleActors() {
-  const out = [], P = activeP();
-  G.bosses.forEach((b, i) => out.push({ id: 'B' + i, key: b.key, lk: b.def.look, boss: 1, x: b.x, y: b.y, scale: b.scale, face: b.face, look: DEMON_LOOKS[b.def.look], custom: !DEMON_LOOKS[b.def.look], flash: b.flash > 0, alpha: b.dead ? Math.max(0, 1 - b.deadT / 90) : 1,
-    pose: { t: G.t, run: b.walk, swing: b.swing !== undefined ? b.swing : 0.9, lean: b.lean || 0, hurt: b.hurt > 0, arm2: b.arm2, shout: b.state === 'tele' },
-    draw: (g, ox, oy) => drawBoss(g, Object.assign({}, b, { x: ox, y: oy, small: null }), G) }));
-  G.bosses.forEach((b, i) => { if (b.def.trueBody && b.small && !b.dead) out.push({ id: 'S' + i, key: 'hantengu_small', lk: 'hantengu_small', boss: 1, x: b.small.x, y: b.small.y, scale: 0.22, face: b.face, look: DEMON_LOOKS.hantengu, pose: { t: G.t, run: G.t * 0.4 }, draw: () => 0 }); });
-  if (!P.down) { const pose = playerPose(P), alpha = playerAlpha(P); out.push({ id: 'P', key: P.key, ch: P.ch, look: P.look, x: P.x, y: P.y, face: P.face, scale: P.scale, pose, alpha, z: 0.02,
-    draw: (g, ox, oy) => drawPerson(g, P.look, P.ch, ox, oy, P.face, Object.assign({}, pose, { noShadow: 1 }), alpha, P.scale) }); }
+  const out = [], P = activeP(), S3 = 0.01;
+  G.bosses.forEach((b, i) => {
+    const tgt = b.dead ? null : P, yaw = tgt && !b.fleeing ? yawTo(tgt.x - b.x, (tgt.z - b.z) * 1.0 + 110) : b.face * 0.9;
+    out.push({ id: 'B' + i, key: b.key, lk: b.def.look, boss: 1, x: b.x, y: b.y, z: (b.z || 0) * S3, yaw, scale: b.scale, face: b.face, look: DEMON_LOOKS[b.def.look], custom: !DEMON_LOOKS[b.def.look], flash: b.flash > 0, alpha: b.dead ? Math.max(0, 1 - b.deadT / 90) : 1,
+      pose: { t: G.t, run: b.walk, swing: b.swing !== undefined ? b.swing : 0.9, lean: b.lean || 0, hurt: b.hurt > 0, arm2: b.arm2, shout: b.state === 'tele' },
+      draw: (g, ox, oy) => drawBoss(g, Object.assign({}, b, { x: ox, y: oy, small: null }), G) });
+  });
+  G.bosses.forEach((b, i) => { if (b.def.trueBody && b.small && !b.dead) out.push({ id: 'S' + i, key: 'hantengu_small', lk: 'hantengu_small', boss: 1, x: b.small.x, y: b.small.y, z: (b.small.z || 0) * S3, yaw: yawTo(b.small.vx || 1, b.small.vz || 0), scale: 0.22, face: b.face, look: DEMON_LOOKS.hantengu, pose: { t: G.t, run: G.t * 0.4 }, draw: () => 0 }); });
+  if (!P.down) {
+    const pose = playerPose(P), alpha = playerAlpha(P);
+    let yaw;
+    const moving = !P.cast && P.hurtT <= 0 && (Math.abs(P.vx) + Math.abs(P.vz || 0) > 0.5 || P.dashT > 0);
+    if (moving) { const dd = P.dashT > 0 && P.dashDir ? P.dashDir : [P.vx, P.vz || 0]; yaw = yawTo(dd[0], dd[1] * 1.15); }
+    else { const e = nearestEnemy(P); yaw = e && Math.sign(e.x - P.x) === P.face ? yawTo(e.x - P.x, ((e.z || 0) - P.z) + 90) : P.face * 0.95; if (P.cast) yaw = P.face * 1.2 + (e && Math.sign(e.x - P.x) === P.face ? clamp(-((e.z || 0) - P.z) * 0.004 * P.face, -0.5, 0.5) : 0); }
+    out.push({ id: 'P', key: P.key, ch: P.ch, look: P.look, x: P.x, y: P.y, z: (P.z || 0) * S3 + 0.02, yaw, face: P.face, scale: P.scale, pose, alpha,
+      draw: (g, ox, oy) => drawPerson(g, P.look, P.ch, ox, oy, P.face, Object.assign({}, pose, { noShadow: 1 }), alpha, P.scale) });
+  }
   return out;
 }
+// draw a 2D label/gauge anchored at a 3D game position, scaled by perspective
+function atWorld(x, y, z, fn, minK) {
+  const p = R3D.project(x, y, z); if (p[2] > 1) return;
+  const k = Math.max(minK || 0.55, R3D.scaleAt(x, y, z));
+  ctx.save(); ctx.translate(p[0], p[1]); ctx.scale(k, k); fn(); ctx.restore();
+}
+function drawAuras(P) { // guard / Nagi / Zen / sleep effects around the active slayer (local coords, feet at 0,0)
+  if (P.buffs.guard) { ctx.save(); ctx.strokeStyle = '#aaa'; ctx.lineWidth = 4; ctx.setLineDash([6, 4]); ctx.beginPath(); ctx.ellipse(0, -75, 90, 60, 0, G.t * 0.2, G.t * 0.2 + TAU); ctx.stroke(); ctx.setLineDash([]); ctx.fillStyle = '#777'; ctx.beginPath(); ctx.arc(Math.cos(G.t * 0.2) * 90, -75 + Math.sin(G.t * 0.2) * 60, 14, 0, TAU); ctx.fill(); ctx.restore(); }
+  if (P.buffs.nagi) { ctx.save(); ctx.globalAlpha = 0.5; ctx.strokeStyle = '#9fd8ff'; ctx.lineWidth = 2; for (let i = 0; i < 3; i++) { ctx.beginPath(); ctx.ellipse(0, -2, 60 + ((G.t + i * 20) % 60) * 2, 12 + ((G.t + i * 20) % 60) * 0.4, 0, 0, TAU); ctx.stroke(); } ctx.restore(); }
+  if (P.zen) { ctx.save(); ctx.globalAlpha = 0.3 + Math.sin(G.t * 0.2) * 0.15; ctx.strokeStyle = THEMES[curStyle(P).theme].l; ctx.lineWidth = 2; ctx.beginPath(); ctx.ellipse(0, -75, 50, 90, 0, 0, TAU); ctx.stroke(); ctx.restore(); }
+  if (P.sleep > 0) txt('Zzz', 20, -170 - Math.sin(G.t * 0.1) * 5, 20, '#c8a0ff', 'center', UIF, 3);
+}
 function renderBattle3D() {
-  R3D.render(G, battleActors());
+  R3D.render(G, battleActors(), { cam: true });
   ctx.clearRect(0, 0, W, H);
-  ctx.save();
-  const sh = R3D.lastShake || [0, 0]; ctx.translate(sh[0], sh[1]);
-  if (G.tiltT > 0) { ctx.translate(W / 2, H / 2); ctx.rotate(G.tilt * 0.12 * Math.sin(Math.PI * G.tiltT / 120)); ctx.translate(-W / 2, -H / 2); }
-  drawHazards();
+  drawHazards(); // 3D mode: only the warning captions (the telegraphs themselves are 3D)
   for (const b of G.bosses) {
+    G.cz = b.z || 0;
     if (b.burning || (G.over === 'win' && G.dawnMax && b.def.final)) for (let i = 0; i < 3; i++) particles('flame', b.x + rnd(-30, 30), b.y - rnd(0, b.hh), 1, 3, { g: -0.15 });
-    if (b.pending) { seal(b.x - 22, b.y - b.hh - 74, 44, '頸', { rot: Math.sin(G.t * 0.2) * 0.1 }); T(Math.ceil(b.pending / 60) + 's', b.x, b.y - b.hh - 80, { size: 14, col: '#fff', align: 'center', stroke: 3, weight: 700 }); }
-    if (b.def.minion && !b.dead) gauge(b.x - 30, b.y - b.hh - 16, 60, 6, b.hp / b.maxhp, trailOf(b, 'hp', b.hp / b.maxhp), '#ff5060', '#a01020');
-    if (b.def.trueBody && b.small && !b.dead) drawSmallBody(ctx, b, G.t, true);
+    if (b.pending) atWorld(b.x, b.y - b.hh - 60, b.z, () => { seal(-22, -14, 44, '頸', { rot: Math.sin(G.t * 0.2) * 0.1 }); T(Math.ceil(b.pending / 60) + 's', 0, -20, { size: 14, col: '#fff', align: 'center', stroke: 3, weight: 700 }); });
+    if (b.def.minion && !b.dead) atWorld(b.x, b.y - b.hh - 16, b.z, () => gauge(-30, 0, 60, 6, b.hp / b.maxhp, trailOf(b, 'hp', b.hp / b.maxhp), '#ff5060', '#a01020'));
+    if (b.def.trueBody && b.small && !b.dead) { const sm = b.small; atWorld(sm.x, sm.y, sm.z, () => drawSmallBody(ctx, Object.assign({}, b, { small: Object.assign({}, sm, { x: 0, y: 0 }) }), G.t, true)); }
   }
-  for (const p of G.eproj) drawEProj(p);
-  const P = activeP();
-  if (!P.down) drawPlayerChar(P, true);
-  for (const e of G.fx) if (!R3D.handles(e.type)) drawFx(e);
-  for (const p of G.pproj) if (!R3D.handlesProj(p.k)) drawPProj(p);
-  for (const t of G.texts) { const jp = /[　-鿿]/.test(t.s); T(t.s, t.x, t.y, { size: t.size, col: t.c, align: 'center', font: jp ? JPF : UIF, weight: jp ? '' : 700, stroke: 4, alpha: Math.min(1, t.life / 20) }); }
-  ctx.restore();
+  const P = activeP(); G.cz = P.z || 0;
+  if (!P.down) atWorld(P.x, P.y, P.z, () => drawAuras(P));
+  for (const t of G.texts) { const jp = /[　-鿿]/.test(t.s); atWorld(t.x, t.y, t.z, () => T(t.s, 0, 0, { size: t.size, col: t.c, align: 'center', font: jp ? JPF : UIF, weight: jp ? '' : 700, stroke: 4, alpha: Math.min(1, t.life / 20) }), 0.7); }
 }
 function renderBattle() {
   if (R3D.ok) { renderBattle3D(); renderBattleOverlay(); return; }
@@ -331,7 +349,8 @@ function renderBattleOverlay() {
   drawCallouts();
   if (G.bossLine) {
     const b = G.bossLine.b, a = Math.min(1, (90 - G.bossLine.t) / 20, G.bossLine.t / 6);
-    const x = clamp(b.x, 240, W - 240), y = Math.max(150, b.y - b.hh - 44);
+    const bp = R3D.ok ? R3D.project(b.x, b.y - b.hh - 44, b.z) : [b.x, b.y - b.hh - 44];
+    const x = clamp(bp[0], 240, W - 240), y = Math.max(150, bp[1]);
     const w = measure(G.bossLine.s, 22, JPF) + 40;
     ctx.save(); ctx.globalAlpha = a; ink(x - w / 2, y - 26, w, 36, 'rgba(60,0,10,.85)', 1, 3); T(G.bossLine.s, x, y, { size: 22, font: JPF, col: '#ffc4cc', align: 'center', stroke: 4, weight: 600 }); ctx.restore();
   }
@@ -507,7 +526,7 @@ function drawPause() {
   seal(W / 2 - 390, 96, 58, '止', { rot: -0.05 });
   bi('一時停止', 'TẠM DỪNG · Hướng dẫn điều khiển', W / 2 - 316, 132, { size: 40, font: DISP, vcol: COL.gold2, vsize: 15, gap: 28 });
   const rows = [
-    ['A / D', '移動', 'Di chuyển'], ['W / Space', 'ジャンプ', 'Nhảy'], ['Shift', '回避', 'Lướt né (bất tử ngắn)'],
+    ['W A S D', '移動', 'Di chuyển 8 hướng'], ['Space', 'ジャンプ', 'Nhảy'], ['Shift', '回避', 'Lướt né theo hướng đi'],
     ['J', '斬撃', 'Chém thường — combo 3 đòn'], ['K', '技を放つ', 'Tung thức đang chọn'], ['Q / E / Chuột', '型を選ぶ', 'Chọn thức'],
     ['R', '呼吸切替', 'Đổi hơi thở (Tanjiro: Nước ↔ Hinokami)'], ['L (giữ)', '全集中', 'Hồi thanh hơi thở nhanh'], ['1…0 / Tab', '交代', 'Đổi nhân vật trong đội'], ['F (giữ)', '型を選ぶ', 'Bảng chọn thức nhanh (dừng thời gian, bấm số)'],
   ];

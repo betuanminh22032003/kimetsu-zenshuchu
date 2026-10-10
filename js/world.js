@@ -7,7 +7,12 @@ function drawHazards() {
   const in3d = R3D.ok; // active attacks are real 3D objects; overlay keeps only telegraphs + text
   for (const h of G.haz) {
     const tele = h.delay > 0, blink = (G.t % 8) < 4;
-    if (in3d && !tele && h.type !== 'cage') { if (h.type === 'shock') particles('mist', h.x, GY - 10, 1, 3, { k: 'rock', g: 0.3 }); continue; }
+    if (in3d) { // telegraph + attack are 3D objects; only captions stay 2D (projected)
+      if (h.type === 'shock' && !tele) { G.cz = h.z || 0; particles('mist', h.x, GY - 10, 1, 3, { k: 'rock', g: 0.3 }); }
+      if (tele && h.type === 'cage') atWorld(h.x, h.y - h.r - 16, h.z, () => txt('刻糸牢', 0, 0, 22, '#fff', 'center', JPF, 4));
+      if (tele && h.type === 'sweep') { const p = R3D.project(W / 2, GY - 80, h.z); txt('▲ 跳べ！ NHẢY!', W / 2, Math.max(140, p[1]), 22, '#fff', 'center', JPF, 4); }
+      continue;
+    }
     ctx.save();
     switch (h.type) {
       case 'line': {

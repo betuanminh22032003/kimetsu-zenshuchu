@@ -216,10 +216,10 @@ const GUIDE_PAGES = [
   {
     jp: '基本操作', vn: 'Điều khiển cơ bản', seal: '操',
     rows: [
-      ['A / D', '移動', 'Di chuyển trái / phải'],
-      ['W / Space', 'ジャンプ', 'Nhảy — né sóng đất và dải đỏ "跳べ"'],
-      ['Shift', '回避', 'Lướt né: bất tử khoảng 0,2 giây, hồi lại sau ~0,6 giây'],
-      ['J', '斬撃', 'Chém thường, bấm liên tục ra combo 3 nhát. Không tốn hơi, mỗi đòn trúng hồi hơi'],
+      ['W A S D', '移動', 'Di chuyển 8 hướng trong đấu trường 3D (W/S: vào sâu / ra gần). Bước sang ngang để né vạch chém'],
+      ['Space', 'ジャンプ', 'Nhảy — né sóng đất và dải đỏ "跳べ"'],
+      ['Shift', '回避', 'Lướt né theo hướng đang đi: bất tử ~0,2 giây, hồi lại sau ~0,6 giây'],
+      ['J', '斬撃', 'Chém thường, combo 3 nhát — tự quay và áp sát về phía quỷ gần nhất. Không tốn hơi, mỗi đòn trúng hồi hơi'],
       ['K', '技', 'Tung THỨC đang chọn (hiện ở khung dưới cùng, tốn hơi thở)'],
       ['Q / E', '型の選択', 'Chọn thức trước / sau (hoặc lăn chuột)'],
       ['F (giữ)', '型を選ぶ', 'Mở bảng tất cả thức, thời gian dừng lại, bấm số 1…0 - = [ ] chọn thẳng'],

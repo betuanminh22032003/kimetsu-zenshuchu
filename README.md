@@ -4,20 +4,21 @@ Mở `index.html` bằng Chrome/Edge (double-click là chạy, không cần cài
 
 Giao diện song ngữ 日本語 / Tiếng Việt. Font thư pháp (Yuji Syuku, Shippori Mincho, Be Vietnam Pro) tải từ Google Fonts khi có mạng; offline thì dùng font có sẵn của Windows.
 
-## Đồ họa 3D
-- Thế giới 3D (Three.js r147, WebGL): bối cảnh 3D từng ải (rừng tử đằng, phố Asakusa, dinh thự trống, núi nhện, tàu Vô Hạn, phố đèn đỏ, làng rèn, **Vô Hạn Thành với phòng shoji trôi lơ lửng**, Tokyo), ánh sáng, sương mù, đèn lóe theo chiêu, bloom phát sáng.
-- Chiêu thức 3D: vệt chém có sóng nước / lửa / sét bằng shader, **rồng 3D** (生生流転, 日暈の龍, 火雷神, rắn), **hổ lửa** 炎虎, hạt hiệu ứng GPU.
-- **Toàn bộ nhân vật & quỷ là 3D**, dựng bằng code (kiểu figure Nendoroid: toon shading, viền mực, mặt anime có biểu cảm): 14 kiếm sĩ với tóc/haori/kiếm riêng (haori caro Tanjiro, tam giác Zenitsu, nửa-nửa Giyu, lửa Rengoku, bướm Shinobu, đầu heo Inosuke, ống tre Nezuko, bím tóc Mitsuri, rìu-chùy Gyomei, roi kiếm, dao phay đôi…) và mọi con quỷ (xúc tu Muzan, dải obi Daki, quạt Doma, liềm máu Gyutaro, kiếm thịt Kokushibo 6 mắt, tay quỷ, bình Gyokko, trống Kyogai/Hantengu…). Không tải file model nào — 0 KB.
-- Đạn & đòn của quỷ (quả cầu, nắm đấm khí, trăng khuyết, băng, lưới tơ, cột trăng…) và bóng mờ khi lướt cũng là 3D; lớp 2D chỉ còn HUD, chữ và vạch cảnh báo.
+## Đồ họa 3D — đấu trường 3D thật
+- **Đấu trường 3D, di chuyển 8 hướng**: W/A/S/D đi mọi hướng trên mặt đất, quỷ đuổi theo cả chiều sâu; đòn chém tự xoay & áp sát quỷ gần nhất, né vạch chém bằng cách bước sang ngang hoặc lướt (Shift) theo hướng đang đi.
+- **Camera 3D điện ảnh**: góc cao bám theo trận đấu, tự kéo gần/xa theo khoảng cách hai bên (cả ngang lẫn sâu), xoay vòng khi tung tuyệt chiêu, quay quanh quỷ khi kết liễu. Hậu kỳ: bloom, khử răng cưa FXAA, chỉnh màu điện ảnh, vignette, film grain, bóng đổ mềm.
+- **Map 3D hoàn toàn** (không còn ảnh nền 2D): bầu trời shader có sao lấp lánh, dải ngân hà, trăng có quầng, mây trôi, bình minh thật (ải Akaza / Muzan); địa hình đồi núi xa có sương phủ; rừng thông, cedar, cây tử đằng rủ hoa, cỏ lay theo gió, dương xỉ, đá; sương mù chuyển động, đom đóm, cánh hoa / tuyết / tro / tàn lửa rơi; suối nước nóng có mặt nước phản chiếu; nhà gỗ – mái ngói – mái tranh, nhà gạch phố Taisho, tháp Ryounkaku, đèn khí, cột điện dây võng, lồng đèn giấy; tàu Vô Hạn lao trong đêm (cây, cột điện vụt qua, khói đầu máy), đoàn tàu trật bánh, Vô Hạn Thành nhiều tầng lộn ngược, phòng băng của Douma.
+- Chiêu thức 3D: vệt chém có sóng nước / lửa / sét bằng shader, **rồng 3D** (生生流転, 日暈の龍, 火雷神, rắn), **hổ lửa** 炎虎, hạt hiệu ứng GPU; đạn, vùng đòn và vạch cảnh báo của quỷ đều là vật thể 3D.
+- **Toàn bộ nhân vật & quỷ là 3D**, dựng bằng code (kiểu figure Nendoroid: toon shading, viền mực, mặt anime có biểu cảm), quay mặt theo hướng chạy / hướng địch. Không tải file model nào — 0 KB.
 - `?2dchars` để xem lại nhân vật 2D. Có model **VRM** riêng thì game ưu tiên dùng (xem [assets/README.md](assets/README.md)); thư viện VRM chỉ tải khi có file .vrm, asset nặng được phục vụ qua CDN jsDelivr.
-- Tự hạ chất lượng (tắt bóng → tắt bloom) nếu máy chạy chậm. `?no3d` để về bản 2D.
+- Tự hạ chất lượng (tắt bóng → tắt bloom/cỏ/sương) nếu máy chạy chậm. `?no3d` để về bản 2D cổ điển (đi trái/phải).
 
 ## Điều khiển
 | Phím | Tác dụng |
 |---|---|
-| A / D | Di chuyển |
-| W / Space | Nhảy |
-| Shift | Lướt né (bất tử ngắn) |
+| W A S D | Di chuyển 8 hướng (W/S: vào sâu / ra gần) |
+| Space | Nhảy |
+| Shift | Lướt né theo hướng đang đi (bất tử ngắn) |
 | J | Chém thường (combo 3) |
 | K | Tung thức đang chọn |
 | Q / E / lăn chuột | Chọn thức |
