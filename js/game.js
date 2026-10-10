@@ -134,7 +134,9 @@ function strike(grp, x, y, r) {
 }
 function damageEnemy(b, grp, hx, hy) {
   const P = grp.P, cz0 = G.cz; G.cz = b.z || 0;
-  const rule = FIN[b.key], finOk = !finLocked(b) || rule.fin(b, grp, P); // judged before buffs are consumed
+  const rule = FIN[b.key]; let finOk = !finLocked(b); // judged before buffs are consumed
+  if (!finOk && rule.fin(b, grp, P)) { finOk = true; b.finWin = 240; b.finBy = P && P.key; } // the right move opens a 4s finishing window
+  else if (!finOk && b.finWin > 0 && P && P.key === b.finBy) finOk = true;
   let d = grp.dmg * rnd(0.9, 1.1), crit = false;
   if (P && P.buffs.sense && Math.random() < 0.4) { d *= 1.8; crit = true; }
   if (P && P.buffs.invis) { d *= 2; crit = true; P.buffs.invis = 0; }
@@ -145,7 +147,7 @@ function damageEnemy(b, grp, hx, hy) {
   if (grp.poison) b.poisonTotal = (b.poisonTotal || 0) + grp.poison;
   if (rule && rule.dawn && G.dawnMax && !grp.dawnDone) { const sec = rule.dawn(b, grp, P); if (sec) { grp.dawnDone = 1; G.dawn += sec * 60; } }
   b.hp -= d; b.flash = 4; b.hurt = 10;
-  if (!finOk && b.hp < finFloor(b)) { b.hp = Math.max(b.hp, Math.min(hp0, finFloor(b))); if (!b.finShown) { b.finShown = 1; banner('頸が斬れない…！', 'Không chém đứt được cổ…!', 110); } } b.noRegen = 180; // no regeneration for 3s after a hit
+  if (!finOk && b.hp < finFloor(b)) { b.hp = Math.max(b.hp, Math.min(hp0, finFloor(b))); if (!b.finShown) { b.finShown = 1; banner('頸が斬れない…！', 'Không chém đứt được cổ…!', 110); } } b.noRegen = 300; // no regeneration for 5s after a hit
   if (grp.poison) { b.poison = Math.min(40, b.poison + grp.poison); addText(hx, hy - 30, '毒 Độc', '#c080ff', 18); Audio.sfx.poison(); }
   if (grp.burn) b.burn = 300;
   if (G.dawnMax) G.dawn += d * 0.6;
@@ -815,10 +817,11 @@ function updateBoss(b) {
   // regen, poison, burn
   const poisonF = Math.max(0, 1 - b.poison / 20);
   if (b.noRegen > 0) b.noRegen--;
-  else b.hp = Math.min(b.maxhp, b.hp + d.regen * poisonF * (b.regenBurst > 0 ? 6 : 1));
+  if (b.finWin > 0) b.finWin--;
+  else b.hp = Math.min(b.maxhp, b.hp + d.regen * (G.dawnMax ? 1 : 0.3) * poisonF * (b.regenBurst > 0 ? 6 : 1)); // demons heal, but slowly enough to be outfought
   if (b.regenBurst > 0 && b.noRegen > 0) b.hp = Math.min(b.maxhp, b.hp + d.regen * 4); // dawn-stage forced regeneration still works
   if (b.regenBurst > 0) b.regenBurst--;
-  if (finLocked(b) || (FIN[b.key] && FIN[b.key].small && !b.finOpen)) { if (b.hp <= finFloor(b) + 1 || (b.small && b.small.hp <= 1)) { b.finT = (b.finT || 0) + 1; if (b.finT > 5400) b.finOpen = true; } } // 90s stuck: any blow may finish
+  if (finLocked(b) || (FIN[b.key] && FIN[b.key].small && !b.finOpen)) { if (b.hp <= finFloor(b) * 1.15 || (b.small && b.small.hp <= 1)) { b.finT = (b.finT || 0) + 1; if (b.finT > 5400) b.finOpen = true; } } // 90s stuck: any blow may finish
   const floorHp = finLocked(b) ? finFloor(b) : 0;
   if (b.poison > 0) { b.hp -= b.poison * 0.035; b.poison = Math.max(0, b.poison - 0.008); if (G.t % 12 === 0) G.parts.push({ x: b.x + rnd(-20, 20), y: b.y - rnd(40, b.hh), vx: 0, vy: -1, life: 30, max: 30, s: 4, c: '#b070ff', k: 'drop', g: -0.02 }); if (floorHp) b.hp = Math.max(b.hp, Math.min(floorHp, b.hp + b.poison * 0.035)); if (b.hp <= 0) checkBossDeath(b); }
   if (b.burn > 0) { b.burn--; b.hp -= 0.25; if (floorHp && b.hp < floorHp) b.hp = Math.min(floorHp, b.hp + 0.25); if (G.t % 4 === 0) particles('blood', b.x + rnd(-25, 25), b.y - rnd(20, b.hh), 1, 2, { g: -0.1 }); if (b.hp <= 0) checkBossDeath(b); }
@@ -841,7 +844,7 @@ function updateBoss(b) {
       if (Math.abs(dz) > 14) { b.z += Math.sign(dz) * Math.min(Math.abs(dz), d.speed * spd * 0.75); if (Math.abs(dx) <= want + 30) b.walk += 0.2; }
     }
     b.cd -= spd;
-    if (d.teleport && Math.random() < 0.004) { particles('water', b.x, b.y - 80, 20, 5); b.x = clamp(P.x + rnd(-400, 400), AL + 60, AR - 60); if (D3()) b.z = clamp(P.z + rnd(-140, 140), ...zRange()); G.cz = b.z; particles('water', b.x, b.y - 80, 20, 5); }
+    if (d.teleport && Math.random() < 0.0018) { particles('water', b.x, b.y - 80, 20, 5); b.x = clamp(P.x + (Math.random() < 0.5 ? -1 : 1) * rnd(180, 340), AL + 60, AR - 60); if (D3()) b.z = clamp(P.z + rnd(-140, 140), ...zRange()); G.cz = b.z; particles('water', b.x, b.y - 80, 20, 5); }
     if (b.cd <= 0) {
       const pool = d.atks.concat(phase2 && d.p2 ? d.p2 : []);
       if (!pool.length) { b.cd = 600; return; }

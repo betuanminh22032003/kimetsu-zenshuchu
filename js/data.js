@@ -343,7 +343,7 @@ const BOSSES = {
     p2: [{ n: '円斬旋回・飛び血鎌', type: 'circle', tele: 45, dmg: 30, cd: 150, self: 1, r: 300, poison: 1 }],
   },
   gyokko: {
-    name: '玉壺', kana: 'ぎょっこ', title: '上弦の伍', hp: 2600, regen: 0.3, speed: 1.2, w: 90, h: 170, look: 'gyokko', rank: '上伍', teleport: 1,
+    name: '玉壺', kana: 'ぎょっこ', title: '上弦の伍', hp: 2200, regen: 0.3, speed: 1.2, w: 90, h: 170, look: 'gyokko', rank: '上伍', teleport: 1,
     atks: [
       { n: '血鬼術 千本針 魚殺', type: 'proj', tele: 35, dmg: 12, cd: 70, count: 10, speed: 13, size: 8, color: '#e0e0a0', shape: 'needle', spread: 1 },
       { n: '血鬼術 一万滑空粘魚', type: 'rain', tele: 40, dmg: 14, cd: 100, count: 14, shape: 'fish' },
