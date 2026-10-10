@@ -90,6 +90,7 @@ function drawBoss(ctx, b, g) {
   if (b.dead) ctx.globalAlpha = Math.max(0, 1 - b.deadT / 90);
   if (look === 'hand') { drawHandDemon(ctx, b, t); ctx.restore(); return; }
   if (look === 'gyokko') { drawGyokko(ctx, b, t); ctx.restore(); return; }
+  if (look === 'dummy') { drawDummy(ctx, b, t); ctx.restore(); return; }
   const L = DEMON_LOOKS[look];
   // extras behind
   if (look === 'muzan') {
@@ -416,4 +417,29 @@ function buildBg(c, key) {
       c.fillStyle = 'rgba(120,20,30,.3)'; c.fillRect(0, GY - 40, W, 40);
       ground('#1a1a20', '#060608'); break;
   }
+}
+
+function drawDummy(ctx, b, t) {
+  const wob = b.hurt > 0 ? Math.sin(b.hurt * 1.3) * 0.08 : 0;
+  ctx.save(); ctx.translate(b.x, b.y);
+  ctx.fillStyle = 'rgba(0,0,0,.35)'; ctx.beginPath(); ctx.ellipse(0, 2, 40, 8, 0, 0, TAU); ctx.fill();
+  ctx.rotate(wob);
+  const ol = '#1d1422';
+  // pole + base
+  ctx.fillStyle = '#6a4a2a'; ctx.strokeStyle = ol; ctx.lineWidth = 2.5;
+  ctx.beginPath(); ctx.rect(-7, -190, 14, 190); ctx.fill(); ctx.stroke();
+  ctx.beginPath(); ctx.rect(-34, -10, 68, 12); ctx.fill(); ctx.stroke();
+  // straw bundle
+  const g = ctx.createLinearGradient(-30, 0, 30, 0); g.addColorStop(0, '#b8964a'); g.addColorStop(0.5, '#e6cc80'); g.addColorStop(1, '#a8863e');
+  ctx.beginPath(); ctx.moveTo(-26, -40); ctx.quadraticCurveTo(-34, -110, -24, -170); ctx.lineTo(24, -170); ctx.quadraticCurveTo(34, -110, 26, -40); ctx.closePath();
+  ctx.fillStyle = g; ctx.fill(); ctx.stroke();
+  ctx.strokeStyle = 'rgba(110,80,30,.6)'; ctx.lineWidth = 1;
+  for (let i = -22; i <= 22; i += 5) { ctx.beginPath(); ctx.moveTo(i, -44); ctx.quadraticCurveTo(i * 1.25, -110, i * 0.9, -166); ctx.stroke(); }
+  // rope bands
+  ctx.strokeStyle = ol; ctx.lineWidth = 2.5;
+  for (const y of [-60, -110, -150]) { ctx.fillStyle = '#5a3a1a'; ctx.beginPath(); ctx.rect(-30, y - 4, 60, 8); ctx.fill(); ctx.stroke(); }
+  // paper talisman face
+  ctx.fillStyle = '#f4ecd8'; ctx.beginPath(); ctx.rect(-12, -146, 24, 30); ctx.fill(); ctx.stroke();
+  ctx.fillStyle = '#b01828'; ctx.font = 'bold 18px serif'; ctx.textAlign = 'center'; ctx.fillText('鬼', 0, -125);
+  ctx.restore();
 }

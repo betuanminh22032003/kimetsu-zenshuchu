@@ -43,8 +43,8 @@ function makeBoss(key, x) {
   };
 }
 
-function startBattle(si) {
-  const S = STAGES[si];
+function startBattle(si, custom) {
+  const S = custom || STAGES[si];
   const bd = BOSSES[S.boss];
   G = {
     si, S, t: 0, team: S.team.map(makePlayer), ai: 0, bosses: [], fx: [], parts: [], amb: [], eproj: [], pproj: [], haz: [], texts: [],
@@ -110,6 +110,7 @@ function damageEnemy(b, grp, hx, hy) {
   if (grp.poison) { b.poison = Math.min(40, b.poison + grp.poison); addText(hx, hy - 30, '毒 Độc', '#c080ff', 18); Audio.sfx.poison(); }
   if (grp.burn) b.burn = 300;
   if (G.dawnMax) G.dawn += d * 0.6;
+  if (G.S.training) { G.trainDmg = (G.trainT > 0 ? G.trainDmg : 0) + d; G.trainT = 150; G.trainHits = (G.trainT2 > 0 ? G.trainHits : 0) + 1; G.trainT2 = 150; }
   if (P) P.br = Math.min(P.maxbr, P.br + 1.5);
   particles(grp.theme, hx, hy, grp.heavy ? 26 : 12, grp.heavy ? 9 : 6);
   particles('demon', hx, hy, 6, 5, { k: 'blood', g: 0.3 });
@@ -131,6 +132,7 @@ function checkBossDeath(b) {
   const d = b.def;
   if (b.dead) return;
   if (b.hp > 0) return;
+  if (d.training) { b.hp = b.maxhp; return; }
   if (G.dawnMax && G.dawn < G.dawnMax) {
     b.hp = b.maxhp * 0.15; b.regenBurst = 90;
     banner('再生する…！', 'Hắn tái sinh! Cầm cự tới bình minh!', 120); return;
@@ -711,6 +713,8 @@ function updatePlayer(P) {
   P.br = Math.min(P.maxbr, P.br + 0.09);
   physics(P);
 }
+const PALETTE_KEYS = ['Digit1', 'Digit2', 'Digit3', 'Digit4', 'Digit5', 'Digit6', 'Digit7', 'Digit8', 'Digit9', 'Digit0', 'Minus', 'Equal', 'BracketLeft', 'BracketRight'];
+const PALETTE_LABELS = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '0', '-', '=', '[', ']'];
 function handleSelectionInput() {
   const P = activeP();
   if (P.down) return;
@@ -725,6 +729,10 @@ function handleSelectionInput() {
     const s2 = curStyle(P);
     addText(P.x, P.y - 180, s2.jp + (s2.theme === 'sun' ? ' · Hơi thở Mặt Trời' : ' · Hơi thở của Nước'), '#ffd080', 22);
     if (s2.theme === 'sun') { particles('sun', P.x, P.y - 80, 30, 6); Audio.say('ひのかみかぐら', P.ch.voice); }
+  }
+  if (G.palette) {
+    PALETTE_KEYS.forEach((code, i) => { if (pressed(code) && i < n) { P.formIdx[P.styleIdx] = i; Audio.sfx.select(); } });
+    return;
   }
   for (let i = 0; i < 10; i++) if (pressed('Digit' + ((i + 1) % 10))) switchTo(i);
   if (pressed('Tab')) { for (let k = 1; k <= G.team.length; k++) { const j = (G.ai + k) % G.team.length; if (!G.team[j].down) { switchTo(j); break; } } }
@@ -762,6 +770,7 @@ function updateBoss(b) {
     if (d.teleport && Math.random() < 0.004) { particles('water', b.x, b.y - 80, 20, 5); b.x = clamp(P.x + rnd(-400, 400), AL + 60, AR - 60); particles('water', b.x, b.y - 80, 20, 5); }
     if (b.cd <= 0) {
       const pool = d.atks.concat(phase2 && d.p2 ? d.p2 : []);
+      if (!pool.length) { b.cd = 600; return; }
       b.atk = pool[Math.floor(Math.random() * pool.length)];
       b.state = 'tele'; b.st = 0;
     }
@@ -971,6 +980,8 @@ function updatePProj() {
 // ---------------- MAIN BATTLE STEP ----------------
 function battleStep() {
   if (G.paused) return;
+  G.palette = held('KeyF') && !G.over && !G.cutin && !activeP().down;
+  if (G.palette) { handleSelectionInput(); return; }
   if (G.cutin) { G.cutin.t++; if (G.cutin.t >= G.cutin.dur) { const c = G.cutin; G.cutin = null; beginCast(c.P, c.f, c.st); } return; }
   for (const c of G.callouts) c.t++;
   G.callouts = G.callouts.filter(c => c.t < c.dur);
@@ -980,6 +991,7 @@ function battleStep() {
   if (G.flashScreen) { G.flashScreen.t++; if (G.flashScreen.t > G.flashScreen.life) G.flashScreen = null; }
   if (G.hitstop > 0) { G.hitstop--; return; }
   G.t++;
+  if (G.S.training) { for (const p of G.team) { p.br = p.maxbr; p.hp = p.maxhp; p.down = false; } if (G.trainT > 0) G.trainT--; if (G.trainT2 > 0) G.trainT2--; }
   if (G.shake > 0) G.shake *= 0.86;
   if (G.switchCd > 0) G.switchCd--;
   if (G.slowT > 0) { G.slowT--; if (!G.slowT) G.slow = 1; }

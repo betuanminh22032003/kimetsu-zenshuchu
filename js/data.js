@@ -405,6 +405,9 @@ const BOSSES = {
       { n: '', type: 'circle', tele: 40, dmg: 40, cd: 140, self: 1, r: 300, blood: 1 },
     ],
   },
+  dummy: {
+    name: '巻藁', kana: 'まきわら', title: '稽古台', hp: 5000, regen: 30, speed: 0, w: 70, h: 180, look: 'dummy', training: 1, atks: [],
+  },
   // minions
   mini: { name: '鬼', kana: 'おに', hp: 160, regen: 0, speed: 1.8, w: 50, h: 120, look: 'minion', minion: 1,
     atks: [{ n: '', type: 'melee', tele: 30, dmg: 10, cd: 70, range: 90 }] },
