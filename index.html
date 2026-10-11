@@ -3,10 +3,19 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>鬼滅の刃 — 全集中の章</title>
+<title>Thanh Gươm Diệt Quỷ — 鬼滅の刃 全集中の章</title>
+<meta name="description" content="Fan game hành động 3D Kimetsu no Yaiba chạy trên trình duyệt: 13 màn theo anime, 14 thợ săn quỷ, hơn 100 thức đúng nguyên tác, giao diện tiếng Việt.">
+<meta name="theme-color" content="#0d0b12">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect x='4' y='4' width='56' height='56' rx='8' fill='%23b3122e'/%3E%3Crect x='10' y='10' width='44' height='44' fill='none' stroke='%23fff4ea' stroke-width='3'/%3E%3Ctext x='32' y='45' font-size='34' text-anchor='middle' fill='%23fff4ea' font-family='serif'%3E%E9%AC%BC%3C/text%3E%3C/svg%3E">
+<meta property="og:type" content="website">
+<meta property="og:title" content="Thanh Gươm Diệt Quỷ — Chương Toàn Tập Trung">
+<meta property="og:description" content="Fan game 3D Kimetsu no Yaiba: 13 màn theo anime, 14 thợ săn quỷ, chơi ngay trên trình duyệt.">
+<meta property="og:image" content="https://betuanminh22032003.github.io/kimetsu-zenshuchu/assets/og-image.jpg">
+<meta property="og:url" content="https://betuanminh22032003.github.io/kimetsu-zenshuchu/">
+<meta name="twitter:card" content="summary_large_image">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Yuji+Syuku&family=Shippori+Mincho+B1:wght@500;700&family=Be+Vietnam+Pro:wght@400;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Yuji+Syuku&family=Shippori+Mincho+B1:wght@500;700&family=Be+Vietnam+Pro:wght@400;600;700;800&display=swap" rel="stylesheet">
 <style>
   html, body { margin: 0; height: 100%; background: #000; overflow: hidden; }
   body { display: flex; align-items: center; justify-content: center; }
@@ -14,13 +23,17 @@
   #wrap canvas { position: absolute; left: 0; top: 0; display: block; }
   #gl { background: #000; }
   #game { cursor: crosshair; }
+  #touchNote { position: fixed; left: 12px; right: 12px; top: 12px; z-index: 9; background: rgba(13,11,18,.94); color: #efe6f6; border: 1px solid rgba(217,182,106,.5); border-radius: 10px; padding: 12px 14px; font: 14px/1.5 'Be Vietnam Pro', system-ui, sans-serif; }
+  #touchNote a { color: #f3dca0; } #touchNote button { margin-left: 6px; background: #b3122e; color: #fff; border: 0; border-radius: 6px; padding: 4px 10px; font: inherit; }
 </style>
 </head>
 <body>
+<div id="touchNote" hidden>Game cần <b>bàn phím</b> (hoặc tay cầm). Hãy mở trên máy tính để chơi. · <a href="stats.html">Xem chỉ số nhân vật</a> · <button type="button" onclick="this.parentNode.hidden=true">Đóng</button></div>
 <div id="wrap">
 <canvas id="gl" width="1280" height="720"></canvas>
 <canvas id="game" width="1280" height="720"></canvas>
 </div>
+<script>if (matchMedia('(pointer: coarse)').matches && !matchMedia('(pointer: fine)').matches) document.getElementById('touchNote').hidden = false;</script>
 <script src="js/vendor/three.min.js"></script>
 <script src="js/vendor/CopyShader.js"></script>
 <script src="js/vendor/LuminosityHighPassShader.js"></script>

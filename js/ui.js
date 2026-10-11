@@ -8,7 +8,7 @@ const ctx = cv.getContext('2d');
 const DISP = '"Yuji Syuku","Shippori Mincho B1","Yu Mincho","MS Mincho",serif';
 const JPF = '"Shippori Mincho B1","Yu Mincho","Hiragino Mincho ProN","MS Mincho",serif';
 const UIF = '"Be Vietnam Pro","Segoe UI","Noto Sans",sans-serif';
-if (document.fonts) ['Yuji Syuku', 'Shippori Mincho B1', 'Be Vietnam Pro'].forEach(f => { document.fonts.load(`30px "${f}"`, '鬼滅の刃 全集中 Việt').catch(() => { }); document.fonts.load(`bold 30px "${f}"`, '鬼滅 Việt').catch(() => { }); });
+if (document.fonts) ['Yuji Syuku', 'Shippori Mincho B1', 'Be Vietnam Pro'].forEach(f => { document.fonts.load(`30px "${f}"`, '鬼滅の刃 全集中 Việt').catch(() => { }); document.fonts.load(`bold 30px "${f}"`, '鬼滅 Việt').catch(() => { }); document.fonts.load(`800 30px "${f}"`, 'Việt').catch(() => { }); });
 
 const GAME_VERSION = '1.0.0';
 const COL = { ink: '#0d0b12', ink2: '#17131f', crimson: '#b3122e', crimson2: '#e0324e', gold: '#d9b66a', gold2: '#f3dca0', paper: '#efe4cc', dim: '#9d95ad', wis: '#a68bdc' };
@@ -115,6 +115,7 @@ function cached(key, w, h, draw, x, y) {
   ctx.drawImage(cv2, x, y);
 }
 let drawingCtx = null;
+if (document.fonts && document.fonts.ready) document.fonts.ready.then(() => uiCache.clear()); // re-bake cached pieces with the real fonts
 const P_SEIGAIHA = () => pat('sei', 40, (g, s) => {
   g.strokeStyle = '#fff'; g.lineWidth = 1.2;
   for (const [cx, cy] of [[0, s / 2], [s, s / 2], [s / 2, s], [0, s * 1.5], [s, s * 1.5], [s / 2, 0]]) for (let r = s / 2; r > 3; r -= 5) { g.beginPath(); g.arc(cx, cy, r, Math.PI, TAU); g.stroke(); }

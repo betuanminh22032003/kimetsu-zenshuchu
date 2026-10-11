@@ -1,61 +1,63 @@
-# 鬼滅の刃 — 全集中の章 (fan game, dùng cá nhân)
+# Thanh Gươm Diệt Quỷ — Chương Toàn Tập Trung (鬼滅の刃 — 全集中の章)
 
-Mở `index.html` bằng Chrome/Edge (double-click là chạy, không cần cài gì).
+Fan game hành động 3D chạy thẳng trên trình duyệt, đi theo 13 màn của anime Kimetsu no Yaiba, từ Tuyển Chọn Cuối Cùng tới trận cuối với Kibutsuji Muzan. Phi thương mại, làm để chơi cho vui.
 
-Chơi online: https://betuanminh22032003.github.io/kimetsu-zenshuchu/ · Chỉ số mọi nhân vật & quỷ: [`stats.html`](https://betuanminh22032003.github.io/kimetsu-zenshuchu/stats.html) (đọc thẳng từ `js/data.js`).
+- ▶ **Chơi ngay:** https://betuanminh22032003.github.io/kimetsu-zenshuchu/
+- 📊 **Chỉ số nhân vật & quỷ:** https://betuanminh22032003.github.io/kimetsu-zenshuchu/stats.html
+- Phiên bản hiện tại: **v1.0.0** — xem [CHANGELOG.md](CHANGELOG.md)
 
-Giao diện song ngữ 日本語 / Tiếng Việt. Font thư pháp (Yuji Syuku, Shippori Mincho, Be Vietnam Pro) tải từ Google Fonts khi có mạng; offline thì dùng font có sẵn của Windows.
+Chơi offline: tải repo về, mở `index.html` bằng Chrome hoặc Edge (không cần cài gì). Nên chơi trên máy tính có bàn phím, chuột hoặc tay cầm.
 
-## Đồ họa 3D — đấu trường 3D thật
-- **Đấu trường 3D, di chuyển 8 hướng**: W/A/S/D đi mọi hướng trên mặt đất, quỷ đuổi theo cả chiều sâu; đòn chém tự xoay & áp sát quỷ gần nhất, né vạch chém bằng cách bước sang ngang hoặc lướt (Shift) theo hướng đang đi.
-- **Camera 3D điện ảnh**: góc cao bám theo trận đấu, tự kéo gần/xa theo khoảng cách hai bên (cả ngang lẫn sâu), xoay vòng khi tung tuyệt chiêu, quay quanh quỷ khi kết liễu. Hậu kỳ: bloom, khử răng cưa FXAA, chỉnh màu điện ảnh, vignette, film grain, bóng đổ mềm.
-- **Map 3D hoàn toàn** (không còn ảnh nền 2D): bầu trời shader có sao lấp lánh, dải ngân hà, trăng có quầng, mây trôi, bình minh thật (ải Akaza / Muzan); địa hình đồi núi xa có sương phủ; rừng thông, cedar, cây tử đằng rủ hoa, cỏ lay theo gió, dương xỉ, đá; sương mù chuyển động, đom đóm, cánh hoa / tuyết / tro / tàn lửa rơi; suối nước nóng có mặt nước phản chiếu; nhà gỗ – mái ngói – mái tranh, nhà gạch phố Taisho, tháp Ryounkaku, đèn khí, cột điện dây võng, lồng đèn giấy; tàu Vô Hạn lao trong đêm (cây, cột điện vụt qua, khói đầu máy), đoàn tàu trật bánh, Vô Hạn Thành nhiều tầng lộn ngược, phòng băng của Douma.
-- Chiêu thức 3D: vệt chém có sóng nước / lửa / sét bằng shader, **rồng 3D** (生生流転, 日暈の龍, 火雷神, rắn), **hổ lửa** 炎虎, hạt hiệu ứng GPU; đạn, vùng đòn và vạch cảnh báo của quỷ đều là vật thể 3D — mỗi con quỷ có huyết thuật riêng: tơ thép của Rui, đai lụa của Daki, xúc tu gai của Muzan, trăng khuyết của Kokushibo, gai băng & hoa sen băng của Douma, rồng gỗ & sét của Hantengu, cầu nước của Gyokko, bão liềm máu của Gyutaro, sóng xung kích của Akaza; khi quỷ gồng chiêu, ấn chú huyết quỷ thuật hiện dưới chân.
-- **Toàn bộ nhân vật & quỷ là 3D**, dựng bằng code (kiểu figure Nendoroid: toon shading, viền mực, mặt anime có biểu cảm), quay mặt theo hướng chạy / hướng địch. Không tải file model nào — 0 KB.
-- `?2dchars` để xem lại nhân vật 2D. Có model **VRM** riêng thì game ưu tiên dùng (xem [assets/README.md](assets/README.md)); thư viện VRM chỉ tải khi có file .vrm, asset nặng được phục vụ qua CDN jsDelivr.
-- Tự hạ chất lượng (tắt bóng → tắt bloom/cỏ/sương) nếu máy chạy chậm. `?no3d` để về bản 2D cổ điển (đi trái/phải).
+## Có gì trong game
+- **13 màn theo cốt truyện**, mỗi màn có thoại mở đầu / kết thúc và các chặng quỷ nhỏ trước trùm. Một số màn có luật riêng đúng như phim: cầm cự tới bình minh với Akaza và Muzan, chém cổ Daki và Gyutaro cùng lúc, tìm bản thể nhỏ của Hantengu…
+- **14 thợ săn quỷ** với hơn 100 thức đúng nguyên tác (Thủy, Hinokami Kagura, Sấm, Thú, Lửa, Côn Trùng, Tình Yêu, Sương, Âm, Rắn, Gió, Đá, Hoa, Huyết quỷ thuật). Mỗi người có chỉ số và điểm mạnh / yếu riêng theo phim.
+- **Giao diện tiếng Việt**, tiếng Nhật đi kèm dạng chữ nhỏ. Thoại có giọng đọc tiếng Nhật (Web Speech).
+- **Đồ họa 3D dựng bằng code**: nhân vật chibi kiểu Nendoroid, map 3D cho từng màn, vệt chém shader, rồng / hổ lửa 3D, camera điện ảnh, bloom. Tự hạ chất lượng nếu máy yếu.
+- Chế độ **Luyện tập**, màn **Danh sách chiêu thức** (cách dùng từng thức), **Hướng dẫn chơi** và trang **Chỉ số nhân vật**.
 
 ## Điều khiển
 | Phím | Tác dụng |
 |---|---|
-| W A S D | Di chuyển 8 hướng (W/S: vào sâu / ra gần) |
+| W A S D | Di chuyển 8 hướng |
 | Space | Nhảy |
-| Shift | Lướt né theo hướng đang đi (bất tử ngắn) |
-| J | Chém thường (combo 3) |
-| K | Tung thức đang chọn |
-| Q / E / lăn chuột | Chọn thức |
-| R | Đổi hơi thở (Tanjiro: 水の呼吸 ↔ ヒノカミ神楽) |
-| Giữ L | 全集中 — hồi thanh 呼吸 nhanh |
-| G | 弾き — chém bật: đánh bật đạn của quỷ ngược lại vào quỷ, hoặc gạt đòn cận chiến |
-| 1…0 / Tab | Đổi nhân vật trong đội |
-| Esc | Tạm dừng (M: về chọn ải) |
+| Shift | Lướt né theo hướng đang đi (bất tử ngắn; né sát lúc trúng đòn = né hoàn hảo) |
+| J / chuột trái | Chém — giữ để tự ra combo |
+| 1 … 0, - = [ ] | Tung thẳng thức số đó |
+| K / chuột phải | Tung thức đang chọn (chọn bằng Q / E / lăn chuột) |
+| Giữ F | Bảng chọn thức (thời gian dừng lại) |
+| G | Chém bật: đánh bật đạn của quỷ, hoặc gạt đòn cận chiến |
+| R | Đổi bộ hơi thở (Tanjiro: Nước ↔ Hinokami) |
+| Giữ L | Toàn tập trung — hồi hơi nhanh |
+| Tab / C | Đổi nhân vật trong đội |
+| Esc | Tạm dừng (H: hướng dẫn · M: thoát) |
 
-## 13 ải theo anime — chia chặng theo cốt truyện
-Nhiều ải phải vượt qua các con quỷ gặp trên đường trước khi trùm xuất hiện (hết mỗi chặng hồi 25% máu, có thoại ngắn):
-- 最終選別: quỷ núi Fujikasane → **手鬼**
-- 浅草: **矢琶羽** (mũi tên) → **朱紗丸** · có **珠世 Tamayo** chiến đấu cùng: 惑血「視覚夢幻の香」 làm quỷ ảo giác đánh trật hướng, thuốc hồi máu cho đội
-- 鼓屋敷: **舌鬼** → **響凱**
-- 那田蜘蛛山: **母蜘蛛** (điều khiển con rối bằng tơ) → **父蜘蛛** (khổng lồ, đầu nhện) → **累**
-- 無限列車: **魘夢** trên nóc tàu → 魘夢 hợp nhất với đoàn tàu
-- 猗窩座 (cầm cự tới bình minh)
-- 遊郭: **堕姫** một mình → 堕姫 & **妓夫太郎** (phải chém cả hai trong 4s)
-- 刀鍛冶の里: **金魚** của Gyokko → **玉壺**
-- 半天狗: **積怒 & 可楽** → **空喜 & 哀絶** → **憎珀天** (chém bản thể nhỏ 「恨」)
-- 無限城: 童磨 → 猗窩座 tái đấu → 黒死牟
-- **最終決戦: 鬼舞辻無惨** — thuốc của Tamayo làm Muzan hồi máu chậm một nửa; đánh tới bình minh, 拾参ノ型 đẩy nhanh thanh 夜明け.
+Tay cầm (chuẩn Xbox): cần trái đi · A nhảy · X chém · Y tung thức · B lướt · LB / RB chọn thức · LT bảng thức · RT tụ khí · L3 / R3 chém bật · Back đổi người · Start tạm dừng.
 
-Giọng đọc (Cài đặt): **VỪA** (mặc định) chỉ đọc thoại, tuyệt kỹ và thỉnh thoảng một tên chiêu; **ĐỦ** đọc mọi tên chiêu; **TẮT**. Câu quan trọng không bị câu khác cắt ngang, tiếng hiệu ứng trùng nhau được gộp lại.
-
-## Thức (theo Kimetsu no Yaiba Wiki, chỉ chiêu gốc manga/anime)
-- 炭治郎: 水の呼吸 壱〜拾ノ型 (10) + ヒノカミ神楽 12 thức + 拾参ノ型 + 円舞一閃
-- 冨岡義勇: 水の呼吸 壱〜拾壱ノ型 (11, gồm 凪)
-- 善逸: 霹靂一閃 (+六連 / 八連 / 神速) + 漆ノ型 火雷神
-- 伊之助: 獣の呼吸 11 nanh/thức · 煉獄: 炎の呼吸 6 (壱〜伍, 玖) · しのぶ: 蟲の呼吸 5
-- 蜜璃: 恋の呼吸 5 (壱弐参伍陸) · 無一郎: 霞の呼吸 7 · 天元: 音の呼吸 3 (壱肆伍)
-- 伊黒: 蛇の呼吸 5 · 実弥: 風の呼吸 9 · 悲鳴嶼: 岩の呼吸 5 · カナヲ: 花の呼吸 5 (弐肆伍陸終) · 禰豆子: 血鬼術 爆血
-
-Trong game có màn **技一覧** liệt kê đầy đủ.
+## 13 màn
+1. Tuyển Chọn Cuối Cùng — Quỷ Tay
+2. Asakusa — Yahaba → Susamaru (có Tamayo hỗ trợ)
+3. Dinh Thự Trống — Quỷ Lưỡi → Kyogai
+4. Núi Natagumo — Mẹ Nhện → Cha Nhện → Rui
+5. Chuyến Tàu Vô Tận — Enmu
+6. Thượng Huyền Tam — Akaza (cầm cự tới bình minh)
+7. Phố Đèn Đỏ — Daki → Daki & Gyutaro (chém cả hai trong 4 giây)
+8. Làng Rèn Kiếm — cá vàng → Gyokko
+9. Làng Rèn Kiếm — Sekido & Karaku → Urogi & Aizetsu → Zohakuten (chém bản thể nhỏ)
+10. Vô Hạn Thành — Douma
+11. Vô Hạn Thành — Akaza tái đấu
+12. Vô Hạn Thành — Kokushibo
+13. Trận cuối — Kibutsuji Muzan (cầm cự tới bình minh)
 
 ## Giọng Nhật
-Thoại và tên chiêu được đọc bằng Web Speech (ja-JP). Cần có giọng tiếng Nhật trên máy:
-Windows Settings → Time & Language → Language → thêm 日本語 (kèm Speech). Edge có sẵn giọng "Nanami Online" nghe tự nhiên nhất.
+Thoại và tên chiêu được đọc bằng Web Speech (ja-JP), cần có giọng tiếng Nhật trên máy: Windows Settings → Time & Language → Language → thêm 日本語 (kèm Speech). Edge có sẵn giọng "Nanami Online" nghe tự nhiên nhất. Chỉnh mức đọc trong Cài đặt: Tắt / Vừa / Đầy đủ.
+
+## Tùy chọn nâng cao
+- Mô hình **VRM** riêng (vd. tự dựng bằng VRoid Studio), ảnh chân dung và ảnh cut-in vẽ tay: xem [assets/README.md](assets/README.md). Game ưu tiên dùng các file này nếu có.
+- `?no3d` để chơi bản 2D cổ điển, `?2dchars` để xem nhân vật 2D trong map 3D.
+- Nhạc riêng: Cài đặt → chọn file nhạc trên máy (chỉ lưu trong trình duyệt, không tải lên đâu).
+
+## Cấu trúc mã
+`js/data.js` (nhân vật, thức, quỷ, màn, bản dịch) · `js/game.js` (luật chơi) · `js/ui.js` + `js/guide.js` (giao diện canvas) · `js/render3d.js`, `js/world3d.js`, `js/model3d.js` (đồ họa 3D) · `js/portrait3d.js` (chân dung 3D cho giao diện) · `stats.html` (trang chỉ số, đọc thẳng từ `js/data.js`). Deploy tự động lên GitHub Pages khi push lên `main`.
+
+---
+Kimetsu no Yaiba © Koyoharu Gotouge / Shueisha, ufotable. Đây là fan game phi thương mại, không liên quan tới chủ sở hữu bản quyền.
