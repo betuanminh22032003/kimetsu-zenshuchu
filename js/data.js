@@ -31,7 +31,7 @@ const STYLES = {
       F(KATA[6], 'ねじれ渦', 'ねじれうず', 'Nữu Oa — xoáy nước vặn mình', 'spin', { dmg: 18, cost: 20, hits: 5, r: 160 }),
       F(KATA[7], '雫波紋突き', 'しずくはもんづき', 'Đích Ba Văn Đột — đâm nhanh nhất, gợn sóng', 'thrust', { dmg: 55, cost: 12, len: 300 }),
       F(KATA[8], '滝壷', 'たきつぼ', 'Lung Hồ — bổ xuống như thác đổ', 'slam', { dmg: 70, cost: 22, r: 200 }),
-      F(KATA[9], '水流飛沫・乱', 'すいりゅうしぶき・らん', 'Thủy Lưu Phi Mạt · Loạn — lướt nước, bất khả xâm phạm', 'dashSlash', { dmg: 16, cost: 18, dist: 460, hits: 6, inv: 1, hop: 1 }),
+      F(KATA[9], '水流飛沫・乱', 'すいりゅうしぶき・らん', 'Thủy Lưu Phi Mạt · Loạn — chạm đất tối thiểu, lướt liên tục mà chém', 'dashSlash', { dmg: 16, cost: 18, dist: 460, hits: 6, inv: 1, hop: 1 }),
       F(KATA[10], '生生流転', 'せいせいるてん', 'Sinh Sinh Lưu Chuyển — rồng nước, càng xoay càng mạnh', 'dragon', { dmg: 16, cost: 34, hits: 9, grow: 1, big: 1 }),
     ]
   },
@@ -50,7 +50,7 @@ const STYLES = {
       F(null, '斜陽転身', 'しゃようてんしん', 'Tà Dương Chuyển Thân — lộn ngược chém ngang cổ', 'flip', { dmg: 50, cost: 20, hits: 1, dist: 120, back: 1 }),
       F(null, '飛輪陽炎', 'ひりんかげろう', 'Phi Luân Dương Viêm — lưỡi kiếm ẩn trong ảo nhiệt', 'slash', { dmg: 65, cost: 22, r: 240, a0: -0.5, a1: 0.5, flat: 1, haze: 1, w: 30 }),
       F(null, '輝輝恩光', 'ききおんこう', 'Huy Huy Ân Quang — xoắn ốc bay lên', 'rise', { dmg: 22, cost: 22, hits: 4 }),
-      F(null, '火車', 'かしゃ', 'Hỏa Xa — lộn ra sau lưng địch, chém dọc', 'flip', { dmg: 32, cost: 20, hits: 2, dist: 260 }),
+      F(null, '火車', 'かしゃ', 'Hỏa Xa — nhảy lộn vòng, chém dọc từ trên xuống', 'flip', { dmg: 32, cost: 20, hits: 2, dist: 200 }),
       F(null, '幻日虹', 'げんにちこう', 'Huyễn Nhật Hồng — ảo ảnh né tránh', 'buff', { cost: 16, buff: 'evade', dur: 120 }),
       F(null, '炎舞', 'えんぶ', 'Viêm Vũ — hai nhát dọc rồi ngang', 'multi', { dmg: 40, cost: 20, n: 2, r: 160 }),
       F([ '拾参ノ型', 'じゅうさんのかた' ], '', '', 'Thập Tam Hình — nối liền 12 thức không ngừng nghỉ', 'combo13', { dmg: 20, cost: 60, big: 1 }),
@@ -77,7 +77,7 @@ const STYLES = {
       F(KATA[8], '爆裂猛進', 'ばくれつもうしん', 'Bạo Liệt Mãnh Tiến — húc thẳng', 'dashSlash', { dmg: 40, cost: 18, dist: 420, hits: 2, body: 1 }),
       F(KIBA[9], '伸・うねり裂き', 'しん・うねりざき', 'Thân · Uốn Lượn Liệt — vặn khớp vươn dài', 'whip', { dmg: 50, cost: 18, len: 340 }),
       F(KIBA[10], '円転旋牙', 'えんてんせんが', 'Viên Chuyển Toàn Nha — xoay tròn như lốc', 'spin', { dmg: 20, cost: 22, hits: 5, r: 160 }),
-      F(null, '思いつきの投げ裂き', 'おもいつきのなげさき', 'Ném Liệt Ngẫu Hứng — ném kiếm (nanh thứ 11)', 'throw', { dmg: 45, cost: 16 }),
+      F(null, '思いつきの投げ裂き', 'おもいつきのなげさき', 'Ném Liệt Ngẫu Hứng — ném kiếm răng cưa', 'throw', { dmg: 45, cost: 16 }),
     ]
   },
   flame: {
@@ -144,7 +144,7 @@ const STYLES = {
       F(KATA[5], '木枯らし颪', 'こがらしおろし', 'Mộc Khô Ma — gió lạnh từ trên giáng xuống', 'slam', { dmg: 65, cost: 20, r: 200 }),
       F(KATA[6], '黒風烟嵐', 'こくふうえんらん', 'Hắc Phong Yên Lam — chém vút lên', 'slash', { dmg: 60, cost: 20, r: 180, a0: 1.2, a1: -1.6, w: 40 }),
       F(KATA[7], '勁風・天狗風', 'けいふう・てんぐかぜ', 'Kính Phong · Thiên Cẩu Phong — từ trên cao bổ xuống', 'slam', { dmg: 55, cost: 20, r: 180, air: 1 }),
-      F(KATA[8], '初烈風斬り', 'しょれっかざきり', 'Sơ Liệt Phong Trảm — một nhát gió cực mạnh', 'dashSlash', { dmg: 75, cost: 22, dist: 380, hits: 1 }),
+      F(KATA[8], '初烈風斬り', 'しょれつかざきり', 'Sơ Liệt Phong Trảm — một nhát gió cực mạnh', 'dashSlash', { dmg: 75, cost: 22, dist: 380, hits: 1 }),
       F(KATA[9], '韋駄天台風', 'いだてんたいふう', 'Vi Đà Thiên Đài Phong — bão xoay trên không', 'flip', { dmg: 26, cost: 28, hits: 4, dist: 200, air: 1, big: 1 }),
     ]
   },
@@ -178,75 +178,90 @@ STYLES.water11.forms = STYLES.water.forms.concat([
 
 // ---------------- CHARACTERS ----------------
 // look: drawing spec used by draw.js
+// atk: damage dealt x, def: damage taken x, brRegen: breath regen x, hpRegen/poisonRes: canon traits; pros/cons shown in guide
 const CHARS = {
   tanjiro: {
-    name: '竈門炭治郎', kana: 'かまどたんじろう', vn: 'Kamado Tanjiro', styles: ['water', 'sun'], hp: 220, br: 100, speed: 5.4, voice: 1.15,
+    name: '竈門炭治郎', kana: 'かまどたんじろう', vn: 'Kamado Tanjiro', styles: ['water', 'sun'], hp: 230, br: 100, speed: 5.4, atk: 1.0, def: 0.95, brRegen: 1.0, voice: 1.15,
     look: { hair: '#5a1d1d', hairTip: '#a33', style: 'tanjiro', haori: 'check', h1: '#1d6b4a', h2: '#111', skin: '#f3d2b3', blade: '#1a1a1a', edge: '#ddd', scar: 1, earring: 1, box: 1 },
+    pros: 'Toàn diện, 2 bộ hơi thở; đầu cứng, ý chí kiên cường (chịu đòn khá)', cons: 'Hinokami rất tốn hơi, không có chỉ số nào nổi trội',
     lines: { start: '全集中！', win: '俺は長男だから我慢できたけど…' }
   },
   nezuko: {
-    name: '竈門禰豆子', kana: 'かまどねずこ', vn: 'Kamado Nezuko', styles: ['blood'], hp: 260, br: 100, speed: 5.8, voice: 1.6, kick: 1,
+    name: '竈門禰豆子', kana: 'かまどねずこ', vn: 'Kamado Nezuko', styles: ['blood'], hp: 260, br: 100, speed: 5.8, atk: 1.1, def: 0.9, brRegen: 1.0, hpRegen: 0.04, voice: 1.6, kick: 1,
     look: { hair: '#1b1010', hairTip: '#d0573b', style: 'nezuko', haori: 'plain', h1: '#c46186', h2: '#7a3654', kimono: '#f2b8c6', skin: '#fbe2d0', muzzle: 1, ribbon: '#e6748e', noSword: 1 },
+    pros: 'Quỷ: TỰ HỒI MÁU liên tục, cú đá rất mạnh, 爆血 giải độc cả đội', cons: 'Chỉ có 1 thuật, đánh cận chiến bằng chân',
     lines: { start: 'ムー！', win: 'ムー♪' }
   },
   zenitsu: {
-    name: '我妻善逸', kana: 'あがつまぜんいつ', vn: 'Agatsuma Zenitsu', styles: ['thunder'], hp: 180, br: 100, speed: 6.2, voice: 1.4, iai: 1,
+    name: '我妻善逸', kana: 'あがつまぜんいつ', vn: 'Agatsuma Zenitsu', styles: ['thunder'], hp: 170, br: 100, speed: 6.6, atk: 1.15, def: 1.15, brRegen: 1.0, voice: 1.4, iai: 1,
     look: { hair: '#f2c832', hairTip: '#e08a1e', style: 'zenitsu', haori: 'tri', h1: '#f4c430', h2: '#fff', skin: '#f6d9bd', blade: '#ccc', edge: '#ffef80', sleepy: 1 },
+    pros: 'Nhanh nhất game, rút kiếm 霹靂一閃 sát thương rất cao', cons: 'Mỏng máu, nhát gan (chịu đòn kém), chỉ biết thức 1 và thức 7',
     lines: { start: 'シィィィ…', win: '禰豆子ちゃーん！' }
   },
   inosuke: {
-    name: '嘴平伊之助', kana: 'はしびらいのすけ', vn: 'Hashibira Inosuke', styles: ['beast'], hp: 210, br: 100, speed: 6.0, voice: 0.85, dual: 1,
+    name: '嘴平伊之助', kana: 'はしびらいのすけ', vn: 'Hashibira Inosuke', styles: ['beast'], hp: 230, br: 100, speed: 6.2, atk: 1.05, def: 0.9, brRegen: 0.9, voice: 0.85, dual: 1,
     look: { hair: '#222', style: 'boar', haori: 'none', h1: '#6b5a48', h2: '#3b3b3b', skin: '#e9c7a6', blade: '#99a', edge: '#ccd', saw: 1, shirtless: 1, pelt: 1 },
+    pros: 'Cơ thể dẻo dai, da dày, song kiếm hoang dã, 空間識覚 tăng chí mạng', cons: 'Hơi thở tự học nên hồi hơi chậm',
     lines: { start: '猪突猛進！猪突猛進！', win: '伊之助様の勝ちだ！' }
   },
   kanao: {
-    name: '栗花落カナヲ', kana: 'つゆりかなを', vn: 'Tsuyuri Kanao', styles: ['flower'], hp: 190, br: 100, speed: 6.0, voice: 1.5,
+    name: '栗花落カナヲ', kana: 'つゆりかなを', vn: 'Tsuyuri Kanao', styles: ['flower'], hp: 180, br: 100, speed: 6.2, atk: 1.0, def: 1.05, brRegen: 1.05, voice: 1.5,
     look: { hair: '#2a1530', hairTip: '#4a2050', style: 'kanao', haori: 'cape', h1: '#fff', h2: '#ddd', skin: '#fbe0cf', blade: '#bbb', edge: '#f7a6c8', clip: 1 },
+    pros: 'Thị lực siêu phàm, kỹ thuật chính xác, 彼岸朱眼 làm chậm cả trận', cons: 'Thân thể mảnh, chiêu mắt tốn máu',
     lines: { start: '…', win: '姉さん…' }
   },
   giyu: {
-    name: '冨岡義勇', kana: 'とみおかぎゆう', vn: 'Tomioka Giyu — Thủy Trụ', styles: ['water11'], hp: 260, br: 120, speed: 5.6, voice: 0.85,
+    name: '冨岡義勇', kana: 'とみおかぎゆう', vn: 'Tomioka Giyu — Thủy Trụ', styles: ['water11'], hp: 270, br: 130, speed: 5.6, atk: 1.1, def: 0.85, brRegen: 1.2, voice: 0.85,
     look: { hair: '#14141c', style: 'giyu', haori: 'giyu', h1: '#7a1e22', h2: '#2a6a3a', h3: '#d8b040', skin: '#efd0b5', blade: '#2b4a8a', edge: '#cfe0ff' },
+    pros: 'Trụ cột: phòng thủ vững nhất, hồi hơi nhanh, 凪 chém tan mọi đòn', cons: 'Không có đòn đánh xa, tốc độ trung bình',
     lines: { start: '俺は嫌われていない', win: '生殺与奪の権を他人に握らせるな' }
   },
   rengoku: {
-    name: '煉獄杏寿郎', kana: 'れんごくきょうじゅろう', vn: 'Rengoku Kyojuro — Viêm Trụ', styles: ['flame'], hp: 300, br: 120, speed: 5.8, voice: 0.95,
+    name: '煉獄杏寿郎', kana: 'れんごくきょうじゅろう', vn: 'Rengoku Kyojuro — Viêm Trụ', styles: ['flame'], hp: 300, br: 120, speed: 5.8, atk: 1.25, def: 0.85, brRegen: 1.0, voice: 0.95,
     look: { hair: '#f6c537', hairTip: '#d2352c', style: 'rengoku', haori: 'flame', h1: '#fff', h2: '#e2421c', skin: '#f3d0b0', blade: '#c0301c', edge: '#ffb070' },
+    pros: 'Hỏa lực cực cao, máu trâu, 煉獄 là đòn đơn mạnh nhất', cons: 'Ít thức (6), đòn lửa tốn hơi',
     lines: { start: '心を燃やせ！', win: 'うまい！うまい！' }
   },
   shinobu: {
-    name: '胡蝶しのぶ', kana: 'こちょうしのぶ', vn: 'Kocho Shinobu — Trùng Trụ', styles: ['insect'], hp: 170, br: 120, speed: 6.4, voice: 1.45, rapier: 1,
+    name: '胡蝶しのぶ', kana: 'こちょうしのぶ', vn: 'Kocho Shinobu — Trùng Trụ', styles: ['insect'], hp: 150, br: 120, speed: 6.8, atk: 0.7, def: 1.25, brRegen: 1.1, voice: 1.45, rapier: 1,
     look: { hair: '#1a1028', hairTip: '#6a2f9a', style: 'shinobu', haori: 'butterfly', h1: '#fff', h2: '#7a3cb0', skin: '#fbe3d2', blade: '#80b0a0', edge: '#c0f0e0', clip: 1 },
+    pros: 'Đâm nhanh nhất, độc tích tụ làm quỷ mất máu và giảm hồi máu', cons: 'Sức yếu nhất — không chém đứt cổ quỷ (sát thương thấp), rất mỏng máu',
     lines: { start: 'あらあら', win: '鬼と仲良くする夢を見ているんです' }
   },
   tengen: {
-    name: '宇髄天元', kana: 'うずいてんげん', vn: 'Uzui Tengen — Âm Trụ', styles: ['sound'], hp: 290, br: 120, speed: 6.0, voice: 0.8, cleaver: 1,
+    name: '宇髄天元', kana: 'うずいてんげん', vn: 'Uzui Tengen — Âm Trụ', styles: ['sound'], hp: 290, br: 120, speed: 6.0, atk: 1.15, def: 0.85, brRegen: 1.0, poisonRes: 0.4, voice: 0.8, cleaver: 1,
     look: { hair: '#e8e8f0', style: 'tengen', haori: 'none', h1: '#334', h2: '#222', skin: '#f0cfb2', blade: '#ccc', edge: '#ffd27a', gems: 1, sleeveless: 1, paint: 1 },
+    pros: 'Cựu nhẫn giả: KHÁNG ĐỘC (độc chỉ còn 40% thời gian), máu trâu, nổ diện rộng', cons: 'Chỉ 3 thức, đòn nổ có độ trễ',
     lines: { start: '派手に行くぜ！', win: '地味に終わったな…いや、ド派手だ！' }
   },
   mitsuri: {
-    name: '甘露寺蜜璃', kana: 'かんろじみつり', vn: 'Kanroji Mitsuri — Luyến Trụ', styles: ['love'], hp: 230, br: 120, speed: 6.0, voice: 1.6, whipBlade: 1,
+    name: '甘露寺蜜璃', kana: 'かんろじみつり', vn: 'Kanroji Mitsuri — Luyến Trụ', styles: ['love'], hp: 240, br: 120, speed: 6.2, atk: 1.2, def: 0.95, brRegen: 1.0, voice: 1.6, whipBlade: 1,
     look: { hair: '#f48fb7', hairTip: '#9ad06a', style: 'mitsuri', haori: 'cape', h1: '#fff', h2: '#eee', skin: '#fbe0cf', blade: '#f5a0c0', edge: '#fff' },
+    pros: 'Cơ bắp đặc gấp 8 lần — rất khỏe, kiếm roi tầm xa và cực dẻo', cons: 'Đòn quất rộng nhưng từng nhát nhẹ',
     lines: { start: 'キュンキュンしちゃう！', win: 'やったぁ！' }
   },
   muichiro: {
-    name: '時透無一郎', kana: 'ときとうむいちろう', vn: 'Tokito Muichiro — Hà Trụ', styles: ['mist'], hp: 220, br: 120, speed: 6.4, voice: 1.3,
+    name: '時透無一郎', kana: 'ときとうむいちろう', vn: 'Tokito Muichiro — Hà Trụ', styles: ['mist'], hp: 210, br: 120, speed: 6.6, atk: 1.1, def: 1.05, brRegen: 1.15, voice: 1.3,
     look: { hair: '#14141c', hairTip: '#4cc3b8', style: 'muichiro', haori: 'none', h1: '#2a2a3a', h2: '#222', skin: '#f6dcc8', blade: '#cfe8e8', edge: '#fff', baggy: 1 },
+    pros: 'Thiên tài: rất nhanh, hồi hơi nhanh, 朧 ẩn thân đòn kế x2', cons: 'Thân hình nhỏ, chịu đòn hơi kém',
     lines: { start: '俺は時透無一郎だ', win: 'すぐに忘れるから' }
   },
   obanai: {
-    name: '伊黒小芭内', kana: 'いぐろおばない', vn: 'Iguro Obanai — Xà Trụ', styles: ['serpent'], hp: 230, br: 120, speed: 6.2, voice: 1.0, curved: 1,
+    name: '伊黒小芭内', kana: 'いぐろおばない', vn: 'Iguro Obanai — Xà Trụ', styles: ['serpent'], hp: 210, br: 120, speed: 6.4, atk: 1.05, def: 1.05, brRegen: 1.05, voice: 1.0, curved: 1,
     look: { hair: '#15151c', style: 'obanai', haori: 'stripe', h1: '#eee', h2: '#333', skin: '#f2d6c0', blade: '#8a7aaa', edge: '#e0d0ff', mask: 1, snake: 1, hetero: 1 },
+    pros: 'Đòn uốn lượn khó đoán, nhanh, chính xác', cons: 'Thể hình nhỏ, chịu đòn hơi kém',
     lines: { start: '信用しない 信用しない', win: 'ネチネチ…' }
   },
   sanemi: {
-    name: '不死川実弥', kana: 'しなずがわさねみ', vn: 'Shinazugawa Sanemi — Phong Trụ', styles: ['wind'], hp: 280, br: 120, speed: 6.2, voice: 0.8,
+    name: '不死川実弥', kana: 'しなずがわさねみ', vn: 'Shinazugawa Sanemi — Phong Trụ', styles: ['wind'], hp: 290, br: 120, speed: 6.2, atk: 1.2, def: 0.95, brRegen: 1.0, voice: 0.8,
     look: { hair: '#eef0ee', style: 'sanemi', haori: 'plain', h1: '#f3f3f3', h2: '#ccc', skin: '#f0cfb2', blade: '#5a9a6a', edge: '#e0ffe0', scars: 1, openChest: 1, kanji: '殺' },
+    pros: 'Hung bạo: đánh rất mạnh, nhiều thức gió, chịu thương tích cực giỏi', cons: 'Lao vào liều lĩnh — ít đòn phòng thủ',
     lines: { start: 'ぶっ殺してやる！', win: 'チッ' }
   },
   gyomei: {
-    name: '悲鳴嶼行冥', kana: 'ひめじまぎょうめい', vn: 'Himejima Gyomei — Nham Trụ', styles: ['stone'], hp: 380, br: 120, speed: 5.0, voice: 0.6, flailW: 1, scale: 1.25,
+    name: '悲鳴嶼行冥', kana: 'ひめじまぎょうめい', vn: 'Himejima Gyomei — Nham Trụ', styles: ['stone'], hp: 380, br: 120, speed: 5.0, atk: 1.3, def: 0.8, brRegen: 1.0, voice: 0.6, flailW: 1, scale: 1.25,
     look: { hair: '#222', style: 'gyomei', haori: 'gyomei', h1: '#7a5a2a', h2: '#3a2a1a', skin: '#c9a07a', blade: '#888', edge: '#ccc', beads: 1, blind: 1 },
+    pros: 'Trụ cột MẠNH NHẤT: sát thương và máu cao nhất, 岩軀の膚 giảm 70% sát thương', cons: 'Chậm nhất game',
     lines: { start: '南無阿弥陀仏…', win: 'ああ…なんと哀れな' }
   },
 };
@@ -270,7 +285,7 @@ const BOSSES = {
       { n: '', type: 'proj', tele: 40, dmg: 14, cd: 90, count: 6, speed: 9, size: 22, color: '#e8b030', shape: 'temari', bounce: 1, spread: 1 },
       { n: '', type: 'melee', tele: 25, dmg: 18, cd: 60, range: 150 },
     ],
-    p2: [{ n: '血鬼術 紅潔の矢印', type: 'lines', tele: 50, dmg: 18, cd: 90, count: 4, style: 'arrow' }],
+    p2: [{ n: '六本腕の手毬', type: 'proj', tele: 35, dmg: 14, cd: 80, count: 6, speed: 11, size: 22, color: '#e04040', shape: 'temari', bounce: 1, spread: 1 }], // grows six arms
   },
   kyogai: {
     name: '響凱', kana: 'きょうがい', title: '元・下弦の陸', hp: 1300, regen: 0.06, speed: 1.4, w: 110, h: 210, look: 'kyogai',
@@ -313,17 +328,17 @@ const BOSSES = {
       { n: '破壊殺・鬼芯八重芯', type: 'proj', tele: 30, dmg: 20, cd: 70, count: 8, speed: 15, size: 22, color: '#6cf', shape: 'fist', spread: 1 },
     ],
   },
-  akaza2: { // Infinity Castle rematch
-    name: '猗窩座', kana: 'あかざ', title: '上弦の参', hp: 4200, regen: 0.45, speed: 3.8, w: 70, h: 170, look: 'akaza', rank: '上参', neckRegen: 1,
+  akaza2: { // Infinity Castle rematch — only 2 slayers, so tuned below Douma/Kokushibo
+    name: '猗窩座', kana: 'あかざ', title: '上弦の参', hp: 3500, regen: 0.28, speed: 3.5, w: 70, h: 170, look: 'akaza', rank: '上参', neckRegen: 1,
     atks: [
-      { n: '破壊殺・空式', type: 'proj', tele: 22, dmg: 18, cd: 45, count: 5, speed: 17, size: 24, color: '#6cf', shape: 'fist' },
-      { n: '破壊殺・砕式 万葉閃柳', type: 'shock', tele: 30, dmg: 28, cd: 80 },
-      { n: '破壊殺・脚式 飛遊星千輪', type: 'dash', tele: 26, dmg: 30, cd: 70 },
-      { n: '破壊殺・乱式', type: 'melee', tele: 20, dmg: 24, cd: 45, range: 200, multi: 5 },
+      { n: '破壊殺・空式', type: 'proj', tele: 26, dmg: 16, cd: 55, count: 4, speed: 16, size: 24, color: '#6cf', shape: 'fist' },
+      { n: '破壊殺・砕式 万葉閃柳', type: 'shock', tele: 34, dmg: 24, cd: 90 },
+      { n: '破壊殺・脚式 飛遊星千輪', type: 'dash', tele: 30, dmg: 26, cd: 80 },
+      { n: '破壊殺・乱式', type: 'melee', tele: 24, dmg: 20, cd: 55, range: 200, multi: 4 },
     ],
     p2: [
-      { n: '破壊殺・終式 青銀乱残光', type: 'storm', tele: 60, dmg: 22, cd: 200 },
-      { n: '破壊殺・鬼芯八重芯', type: 'proj', tele: 26, dmg: 20, cd: 60, count: 8, speed: 16, size: 22, color: '#6cf', shape: 'fist', spread: 1 },
+      { n: '破壊殺・終式 青銀乱残光', type: 'storm', tele: 66, dmg: 18, cd: 240 },
+      { n: '破壊殺・鬼芯八重芯', type: 'proj', tele: 30, dmg: 18, cd: 70, count: 7, speed: 15, size: 22, color: '#6cf', shape: 'fist', spread: 1 },
     ],
   },
   daki: {
@@ -408,7 +423,7 @@ const BOSSES = {
   // ---- story waves: the demons met on the way to each arc's boss
   yahaba: { name: '矢琶羽', kana: 'やはば', title: '十二鬼月を名乗る鬼', hp: 800, regen: 0.05, speed: 1.6, w: 80, h: 170, look: 'yahaba',
     atks: [
-      { n: '血鬼術 紅潔の矢印', type: 'lines', tele: 45, dmg: 16, cd: 80, count: 3, style: 'arrow' },
+      { n: '血鬼術 紅潔の矢', type: 'lines', tele: 45, dmg: 16, cd: 80, count: 3, style: 'arrow' },
       { n: '', type: 'proj', tele: 30, dmg: 12, cd: 80, count: 3, speed: 9, size: 14, color: '#ff4848', shape: 'orb', homing: 0.06 },
       { n: '', type: 'melee', tele: 25, dmg: 14, cd: 60, range: 140 },
     ] },

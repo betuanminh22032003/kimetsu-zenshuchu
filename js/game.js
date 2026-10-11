@@ -222,6 +222,7 @@ function damageEnemy(b, grp, hx, hy) {
   G.combo = (G.comboT > 0 ? G.combo || 0 : 0) + (G.lastMove && G.lastMove !== mv ? 2 : 1); G.comboT = 120; G.lastMove = mv; G.comboMax = Math.max(G.comboMax || 0, G.combo);
   d *= 1 + Math.min(G.combo, 50) * 0.01;
   if (b.stunT > 0) { d *= 1.5; crit = true; }
+  if (P) d *= P.ch.atk || 1;
   // posture: techniques break a demon's stance far faster than plain slashes
   if (boss && !(b.stunT > 0)) { b.post = (b.post || 0) + d * (isNormal ? 0.18 : 0.75); b.postT = 120; if (b.post >= postMax(b)) stagger(b); }
   if (b.pending) d = 0;
@@ -277,7 +278,7 @@ function checkBossDeath(b) {
     banner('本体を探せ！', 'Đó không phải bản thể! Chém con quỷ nhỏ 「恨」!', 150); return;
   }
   if (d.neckRegen && !b.revived) {
-    b.revived = 1; b.hp = b.maxhp * 0.35;
+    b.revived = 1; b.hp = b.maxhp * 0.25;
     banner('頸を斬っても…再生する！？', 'Chém cổ rồi mà vẫn tái sinh!? Đánh tiếp!', 150); Audio.sfx.gong(); return;
   }
   if (G.S.boss2 && !d.minion && (b.key === G.S.boss || b.key === G.S.boss2)) {
@@ -333,9 +334,10 @@ function hurtPlayer(P, dmg, sx, opts) {
   if (P.buffs.guard) dmg *= 0.3;
   G.cz = P.z || 0;
   G.combo = 0; G.comboT = 0;
+  dmg *= P.ch.def || 1;
   P.hp -= dmg; P.inv = 45; P.hurtT = 16; P.cast = null; P.swing = undefined; P.spin = 0;
   P.vx = Math.sign(P.x - sx || 1) * 6; P.vy = -5;
-  if (opts && opts.poison) P.poison = 360;
+  if (opts && opts.poison) P.poison = Math.round(360 * (P.ch.poisonRes || 1));
   if (P.sleep) P.sleep = Math.max(0, P.sleep - 0.3);
   addText(P.x, P.y - 160, '-' + Math.round(dmg), '#ff5050', 24);
   particles('demon', P.x, P.y - 80, 10, 5, { k: 'blood', g: 0.3 });
@@ -901,7 +903,8 @@ function updatePlayer(P) {
   if (pressed('ShiftLeft', 'ShiftRight', 'KeyI') && P.dashCd <= 0) { const l = Math.hypot(mv, mz); P.dashDir = l ? [mv / l, mz / l] : [P.face, 0]; P.dashAge = 0; P.dodged = false; P.dashT = 11; P.dashCd = 34; P.inv = Math.max(P.inv, 13); if (mv) P.face = mv; Audio.sfx.wind(); }
   if (P.bufK > 0) { P.bufK = 0; tryCast(P); }
   else if (P.bufJ > 0 || held('KeyJ')) { P.bufJ = 0; beginNormal(P, 0); }
-  P.br = Math.min(P.maxbr, P.br + 0.09);
+  P.br = Math.min(P.maxbr, P.br + 0.09 * (P.ch.brRegen || 1));
+  if (P.ch.hpRegen) P.hp = Math.min(P.maxhp, P.hp + P.ch.hpRegen);
   physics(P);
 }
 const PALETTE_KEYS = ['Digit1', 'Digit2', 'Digit3', 'Digit4', 'Digit5', 'Digit6', 'Digit7', 'Digit8', 'Digit9', 'Digit0', 'Minus', 'Equal', 'BracketLeft', 'BracketRight'];
@@ -1229,7 +1232,7 @@ function battleStep() {
   if (!G.over) handleSelectionInput();
   const P = activeP();
   if (!G.over || G.over === 'win') updatePlayer(P);
-  for (const p of G.team) if (p !== P && !p.down) { p.br = Math.min(p.maxbr, p.br + 0.15); p.hp = Math.min(p.maxhp, p.hp + 0.02); }
+  for (const p of G.team) if (p !== P && !p.down) { p.br = Math.min(p.maxbr, p.br + 0.15 * (p.ch.brRegen || 1)); p.hp = Math.min(p.maxhp, p.hp + 0.02 + (p.ch.hpRegen || 0)); }
 
   for (const b of G.bosses) {
     b.acc += G.slow;

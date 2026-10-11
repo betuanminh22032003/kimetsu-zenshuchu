@@ -155,7 +155,21 @@ function renderMoveList() {
   if (ps) {
     seal(dx + 18, dy + 64, 30, '型');
     T(ps[0] + ' · Lối chơi', dx + 56, dy + 84, { size: 14, font: JPF, col: '#fff' });
-    wrap(ps[1], 228, 12, UIF).forEach((l, i) => T(l, dx + 18, dy + 112 + i * 16, { size: 12, col: '#d8d0e4' }));
+    let yy = dy + 112;
+    wrap(ps[1], 228, 12, UIF).forEach(l => { T(l, dx + 18, yy, { size: 12, col: '#d8d0e4' }); yy += 16; });
+    // canon strengths / weaknesses + stat bars
+    yy += 6;
+    if (ch.pros) wrap('強 ' + ch.pros, 228, 11, UIF).forEach(l => { T(l, dx + 18, yy, { size: 11, col: '#9fe0a0', weight: 600 }); yy += 14; });
+    if (ch.cons) wrap('弱 ' + ch.cons, 228, 11, UIF).forEach(l => { T(l, dx + 18, yy, { size: 11, col: '#ff9a9a', weight: 600 }); yy += 14; });
+    yy += 4;
+    const bars = [['体', 'Máu', ch.hp / 380], ['攻', 'Công', ((ch.atk || 1) - 0.6) / 0.7], ['守', 'Thủ', (1.35 - (ch.def || 1)) / 0.55], ['速', 'Tốc', (ch.speed - 4.6) / 2.2], ['息', 'Hơi', (ch.br / 130) * 0.6 + ((ch.brRegen || 1) - 0.8) ]];
+    bars.forEach(([jp, vn, v]) => {
+      v = clamp(v, 0.05, 1);
+      T(jp + ' ' + vn, dx + 18, yy + 9, { size: 10, col: COL.dim, weight: 600 });
+      ctx.fillStyle = 'rgba(255,255,255,.08)'; ctx.fillRect(dx + 70, yy + 2, 160, 7);
+      ctx.fillStyle = th0.m; ctx.fillRect(dx + 70, yy + 2, 160 * v, 7);
+      yy += 12;
+    });
   }
   // form list
   const lx = dx + 262, lw = dw - 262 - 14;
