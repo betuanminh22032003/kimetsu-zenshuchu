@@ -10,6 +10,7 @@ const JPF = '"Shippori Mincho B1","Yu Mincho","Hiragino Mincho ProN","MS Mincho"
 const UIF = '"Be Vietnam Pro","Segoe UI","Noto Sans",sans-serif';
 if (document.fonts) ['Yuji Syuku', 'Shippori Mincho B1', 'Be Vietnam Pro'].forEach(f => { document.fonts.load(`30px "${f}"`, '鬼滅の刃 全集中 Việt').catch(() => { }); document.fonts.load(`bold 30px "${f}"`, '鬼滅 Việt').catch(() => { }); });
 
+const GAME_VERSION = '1.0.0';
 const COL = { ink: '#0d0b12', ink2: '#17131f', crimson: '#b3122e', crimson2: '#e0324e', gold: '#d9b66a', gold2: '#f3dca0', paper: '#efe4cc', dim: '#9d95ad', wis: '#a68bdc' };
 const STYLE_VN = { water: 'Hơi thở của Nước', sun: 'Hơi thở Mặt Trời', thunder: 'Hơi thở Sấm Sét', beast: 'Hơi thở Dã Thú', flame: 'Hơi thở Lửa', insect: 'Hơi thở Côn Trùng', love: 'Hơi thở Tình Yêu', mist: 'Hơi thở Sương Mù', sound: 'Hơi thở Âm Thanh', serpent: 'Hơi thở Rắn', wind: 'Hơi thở Gió', stone: 'Hơi thở Đá', flower: 'Hơi thở Hoa', blood: 'Huyết Quỷ Thuật' };
 const BUFF_N = { sense: ['空間識覚', 'Cảm nhận'], evade: ['幻日虹', 'Ảo ảnh'], invis: ['朧', 'Ẩn thân'], guard: ['岩軀の膚', 'Giáp đá'], nagi: ['凪', 'Phong lặng'], slow: ['彼岸朱眼', 'Mắt chậm'] };
@@ -208,15 +209,15 @@ function keycap(k, x, y, o) {
   T(k, x + w / 2, y - 2, { size: sz, col: COL.gold2, align: 'center', weight: 600 });
   return w;
 }
+// key hint: keycap + Vietnamese label (the Japanese verb stays in the call sites but is not shown)
 function hint(k, jp, vn, x, y) {
-  let w = keycap(k, x, y); w += 6;
-  w += T(jp, x + w, y - 2, { size: 14, col: '#fff', font: JPF }) + 4;
-  w += T(vn, x + w, y - 2, { size: 12, col: COL.dim });
-  return w + 18;
+  let w = keycap(k, x, y); w += 7;
+  w += T(vn, x + w, y - 2, { size: 13, col: '#efe6f6', weight: 600 });
+  return w + 20;
 }
 function hintsWidth(list) {
   let t = 0;
-  for (const [k, jp, vn] of list) { ctx.font = `600 12px ${UIF}`; t += Math.max(20, ctx.measureText(k).width + 12) + 6 + measure(jp, 14, JPF) + 4 + measure(vn, 12, UIF) + 18; }
+  for (const [k, , vn] of list) { ctx.font = `600 12px ${UIF}`; t += Math.max(20, ctx.measureText(k).width + 12) + 7 + measure(vn, 13, UIF, 600) + 20; }
   return t;
 }
 function hints(list, x, y, align) {
@@ -224,11 +225,12 @@ function hints(list, x, y, align) {
   let xx = align === 'center' ? x - total / 2 : align === 'right' ? x - total : x;
   for (const h of list) xx += hint(h[0], h[1], h[2], xx, y);
 }
-// bilingual stacked label
+// bilingual stacked label — Vietnamese is the main line, Japanese a small line under it
 function bi(jp, vn, x, y, o) {
   o = o || {};
-  T(jp, x, y, { size: o.size || 24, col: o.col || '#fff', align: o.align, font: o.font || JPF, stroke: o.stroke, weight: o.weight, glow: o.glow });
-  T(vn, x, y + (o.gap || (o.size || 24) * 0.75), { size: o.vsize || Math.max(11, (o.size || 24) * 0.46), col: o.vcol || COL.dim, align: o.align, stroke: o.stroke ? 3 : 0, weight: o.vweight || 600 });
+  const size = o.size || 24, main = Math.round(size * 0.8);
+  T(vn, x, y, { size: main, col: o.col || '#fff', align: o.align, stroke: o.stroke, weight: 800, glow: o.glow });
+  T(jp, x, y + (o.gap || size * 0.75), { size: Math.max(12, Math.round(size * 0.44)), col: o.vcol || COL.gold2, align: o.align, font: JPF, stroke: o.stroke ? 3 : 0, weight: 600, alpha: 0.85 });
 }
 function portrait(L, x, y, r, o) {
   o = o || {};
@@ -246,7 +248,9 @@ function portraitRaw(ctx, L, x, y, r, o) {
   const g = ctx.createRadialGradient(x, y - r * 0.3, 2, x, y, r); g.addColorStop(0, shade(th.m, 30)); g.addColorStop(1, shade(th.d, -40));
   ctx.fillStyle = g; ctx.fill(); ctx.clip();
   if (o.grey) ctx.filter = 'grayscale(1) brightness(.5)';
+  const p3 = o.key && !ASSETS.portrait[o.key] && typeof PORTRAIT3D !== 'undefined' ? PORTRAIT3D.get(o.key, 'head') : null;
   if (o.key && ASSETS.portrait[o.key]) { const im = ASSETS.portrait[o.key], k = (r * 2) / Math.min(im.width, im.height); ctx.drawImage(im, x - im.width * k / 2, y - im.height * k / 2, im.width * k, im.height * k); }
+  else if (p3) { const s = r * 2.25; ctx.drawImage(p3, x - s / 2, y - s * 0.46, s, s * p3.height / p3.width); }
   else if (L) { ctx.translate(x - r * 0.08, y + r * 0.12); const s = r / 21; ctx.scale(s, s); withLineScale(ctx, Math.min(1, 1.6 / s + 0.25), () => drawHead(ctx, L, 0, 0, { t: 0 }, 1)); }
   else { ctx.font = `${r}px ${DISP}`; ctx.textAlign = 'center'; ctx.fillStyle = '#ff6070'; ctx.fillText(o.fallback || '鬼', x, y + r * 0.35); }
   ctx.restore();
@@ -258,6 +262,11 @@ function sealText(f, st) {
   return st.theme === 'sun' ? '日' : st.theme === 'blood' ? '血' : '技';
 }
 function vnName(f) { return f.vn.split(' — ')[0]; }
+// 壱ノ型 → Thức 1, 弐ノ牙 → Nanh 2, 蝶ノ舞 → Điệu múa Bướm …
+const KATA_NUM = { '壱': 1, '弐': 2, '参': 3, '肆': 4, '伍': 5, '陸': 6, '漆': 7, '捌': 8, '玖': 9, '拾': 10, '拾壱': 11, '拾参': 13 };
+const KATA_SPECIAL = { '終ノ型': 'Thức cuối', '蝶ノ舞': 'Điệu múa Bướm', '蜂牙ノ舞': 'Điệu múa Ong', '虻咬ノ舞': 'Điệu múa Ruồi trâu', '蜻蛉ノ舞': 'Điệu múa Chuồn chuồn', '蜈蚣ノ舞': 'Điệu múa Rết' };
+function kataVN(k) { if (!k) return ''; if (KATA_SPECIAL[k]) return KATA_SPECIAL[k]; const m = k.match(/^(.+?)ノ(型|牙)$/); return m && KATA_NUM[m[1]] ? (m[2] === '牙' ? 'Nanh ' : 'Thức ') + KATA_NUM[m[1]] : k; }
+function vnSpeaker(k) { return CHARS[k] ? CHARS[k].vn.split(' — ')[0] : BOSS_VN[k] || (SPEAKERS[k] ? SPEAKERS[k].name : k); }
 function vnDesc(f) { return f.vn.split(' — ')[1] || ''; }
 function bgCanvas(key) {
   if (!bgCache[key]) { const c = document.createElement('canvas'); c.width = W; c.height = H; buildBg(c.getContext('2d'), key); bgCache[key] = c; }
@@ -268,10 +277,9 @@ function patternBg(base, p, a) { ctx.fillStyle = base; ctx.fillRect(0, 0, W, H);
 function screenHeader(jp, vn, sealT, right) {
   const g = ctx.createLinearGradient(0, 0, 0, 72); g.addColorStop(0, 'rgba(0,0,0,.7)'); g.addColorStop(1, 'rgba(0,0,0,0)'); ctx.fillStyle = g; ctx.fillRect(0, 0, W, 72);
   seal(30, 14, 46, sealT, { rot: -0.05 });
-  T(jp, 90, 50, { size: 36, font: DISP, col: '#fff', stroke: 4 });
-  const w = measure(jp, 36, DISP);
-  T(vn, 102 + w, 48, { size: 15, col: COL.gold2, weight: 600 });
-  if (right) T(right, W - 30, 46, { size: 13, col: COL.dim, align: 'right', font: JPF });
+  const w = T(vn, 90, 48, { size: 30, col: '#fff', stroke: 4, weight: 800 });
+  T(jp, 104 + w, 46, { size: 17, col: COL.gold2, font: JPF, weight: 600 });
+  if (right) T(right, W - 30, 46, { size: 13, col: COL.dim, align: 'right', weight: 600 });
   ctx.fillStyle = 'rgba(217,182,106,.45)'; ctx.fillRect(30, 70, W - 60, 1);
 }
 
@@ -386,9 +394,10 @@ function renderBattleOverlay() {
     const b = G.bossLine.b, a = Math.min(1, (90 - G.bossLine.t) / 20, G.bossLine.t / 6);
     const bp = R3D.ok ? R3D.project(b.x, b.y - b.hh - 44, b.z) : [b.x, b.y - b.hh - 44];
     const x = clamp(bp[0], 240, W - 240), y = Math.max(150, bp[1]);
-    const vn = G.bossLine.vn, w = Math.max(measure(G.bossLine.s, 22, JPF), vn ? measure(vn, 13, UIF) : 0) + 40;
-    ctx.save(); ctx.globalAlpha = a; ink(x - w / 2, y - 26, w, vn ? 54 : 36, 'rgba(60,0,10,.85)', 1, 3); T(G.bossLine.s, x, y, { size: 22, font: JPF, col: '#ffc4cc', align: 'center', stroke: 4, weight: 600 });
-    if (vn) T(vn, x, y + 20, { size: 13, col: COL.gold2, align: 'center', stroke: 3, weight: 600 });
+    const vn = G.bossLine.vn, w = Math.max(measure(G.bossLine.s, 17, JPF), vn ? measure(vn, 17, UIF, 700) : 0) + 44;
+    ctx.save(); ctx.globalAlpha = a; ink(x - w / 2, y - 26, w, vn ? 56 : 36, 'rgba(60,0,10,.88)', 1, 3);
+    if (vn) { T(vn, x, y - 2, { size: 17, col: '#fff', align: 'center', stroke: 4, weight: 700 }); T(G.bossLine.s, x, y + 20, { size: 14, font: JPF, col: '#ffb8c4', align: 'center', stroke: 3, weight: 600 }); }
+    else T(G.bossLine.s, x, y, { size: 20, font: JPF, col: '#ffc4cc', align: 'center', stroke: 4, weight: 600 });
     ctx.restore();
   }
   if (G.banner) {
@@ -398,17 +407,17 @@ function renderBattleOverlay() {
     ink(W / 2 - 400, y, 800, h, 'rgba(8,6,12,.82)', 1, 5);
     ctx.fillStyle = COL.crimson; ctx.fillRect(W / 2 - 360, y + h - 6, 720, 2);
     if (b.jp) bi(b.jp, b.vn, W / 2, y + 42, { size: 34, align: 'center', font: DISP, vcol: COL.gold2, vsize: 17, gap: 30, stroke: 4 });
-    else T(b.vn, W / 2, y + 32, { size: 18, col: COL.gold2, align: 'center', weight: 600 });
+    else T(b.vn, W / 2, y + 32, { size: 20, col: '#fff', align: 'center', weight: 700 });
     ctx.restore();
   }
   if (G.subs && G.subs.length && !G.over) { // story lines between waves
     const l = G.subs[0], sp = SPEAKERS[l[0]], a = Math.min(1, G.subT / 8, (170 - G.subT) / 14), y = H - 236;
-    const nm = sp ? sp.name : l[0], w = Math.max(measure(l[1], 22, JPF, 600), measure(l[2], 14, UIF)) + 60;
+    const nm = vnSpeaker(l[0]), w = Math.max(measure(l[1], 14, JPF, 600), measure(l[2], 19, UIF, 700)) + 60;
     ctx.save(); ctx.globalAlpha = Math.max(0, a);
     ink(W / 2 - w / 2, y, w, 64, 'rgba(8,6,12,.8)', 1, 7);
-    T(nm, W / 2 - w / 2 + 14, y - 4, { size: 15, font: DISP, col: CHARS[l[0]] ? '#ffe0a8' : '#ff9aa8', stroke: 3 });
-    T(l[1], W / 2, y + 28, { size: 22, font: JPF, col: '#fff', align: 'center', weight: 600, stroke: 3 });
-    T(l[2], W / 2, y + 51, { size: 14, col: '#cfe2ff', align: 'center' });
+    T(nm, W / 2 - w / 2 + 14, y - 4, { size: 15, col: CHARS[l[0]] ? '#ffe0a8' : '#ff9aa8', stroke: 3, weight: 800 });
+    T(l[2], W / 2, y + 30, { size: 19, col: '#fff', align: 'center', weight: 700, stroke: 3 });
+    T(l[1], W / 2, y + 52, { size: 14, font: JPF, col: '#cdbfd8', align: 'center' });
     ctx.restore();
   }
   if (G.bigKanji) {
@@ -425,7 +434,7 @@ function renderBattleOverlay() {
       ctx.save(); ctx.globalAlpha = Math.min(1, (G.overT - 30) / 30);
       ink(W / 2 - 300, H / 2 - 110, 600, 150, 'rgba(120,0,20,.6)', 1, 9);
       T('敗北', W / 2, H / 2, { size: 130, font: DISP, col: '#f2e6e6', align: 'center', stroke: 8 });
-      T('THẤT BẠI', W / 2, H / 2 + 44, { size: 20, col: COL.gold2, align: 'center', weight: 700 });
+      T('THẤT BẠI', W / 2, H / 2 + 48, { size: 34, col: COL.gold2, align: 'center', weight: 800, stroke: 4 });
       hints([['Enter', '再挑戦', 'Thử lại'], ['Esc', 'ステージ選択', 'Chọn ải']], W / 2, H / 2 + 100, 'center');
       ctx.restore();
     }
@@ -442,9 +451,9 @@ function drawCallouts() {
     ink(W / 2 - 420, y, 840, h, 'rgba(8,6,12,.86)', 1, 2);
     ink(W / 2 - 380, y + h - 18, 760, 10, th.m, 0.9, 7);
     seal(W / 2 - 400, y + 16, 62, c.kata ? c.kata.replace(/ノ.*$/, '') : (c.theme === 'sun' ? '日' : c.theme === 'blood' ? '血' : '技'), { rot: -0.08 });
-    T(c.sub + (STYLE_VN[c.theme] ? '  ·  ' + STYLE_VN[c.theme] : ''), W / 2 + 20, y + 26, { size: 16, col: th.l, align: 'center', font: JPF, stroke: 3 });
-    T((c.kata ? c.kata + '　' : '') + c.jp, W / 2 + 20, y + (c.big ? 72 : 64), { size: c.big ? 50 : 42, font: DISP, col: '#fff', align: 'center', stroke: 6, glow: th.m, glowB: 18 });
-    if (c.vn) T(c.vn, W / 2 + 20, y + (c.big ? 98 : 86), { size: 15, col: COL.gold2, align: 'center', stroke: 3, weight: 600 });
+    T((STYLE_VN[c.theme] || '') + (c.kata ? '  ·  ' + kataVN(c.kata) : ''), W / 2 + 20, y + 24, { size: 15, col: th.l, align: 'center', stroke: 3, weight: 700 });
+    T(c.vn ? c.vn.split(' — ')[0] : c.jp, W / 2 + 20, y + (c.big ? 66 : 60), { size: c.big ? 40 : 34, col: '#fff', align: 'center', stroke: 6, glow: th.m, glowB: 18, weight: 800 });
+    T((c.kata ? c.kata + '　' : '') + c.jp, W / 2 + 20, y + (c.big ? 94 : 84), { size: 17, font: JPF, col: COL.gold2, align: 'center', stroke: 3, weight: 600 });
     ctx.restore();
   });
 }
@@ -472,13 +481,14 @@ function drawCutin(c) {
   ctx.beginPath(); ctx.moveTo(0, 430); ctx.lineTo(W, 395); ctx.lineTo(W, 560); ctx.lineTo(0, 595); ctx.closePath();
   ctx.fillStyle = 'rgba(8,6,12,.95)'; ctx.fill(); ctx.strokeStyle = th.m; ctx.lineWidth = 3; ctx.stroke();
   const lab = (c.st.noZen ? '' : '全集中・') + styleLabel(c.st);
-  T(lab + '  ·  ' + (STYLE_VN[c.st.theme] || ''), 120, 456, { size: 20, font: JPF, col: th.l });
+  T((STYLE_VN[c.st.theme] || '') + (c.f.kata ? '  ·  ' + kataVN(c.f.kata) : '') + '    ' + lab, 120, 456, { size: 18, col: th.l, weight: 700 });
   seal(36, 458, 70, sealText(c.f, c.st), { rot: -0.08 });
-  T((c.f.kata ? c.f.kata + '　' : '') + (c.f.name || ''), 120, 520, { size: 62, font: DISP, col: '#fff', glow: th.m, glowB: 24 });
-  T(c.f.vn, 122, 552, { size: 17, col: COL.gold2, weight: 600 });
+  T(vnName(c.f), 120, 514, { size: 52, col: '#fff', glow: th.m, glowB: 24, weight: 800 });
+  T((c.f.kata ? c.f.kata + '　' : '') + (c.f.name || '') + (vnDesc(c.f) ? '   ·   ' + vnDesc(c.f) : ''), 122, 548, { size: 18, col: COL.gold2, weight: 600, font: JPF });
   ctx.restore();
   ctx.globalAlpha = Math.min(1, u * 3);
   vtext(c.P.ch.name, W - 60, 150, 34, '#fff');
+  T(c.P.ch.vn.split(' — ')[0], W - 60, 118, { size: 15, col: COL.gold2, align: 'center', weight: 700, stroke: 3 });
   ctx.restore();
 }
 function drawHUD() {
@@ -489,19 +499,18 @@ function drawHUD() {
     const x = twin ? (i ? W / 2 + 8 : W / 2 - 8 - pw) : W / 2 - pw / 2, y = 10, h = 68;
     panel(x, y, pw, h, { pattern: P_UROKO(), patAlpha: 0.05, border: 'rgba(200,40,60,.6)' });
     seal(x + 12, y + 10, 48, b.def.rank || '鬼', { rot: -0.04 });
-    T(b.def.name, x + 72, y + 32, { size: 26, font: DISP, col: '#fff', stroke: 3 });
-    const nw = measure(b.def.name, 26, DISP);
-    T(BOSS_VN[b.key] || '', x + 80 + nw, y + 31, { size: 13, col: COL.gold2, weight: 600 });
-    if (!twin) T(b.def.title + '  ·  ' + (TITLE_VN[b.def.title] || ''), x + pw - 16, y + 28, { size: 13, col: '#e6b6be', align: 'right', font: JPF });
+    const nw = T(BOSS_VN[b.key] || b.def.name, x + 72, y + 31, { size: 22, col: '#fff', stroke: 3, weight: 800 });
+    T(b.def.name, x + 82 + nw, y + 30, { size: 15, font: JPF, col: COL.gold2, weight: 600 });
+    if (!twin) T(TITLE_VN[b.def.title] || b.def.title || '', x + pw - 16, y + 28, { size: 13, col: '#f0c4cc', align: 'right', weight: 700 });
     const v = b.hp / b.maxhp;
     gauge(x + 72, y + 40, pw - 92, 16, v, trailOf(b, 'hp', v), b.pending ? '#ffa0c0' : '#ff3a4e', b.pending ? '#ff70a0' : '#8a0618', { notch: b.def.p2 ? 0.5 : 0 });
     { const pv = clamp((b.post || 0) / postMax(b), 0, 1), gw = pw - 92; // posture (体勢): full = stunned
       ctx.fillStyle = 'rgba(0,0,0,.55)'; ctx.fillRect(x + 72, y + 60, gw, 4);
       ctx.fillStyle = b.stunT > 0 ? '#fff6a0' : pv > 0.75 ? '#ffb040' : '#e8c060'; ctx.fillRect(x + 72, y + 60, gw * (b.stunT > 0 ? b.stunT / 180 : pv), 4);
-      if (b.stunT > 0) T('隙！ Choáng — dồn đòn!', x + 72 + gw, y + 54, { size: 12, font: JPF, col: '#fff6a0', align: 'right', stroke: 3 });
-      else if (b.guardT > 0) T('防 · Đang đỡ đòn chém thường — dùng thức!', x + 72 + gw, y + 54, { size: 12, font: JPF, col: '#a8c8ff', align: 'right', stroke: 3 }); }
-    if (b.poison > 0) { ctx.fillStyle = 'rgba(180,100,255,.8)'; ctx.fillRect(x + 72, y + 65, (pw - 92) * clamp(b.poison / 40, 0, 1), 2); T('毒 · Độc', x + pw - 16, y + 66, { size: 10, col: '#d0a0ff', align: 'right', font: JPF }); }
-    if (b.small && b.small.hp > 0) { panel(x + 72, y + h + 6, 250, 28, { r: 6, border: 'rgba(255,90,110,.7)' }); T('本体「恨」 · Bản thể  ' + Math.ceil(b.small.hp), x + 86, y + h + 25, { size: 13, col: '#ff8a9a', font: JPF }); }
+      if (b.stunT > 0) T('CHOÁNG — dồn đòn ngay!', x + 72 + gw, y + 54, { size: 12, col: '#fff6a0', align: 'right', stroke: 3, weight: 700 });
+      else if (b.guardT > 0) T('Đang đỡ chém thường — hãy dùng thức!', x + 72 + gw, y + 54, { size: 12, col: '#a8c8ff', align: 'right', stroke: 3, weight: 700 }); }
+    if (b.poison > 0) { ctx.fillStyle = 'rgba(180,100,255,.8)'; ctx.fillRect(x + 72, y + 65, (pw - 92) * clamp(b.poison / 40, 0, 1), 2); T('Trúng độc', x + pw - 16, y + 66, { size: 10, col: '#d0a0ff', align: 'right', weight: 700 }); }
+    if (b.small && b.small.hp > 0) { panel(x + 72, y + h + 6, 250, 28, { r: 6, border: 'rgba(255,90,110,.7)' }); T('Bản thể thật (恨): ' + Math.ceil(b.small.hp) + ' máu', x + 86, y + h + 25, { size: 13, col: '#ff8a9a', weight: 700 }); }
   });
   // ---- dawn meter
   if (G.dawnMax) {
@@ -510,45 +519,46 @@ function drawHUD() {
     ctx.save(); roundRect(ctx, x, y, w, 10, 5); ctx.fillStyle = g; ctx.fill(); ctx.clip(); ctx.fillStyle = 'rgba(0,0,0,.55)'; ctx.fillRect(x + w * d, y, w, 10); ctx.restore();
     ctx.strokeStyle = 'rgba(217,182,106,.6)'; ctx.lineWidth = 1; roundRect(ctx, x, y, w, 10, 5); ctx.stroke();
     ctx.save(); ctx.shadowColor = '#ffb040'; ctx.shadowBlur = 16; ctx.fillStyle = '#ffe08a'; ctx.beginPath(); ctx.arc(x + w * d, y + 5, 9, 0, TAU); ctx.fill(); ctx.restore();
-    T('夜明けまで', x - 12, y + 9, { size: 15, font: JPF, col: '#ffd890', align: 'right', stroke: 3 });
-    T('Tới bình minh', x - 12, y + 23, { size: 10, col: COL.dim, align: 'right', stroke: 2 });
+    T('Tới bình minh', x - 12, y + 10, { size: 14, col: '#ffd890', align: 'right', stroke: 3, weight: 700 });
+    T('夜明けまで', x - 12, y + 24, { size: 10, font: JPF, col: COL.dim, align: 'right', stroke: 2 });
     T(Math.max(0, Math.ceil((G.dawnMax - G.dawn) / 60)) + 's', x + w + 12, y + 11, { size: 15, col: '#ffd890', weight: 700, stroke: 3 });
   }
-  keycap('Esc', 16, 32, { size: 10 }); T('操作 · Hướng dẫn', 50, 29, { size: 11, col: COL.dim, font: JPF, stroke: 2 });
+  keycap('Esc', 16, 32, { size: 10 }); T('Tạm dừng · Điều khiển', 50, 29, { size: 11, col: '#d8cfe2', stroke: 2, weight: 600 });
   // ---- combo counter
   if ((G.combo || 0) >= 3 && G.comboT > 0) {
     const a = Math.min(1, G.comboT / 30), pop = 1 + Math.max(0, (G.comboT - 110) / 10) * 0.25;
     ctx.save(); ctx.globalAlpha = a; ctx.translate(W - 40, 210); ctx.scale(pop, pop);
     T(String(G.combo), 0, 0, { size: 54, font: DISP, col: G.combo >= 30 ? '#ffd040' : G.combo >= 15 ? '#ff9a50' : '#fff', align: 'right', stroke: 5, glow: G.combo >= 15 ? '#ff6020' : null, glowB: 14 });
-    T('連撃 · Combo  +' + Math.min(G.combo, 50) + '%', 0, 24, { size: 13, font: JPF, col: COL.gold2, align: 'right', stroke: 3 });
+    T('COMBO · +' + Math.min(G.combo, 50) + '% sát thương', 0, 24, { size: 13, col: COL.gold2, align: 'right', stroke: 3, weight: 700 });
     ctx.restore();
   }
   { const P0 = activeP(); // reaction-skill states
-    if (P0.counter > 0) T('反撃 · Đòn kế tiếp chí mạng', W - 40, 262, { size: 13, font: JPF, col: '#fff', align: 'right', stroke: 3 });
-    if (P0.halfCost > 0) T('見切り · Thức kế tiếp tốn nửa hơi', W - 40, 282, { size: 13, font: JPF, col: '#9fe8ff', align: 'right', stroke: 3 }); }
+    if (P0.counter > 0) T('Phản đòn: đòn kế tiếp chí mạng', W - 40, 262, { size: 13, col: '#fff', align: 'right', stroke: 3, weight: 700 });
+    if (P0.halfCost > 0) T('Né hoàn hảo: thức kế tiếp tốn nửa hơi', W - 40, 282, { size: 13, col: '#9fe8ff', align: 'right', stroke: 3, weight: 700 }); }
 
   // ---- player panel
   const P = activeP(), st = curStyle(P), th = THEMES[st.theme];
   const px = 14, py = H - 102, pw2 = 384, ph = 92;
   panel(px, py, pw2, ph, { pattern: P_ASANOHA(), patAlpha: 0.05, accent: th.m });
   portrait(P.look, px + 50, py + 46, 34, { key: P.key, theme: st.theme, active: 1, ring: 5 });
-  T(P.ch.name, px + 100, py + 26, { size: 22, font: DISP, col: '#fff', stroke: 3 });
-  T(P.ch.vn, px + 100, py + 40, { size: 11, col: COL.gold2, weight: 600 });
+  const pnw = T(P.ch.vn.split(' — ')[0], px + 100, py + 25, { size: 18, col: '#fff', stroke: 3, weight: 800 });
+  T(P.ch.name, px + 108 + pnw, py + 24, { size: 12, font: JPF, col: COL.gold2 });
+  T(P.ch.vn.split(' — ')[1] || '', px + 100, py + 40, { size: 11, col: COL.gold2, weight: 600 });
   const hv = P.hp / P.maxhp, bv = P.br / P.maxbr;
-  T('体力', px + 100, py + 59, { size: 12, font: JPF, col: '#fff' }); T('Máu', px + 100, py + 69, { size: 9, col: COL.dim });
+  T('Máu', px + 100, py + 62, { size: 12, col: '#fff', weight: 700 });
   gauge(px + 134, py + 49, 236, 14, hv, trailOf(P, 'hp', hv), P.poison > 0 ? '#b8f060' : '#6cf0a0', P.poison > 0 ? '#4a8a10' : '#128a4a');
   T(Math.ceil(P.hp) + ' / ' + P.maxhp, px + 364, py + 60, { size: 10, col: '#fff', align: 'right', weight: 700, stroke: 2 });
-  T('呼吸', px + 100, py + 82, { size: 12, font: JPF, col: '#fff' }); T('Hơi thở', px + 100, py + 91, { size: 8, col: COL.dim });
+  T('Hơi', px + 100, py + 83, { size: 12, col: '#fff', weight: 700 });
   gauge(px + 134, py + 72, 236, 11, bv, bv, shade(th.l, -20), th.m, { wave: 1 });
-  if (P.zen) T('全集中 · Toàn tập trung', px + 250, py + 18, { size: 11, font: JPF, col: th.l, align: 'center', glow: th.m });
+  if (P.zen) T('Toàn tập trung — đang hồi hơi', px + 260, py + 18, { size: 11, col: th.l, align: 'center', glow: th.m, weight: 700 });
   // buffs
   let cx = px + 4; const by = py - 8;
   for (const [k, v] of Object.entries(P.buffs)) {
     if (!(v > 0) || !BUFF_N[k]) continue;
-    const s = BUFF_N[k][0] + ' · ' + BUFF_N[k][1] + ' ' + Math.ceil(v / 60) + 's';
-    const w = measure(s, 12, JPF) + 16;
+    const s = BUFF_N[k][1] + ' ' + Math.ceil(v / 60) + 's';
+    const w = measure(s, 12, UIF, 700) + 16;
     ctx.fillStyle = 'rgba(40,30,10,.88)'; roundRect(ctx, cx, by - 18, w, 20, 10); ctx.fill(); ctx.strokeStyle = COL.gold; ctx.lineWidth = 1; ctx.stroke();
-    T(s, cx + 8, by - 4, { size: 12, font: JPF, col: COL.gold2 }); cx += w + 6;
+    T(s, cx + 8, by - 4, { size: 12, col: COL.gold2, weight: 700 }); cx += w + 6;
   }
   // team strip
   const ty = py - (cx > px + 4 ? 52 : 28);
@@ -569,28 +579,26 @@ function drawHUD() {
     if (i > 13) return; const x = fx + 8 + i * 46, y = fy - 26, ok = P.br >= g.cost, cur = i === fi;
     ctx.fillStyle = cur ? 'rgba(179,18,46,.92)' : 'rgba(10,8,16,.78)'; ctx.fillRect(x, y, 42, 22);
     ctx.strokeStyle = cur ? COL.gold2 : 'rgba(217,182,106,.35)'; ctx.lineWidth = 1; ctx.strokeRect(x + 0.5, y + 0.5, 41, 21);
-    T(PALETTE_LABELS[i], x + 8, y + 16, { size: 12, col: COL.gold2, align: 'center', weight: 700 });
-    T((g.kata || g.name || '').replace(/ノ型.*/, '').slice(0, 2), x + 27, y + 16, { size: 12, font: JPF, col: ok ? '#fff' : '#6a6070', align: 'center' });
+    T(PALETTE_LABELS[i], x + 21, y + 16, { size: 13, col: ok ? (cur ? '#fff' : COL.gold2) : '#6a6070', align: 'center', weight: 800 });
     if (clickIn(x, y, 42, 22)) { P.formIdx[P.styleIdx] = i; P.bufK = 12; P.qcast = true; }
   });
   seal(fx + 16, fy + 12, 68, sealText(f, st), { rot: -0.06, col: can ? COL.crimson : '#5a4a50' });
   const lab = (st.noZen ? '' : '全集中・') + styleLabel(st);
-  const lw = T(lab, fx + 100, fy + 24, { size: 16, font: JPF, col: th.l, weight: 600 });
-  const lw2 = T('·  ' + (STYLE_VN[st.theme] || ''), fx + 108 + lw, fy + 24, { size: 12, col: COL.dim });
-  T(`${fi + 1} / ${forms.length}`, fx + 120 + lw + lw2, fy + 24, { size: 11, col: COL.gold, weight: 700 });
-  T((f.kata ? f.kata + '　' : '') + (f.name || ''), fx + 100, fy + 60, { size: 32, font: DISP, col: can ? '#fff' : '#8a8090', stroke: 4, glow: can ? th.m : null, glowB: 10 });
-  const nv = T(vnName(f), fx + 102, fy + 82, { size: 15, col: COL.gold2, weight: 700 });
-  const desc = vnDesc(f), maxD = fw - 300 - 150 - nv;
-  T(measure(desc, 12) > maxD ? desc.slice(0, Math.floor(desc.length * maxD / measure(desc, 12)) - 1) + '…' : desc, fx + 110 + nv, fy + 82, { size: 12, col: COL.dim });
+  const lw = T((STYLE_VN[st.theme] || lab) + (f.kata ? '  ·  ' + kataVN(f.kata) : ''), fx + 100, fy + 24, { size: 13, col: th.l, weight: 700 });
+  T(`${fi + 1} / ${forms.length}`, fx + 112 + lw, fy + 24, { size: 11, col: COL.gold, weight: 700 });
+  const nv = T(vnName(f), fx + 100, fy + 55, { size: 26, col: can ? '#fff' : '#8a8090', stroke: 4, glow: can ? th.m : null, glowB: 10, weight: 800 });
+  T((f.kata ? f.kata + ' ' : '') + (f.name || ''), fx + 110 + nv, fy + 54, { size: 14, font: JPF, col: COL.gold2, alpha: 0.85 });
+  const desc = vnDesc(f), maxD = fw - 300 - 130;
+  T(measure(desc, 13) > maxD ? desc.slice(0, Math.floor(desc.length * maxD / measure(desc, 13)) - 1) + '…' : desc, fx + 100, fy + 79, { size: 13, col: '#cfc6da' });
   const rx = fx + fw - 290;
   ctx.fillStyle = 'rgba(217,182,106,.25)'; ctx.fillRect(rx - 14, fy + 14, 1, fh - 28);
   const prev = forms[(fi - 1 + forms.length) % forms.length], next = forms[(fi + 1) % forms.length];
-  keycap('Q', rx, fy + 26, { size: 10 }); T('◀ ' + (prev.kata ? prev.kata + ' ' : '') + prev.name, rx + 26, fy + 24, { size: 13, font: JPF, col: '#b8a8b0' });
-  keycap('E', rx, fy + 47, { size: 10 }); T('▶ ' + (next.kata ? next.kata + ' ' : '') + next.name, rx + 26, fy + 45, { size: 13, font: JPF, col: '#b8a8b0' });
+  keycap('Q', rx, fy + 26, { size: 10 }); T('◀ ' + vnName(prev), rx + 26, fy + 24, { size: 13, col: '#c8bcd0', weight: 600 });
+  keycap('E', rx, fy + 47, { size: 10 }); T('▶ ' + vnName(next), rx + 26, fy + 45, { size: 13, col: '#c8bcd0', weight: 600 });
   keycap('K', rx, fy + 68, { size: 10 }); T('/ 1-0', rx + 24, fy + 66, { size: 11, col: COL.gold2, weight: 700 });
   T('Tung chiêu · ' + f.cost + ' hơi' + (f.hpCost ? ' · ' + f.hpCost + ' máu' : ''), rx + 86, fy + 66, { size: 11, col: can ? '#8fd0ff' : '#ff7080', weight: 600 });
   const hk = P.ch.styles.length > 1 ? ['R', '呼吸切替', 'Đổi hơi thở'] : ['L', '全集中', 'Giữ để hồi hơi'];
-  keycap(hk[0], rx, fy + 89, { size: 10 }); T(hk[1], rx + 26, fy + 87, { size: 13, font: JPF, col: '#fff' }); T(hk[2], rx + 86, fy + 87, { size: 11, col: COL.dim });
+  keycap(hk[0], rx, fy + 89, { size: 10 }); T(hk[2], rx + 26, fy + 87, { size: 12, col: '#fff', weight: 600 });
 }
 function drawPause() {
   ctx.fillStyle = 'rgba(5,3,10,.78)'; ctx.fillRect(0, 0, W, H);
@@ -605,7 +613,7 @@ function drawPause() {
   rows.forEach(([k, jp, vn], i) => {
     const y = 204 + i * 39;
     if (i % 2 === 0) { ctx.fillStyle = 'rgba(255,255,255,.03)'; ctx.fillRect(W / 2 - 380, y - 28, 760, 40); }
-    keycap(k, W / 2 - 360, y, { size: 14 }); T(jp, W / 2 - 170, y - 2, { size: 20, font: JPF, col: '#fff', weight: 600 }); T(vn, W / 2 - 30, y - 2, { size: 15, col: '#d8d0e0' });
+    keycap(k, W / 2 - 360, y, { size: 14 }); T(vn, W / 2 - 160, y - 2, { size: 17, col: '#fff', weight: 600 }); T(jp, W / 2 + 370, y - 2, { size: 13, font: JPF, col: COL.dim, align: 'right' });
   });
   hints([['Esc', '再開', 'Tiếp tục'], ['H', '遊び方', 'Hướng dẫn'], ['M', G.S.training ? 'タイトルへ' : 'ステージ選択へ', G.S.training ? 'Về menu' : 'Về chọn ải']], W / 2, 628, 'center');
 }
@@ -640,8 +648,8 @@ function renderDialogScene() {
   ctx.fillStyle = '#000'; ctx.fillRect(0, 0, W, 56);
   ctx.fillStyle = 'rgba(217,182,106,.4)'; ctx.fillRect(0, 56, W, 1);
   seal(22, 8, 40, KN[S.id], { rot: -0.05 });
-  T(S.arc, 76, 40, { size: 28, font: DISP, col: '#fff' });
-  T(S.arcVn + '  ·  ' + S.place, 88 + measure(S.arc, 28, DISP), 38, { size: 13, col: COL.gold2, weight: 600, font: UIF });
+  const aw = T('Màn ' + S.id + ' · ' + S.arcVn, 76, 38, { size: 22, col: '#fff', weight: 800 });
+  T(S.arc + ' · ' + S.place, 90 + aw, 37, { size: 14, col: COL.gold2, font: JPF });
   hints([['Enter', '次へ', 'Tiếp'], ['Esc', 'スキップ', 'Bỏ qua']], W - 24, 38, 'right');
   // box
   const bx = 60, by = H - 216, bw = W - 120, bh = 190;
@@ -649,20 +657,20 @@ function renderDialogScene() {
   panel(bx, by, bw, bh, { pattern: isChar ? P_ASANOHA() : P_UROKO(), patAlpha: 0.06, accent: isChar ? COL.gold : COL.crimson, border: isChar ? undefined : 'rgba(200,40,60,.7)' });
   const L = isChar ? CHARS[spk].look : demonLook(spk);
   portrait(L, bx + 92, by + 98, 62, { key: spk, theme: isChar ? STYLES[CHARS[spk].styles[0]].theme : 'demon', ring: 7, fallback: '鬼' });
-  const nm = sp ? sp.name : spk, vnm = isChar ? CHARS[spk].vn.split(' — ')[0] : (BOSS_VN[spk] || '');
-  const nw = measure(nm, 24, DISP) + measure(vnm, 13, UIF, 600) + 44;
+  const nm = sp ? sp.name : spk, vnm = vnSpeaker(spk);
+  const nw = measure(vnm, 22, UIF, 800) + measure(nm, 15, JPF) + 48;
   ink(bx + 170, by - 22, nw, 42, isChar ? COL.crimson : '#4a0614', 1, 4);
-  T(nm, bx + 186, by + 8, { size: 24, font: DISP, col: '#fff' });
-  T(vnm, bx + 196 + measure(nm, 24, DISP), by + 6, { size: 13, col: COL.gold2, weight: 600 });
-  const shown = Math.floor(dlg.t * 0.8);
+  const vw = T(vnm, bx + 186, by + 7, { size: 22, col: '#fff', weight: 800 });
+  T(nm, bx + 198 + vw, by + 6, { size: 15, col: COL.gold2, font: JPF });
+  const shown = Math.floor(dlg.t * 1.6);
   dlg.t++;
-  const jl = wrap(l[1], bw - 240, 30, JPF);
+  const vlines = wrap(l[2], bw - 240, 25, UIF);
   let used = 0;
-  jl.forEach((s, i) => { const part = s.slice(0, Math.max(0, shown - used)); used += s.length; T(part, bx + 186, by + 66 + i * 40, { size: 30, font: JPF, col: '#fff', weight: 600 }); });
-  if (shown >= l[1].length) {
-    ctx.fillStyle = 'rgba(217,182,106,.35)'; ctx.fillRect(bx + 186, by + 50 + jl.length * 40, 60, 1);
-    const vl = wrap(l[2], bw - 240, 18, UIF);
-    vl.forEach((s, i) => T(s, bx + 186, by + 76 + jl.length * 40 + i * 24, { size: 18, col: '#cfe2ff' }));
+  vlines.forEach((s, i) => { const part = s.slice(0, Math.max(0, shown - used)); used += s.length; T(part, bx + 186, by + 62 + i * 34, { size: 25, col: '#fff', weight: 700 }); });
+  if (shown >= l[2].length) {
+    ctx.fillStyle = 'rgba(217,182,106,.35)'; ctx.fillRect(bx + 186, by + 48 + vlines.length * 34, 60, 1);
+    const jl = wrap(l[1], bw - 240, 17, JPF);
+    jl.forEach((s, i) => T(s, bx + 186, by + 72 + vlines.length * 34 + i * 24, { size: 17, col: '#cdbfd8', font: JPF }));
     if (G.t % 40 < 26) T('▼', bx + bw - 30, by + bh - 18, { size: 18, col: COL.gold, align: 'center' });
   }
 }
@@ -706,16 +714,18 @@ function renderTitle() {
   seal(1160, 590, 56, '鬼殺', { rot: 0.08 });
   T('THANH GƯƠM DIỆT QUỶ', 650, 110, { size: 32, col: '#fff', weight: 700, align: 'center', stroke: 5 });
   T('Chương Toàn Tập Trung  ·  Fan game', 650, 140, { size: 15, col: COL.gold2, align: 'center', stroke: 3, weight: 600 });
-  T('13 ải theo anime · trận cuối 鬼舞辻無惨', 650, 163, { size: 13, col: '#d8cce8', align: 'center', stroke: 3, font: UIF });
-  const items = [['物語', 'Vào truyện', '物'], ['稽古', 'Luyện tập — thử mọi chiêu', '稽'], ['技一覧', 'Danh sách thức & cách dùng', '技'], ['図鑑', 'Chỉ số nhân vật & quỷ', '図'], ['遊び方', 'Hướng dẫn chơi', '遊'], ['設定', 'Cài đặt', '設']];
-  items.forEach(([jp, vn, s], i) => {
+  T('13 màn theo anime · trận cuối với Kibutsuji Muzan', 650, 163, { size: 13, col: '#d8cce8', align: 'center', stroke: 3, font: UIF });
+  T('v' + GAME_VERSION, W - 14, H - 10, { size: 11, col: 'rgba(255,255,255,.45)', align: 'right', weight: 600 });
+  const items = [['物語', 'Chơi cốt truyện', '物', '13 màn theo anime'], ['稽古', 'Luyện tập', '稽', 'Thử mọi chiêu, không mất máu'], ['技一覧', 'Danh sách chiêu thức', '技', 'Cách dùng từng thức'], ['図鑑', 'Chỉ số nhân vật', '図', 'Máu, công, thủ, điểm mạnh / yếu'], ['遊び方', 'Hướng dẫn chơi', '遊', 'Điều khiển & mẹo từng màn'], ['設定', 'Cài đặt', '設', 'Âm thanh, nhạc, tiến trình']];
+  items.forEach(([jp, vn, s, sub], i) => {
     const x = 470, y = 230 + i * 66, w = 380, h = 62, sel = i === menuIdx;
     if (clickIn(x, y, w, h)) { if (menuIdx === i) Input.pressed.Enter = true; menuIdx = i; }
     if (sel) { ink(x - 20, y + 2, w + 30, h - 4, 'rgba(179,18,46,.92)', 1, i + 2); drawKatana(x - 58, y + h / 2, 0.9, Math.sin(gt * 0.1) * 0.03); }
     else panel(x, y + 6, w, h - 12, { r: 6 });
     seal(x + 16, y + 13, 38, s, { rot: -0.05, col: sel ? '#1a0a10' : COL.crimson });
-    T(jp, x + 68, y + 36, { size: 28, font: DISP, col: '#fff', stroke: sel ? 0 : 3 });
-    T(vn, x + 70, y + 54, { size: 13, col: sel ? '#ffe8b0' : COL.dim, weight: 600 });
+    const tw = T(vn, x + 68, y + 35, { size: 22, col: '#fff', stroke: sel ? 0 : 3, weight: 800 });
+    T(jp, x + 78 + tw, y + 34, { size: 15, font: JPF, col: sel ? '#ffd8b0' : COL.gold, alpha: 0.9 });
+    T(sub, x + 69, y + 53, { size: 12, col: sel ? '#ffe8b0' : COL.dim, weight: 600 });
   });
   hints([['W/S', '選択', 'Chọn'], ['Enter', '決定', 'Xác nhận']], 650, H - 24, 'center');
   if (pressed('KeyW', 'ArrowUp')) { menuIdx = (menuIdx + items.length - 1) % items.length; Audio.sfx.select(); }
@@ -725,7 +735,7 @@ function renderTitle() {
 function renderSelect() {
   gt++;
   patternBg('#0d0b14', P_SEIGAIHA(), 0.035); vignette(0.6);
-  screenHeader('物語', 'Cốt truyện — Con đường diệt quỷ', '道', `討伐 ${Math.min(progress, STAGES.length)} / ${STAGES.length}  ·  Đã hạ`);
+  screenHeader('物語', 'Chọn màn', '道', `Đã hoàn thành ${Math.min(progress, STAGES.length)} / ${STAGES.length} màn`);
   const cols = 5, cw = 232, chh = 150, gx = 12, x0 = (W - (cols * cw + (cols - 1) * gx)) / 2, y0 = 86;
   STAGES.forEach((s, i) => {
     const c = i % cols, r = Math.floor(i / cols);
@@ -744,14 +754,18 @@ function renderSelect() {
     }, x, y);
     ctx.strokeStyle = sel ? (s.boss === 'muzan' ? '#ff3050' : COL.gold2) : 'rgba(217,182,106,.35)'; ctx.lineWidth = sel ? 2.5 : 1; roundRect(ctx, x, y, cw, chh, 10); ctx.stroke();
     seal(x + 10, y + 10, 36, KN[s.id], { rot: -0.06, col: locked ? '#444' : COL.crimson });
-    T('第' + KN[s.id] + '話', x + 52, y + 32, { size: 13, font: JPF, col: locked ? '#666' : '#f3dca0', stroke: 3 });
-    T(s.arc, x + 12, y + chh - 30, { size: 22, font: DISP, col: locked ? '#777' : '#fff', stroke: 3 });
-    T(s.arcVn, x + 12, y + chh - 12, { size: 11, col: locked ? '#666' : COL.gold2, weight: 600 });
-    if (cleared) seal(x + cw - 62, y + chh - 72, 50, '討伐', { rot: 0.18, col: 'rgba(200,20,40,.85)' });
+    T('MÀN ' + s.id, x + 52, y + 32, { size: 13, col: locked ? '#666' : '#f3dca0', stroke: 3, weight: 800 });
+    const [an, ab] = s.arcVn.split(' — ');
+    const room = cw - 24 - (cleared ? 58 : locked ? 52 : 0), tt = ab || an;
+    let fs = 17; while (fs > 11 && measure(tt, fs, UIF, 800) > room) fs--;
+    T(tt, x + 12, y + chh - 31, { size: fs, col: locked ? '#8a8a8a' : '#fff', stroke: 3, weight: 800 });
+    T((ab ? an + ' · ' : '') + s.arc, x + 12, y + chh - 12, { size: 11, col: locked ? '#666' : COL.gold2, weight: 600, font: ab ? UIF : JPF });
+    if (cleared) { seal(x + cw - 56, y + chh - 70, 44, '討伐', { rot: 0.18, col: 'rgba(200,20,40,.85)' }); T('ĐÃ HẠ', x + cw - 34, y + chh - 16, { size: 10, col: '#ffb8c0', align: 'center', weight: 800, stroke: 3 }); }
     if (locked) {
-      ctx.save(); ctx.translate(x + cw / 2, y + chh / 2 - 6); ctx.rotate(-0.05);
-      ctx.fillStyle = '#efe4cc'; ctx.fillRect(-20, -46, 40, 92); ctx.strokeStyle = '#a02020'; ctx.lineWidth = 1.5; ctx.strokeRect(-16, -42, 32, 84);
-      vtext('封印', 0, -12, 26, '#a01818', { stroke: 0 }); ctx.restore();
+      ctx.save(); ctx.translate(x + cw - 32, y + chh / 2 + 4); ctx.rotate(0.05);
+      ctx.fillStyle = '#efe4cc'; ctx.fillRect(-16, -40, 32, 80); ctx.strokeStyle = '#a02020'; ctx.lineWidth = 1.5; ctx.strokeRect(-13, -37, 26, 74);
+      vtext('封印', 0, -10, 21, '#a01818', { stroke: 0 }); ctx.restore();
+      T('Chưa mở khóa', x + 52, y + 50, { size: 11, col: '#bbb', weight: 700, stroke: 3 });
     }
   });
   // detail panel
@@ -759,14 +773,14 @@ function renderSelect() {
   const dy = 572;
   panel(28, dy, W - 56, 136, { pattern: P_ASANOHA(), patAlpha: 0.05, accent: S.boss === 'muzan' ? COL.crimson : COL.gold });
   seal(46, dy + 20, 58, KN[S.id], { rot: -0.05 });
-  T(S.arc, 118, dy + 48, { size: 30, font: DISP, col: '#fff' });
-  T(S.arcVn + '  ·  ' + S.place, 128 + measure(S.arc, 30, DISP), dy + 46, { size: 14, col: COL.gold2, weight: 600 });
-  T('VS', 118, dy + 84, { size: 14, col: '#ff7080', weight: 700 });
-  const vs = bd.name + (S.boss2 ? '・' + BOSSES[S.boss2].name : '');
-  T(vs, 146, dy + 86, { size: 22, font: DISP, col: '#ffb0b8' });
-  T(bd.title + ' · ' + (TITLE_VN[bd.title] || '') + ' — ' + (BOSS_VN[S.boss] || '') + (S.boss2 ? ' & ' + BOSS_VN[S.boss2] : ''), 158 + measure(vs, 22, DISP), dy + 84, { size: 13, col: COL.dim, font: JPF });
-  if (S.note) T('※ ' + S.note, 118, dy + 112, { size: 13, col: '#ffd890' });
-  T('出陣 · Đội hình', 770, dy + 26, { size: 13, col: COL.dim, font: JPF });
+  const tw2 = T('Màn ' + S.id + ' · ' + S.arcVn, 118, dy + 46, { size: 24, col: '#fff', weight: 800 });
+  T(S.arc + ' · ' + S.place, 130 + tw2, dy + 45, { size: 14, col: COL.gold2, font: JPF });
+  T('ĐỐI THỦ', 118, dy + 80, { size: 12, col: '#ff7080', weight: 800 });
+  const vs = (BOSS_VN[S.boss] || bd.name) + (S.boss2 ? ' & ' + (BOSS_VN[S.boss2] || BOSSES[S.boss2].name) : '');
+  const vw2 = T(vs, 182, dy + 82, { size: 20, col: '#ffb0b8', weight: 800 });
+  T((TITLE_VN[bd.title] || '') + '  ·  ' + bd.name + (S.boss2 ? '・' + BOSSES[S.boss2].name : ''), 194 + vw2, dy + 81, { size: 13, col: COL.dim, font: JPF });
+  if (S.note) T('Mẹo: ' + S.note, 118, dy + 112, { size: 13, col: '#ffd890', weight: 600 });
+  T('Đội hình', 770, dy + 26, { size: 13, col: COL.dim, weight: 700 });
   S.team.forEach((k, j) => { const x = 790 + (j % 10) * 46, y = dy + 60; portrait(CHARS[k].look, x, y, 17, { key: k, theme: STYLES[CHARS[k].styles[0]].theme, ring: 3 }); T(CHARS[k].vn.split(' — ')[0].split(' ').pop(), x, y + 34, { size: 9, col: '#bbb', align: 'center' }); });
   hints(locked ? [['Esc', '戻る', 'Quay lại'], ['U', '全解放', 'Mở tất cả']] : [['Enter', '出陣', 'Xuất trận'], ['Esc', '戻る', 'Quay lại'], ['U', '全解放', 'Mở tất cả']], W - 44, dy + 124, 'right');
   const n = STAGES.length;
@@ -789,10 +803,10 @@ function renderSettings() {
   patternBg('#0d0b14', P_SEIGAIHA(), 0.035); vignette(0.6);
   screenHeader('設定', 'Cài đặt', '設');
   const items = [
-    ['音声（日本語の読み上げ）', 'Giọng đọc tiếng Nhật — VỪA: thoại + tuyệt kỹ · ĐỦ: đọc mọi tên chiêu', ['voice', Audio.voiceLv]],
+    ['音声', 'Giọng đọc tiếng Nhật — VỪA: thoại + tuyệt kỹ · ĐẦY ĐỦ: đọc mọi tên chiêu', ['voice', Audio.voiceLv]],
     ['音楽', 'Nhạc nền taiko / koto', Audio.musicOn],
-    ['全ステージ解放', 'Mở khóa tất cả ải', progress >= STAGES.length - 1],
-    ['進行リセット', 'Xóa tiến trình', null],
+    ['全ステージ解放', 'Mở khóa tất cả các màn', progress >= STAGES.length - 1],
+    ['進行リセット', 'Xóa tiến trình (chơi lại từ màn 1)', null],
     ...MUSIC_SLOTS.map(([slot, jp, vn]) => [jp, vn + ' — ' + (Audio.trackName(slot) || 'nhạc mặc định'), 'pick']),
   ];
   panel(W / 2 - 420, 96, 840, 470, { pattern: P_ASANOHA(), patAlpha: 0.05 });
@@ -800,10 +814,10 @@ function renderSettings() {
     const y = 104 + i * 64, sel = i === setIdx;
     if (clickIn(W / 2 - 400, y, 800, 64)) { if (setIdx === i) Input.pressed.Enter = true; setIdx = i; }
     if (sel) ink(W / 2 - 410, y + 4, 790, 60, 'rgba(179,18,46,.85)', 1, i);
-    bi(jp, vn, W / 2 - 370, y + 34, { size: 22, vcol: sel ? '#ffe0b0' : COL.dim, vsize: 13, gap: 20 });
-    const lab = v && v[0] === 'voice' ? [['無効', 'TẮT'], ['控えめ', 'VỪA'], ['全部', 'ĐỦ']][v[1]] : v === 'pick' ? ['選ぶ', 'Chọn file'] : v === null ? ['実行', 'Thực hiện'] : v ? ['有効', 'BẬT'] : ['無効', 'TẮT'];
+    { const [t1, t2] = vn.split(' — '); T(t1, W / 2 - 370, y + 30, { size: 19, col: '#fff', weight: 800 }); T((t2 ? t2 + '   ' : '') + jp, W / 2 - 370, y + 51, { size: 12, col: sel ? '#ffe0b0' : COL.dim, weight: 600 }); }
+    const lab = v && v[0] === 'voice' ? [['', 'TẮT'], ['', 'VỪA'], ['', 'ĐẦY ĐỦ']][v[1]] : v === 'pick' ? ['', 'Chọn file'] : v === null ? ['', 'Thực hiện'] : v ? ['', 'BẬT'] : ['', 'TẮT'];
     ctx.fillStyle = v === true || (v && v[0] === 'voice' && v[1]) ? 'rgba(60,160,90,.9)' : 'rgba(255,255,255,.08)'; roundRect(ctx, W / 2 + 230, y + 16, 150, 36, 18); ctx.fill(); ctx.strokeStyle = COL.gold; ctx.lineWidth = 1; ctx.stroke();
-    T(lab[0] + ' · ' + lab[1], W / 2 + 305, y + 40, { size: 15, col: '#fff', align: 'center', font: JPF, weight: 600 });
+    T(lab[1], W / 2 + 305, y + 40, { size: 15, col: '#fff', align: 'center', weight: 800 });
   });
   const ja = Audio.hasJa();
   panel(W / 2 - 420, 578, 840, 92, { accent: ja ? '#5c5' : '#e93' });
@@ -823,17 +837,20 @@ function renderSettings() {
   if (pressed('Delete', 'Backspace') && setIdx >= 4) { Audio.clearTrack(MUSIC_SLOTS[setIdx - 4][0]); Audio.sfx.select(); }
   if (pressed('Escape')) mode = 'title';
 }
-const MUSIC_SLOTS = [['calm', '音楽・平時', 'Nhạc menu & hội thoại'], ['battle', '音楽・戦闘', 'Nhạc trận thường'], ['boss', '音楽・上弦', 'Nhạc trận Thượng Huyền / Muzan']];
+const MUSIC_SLOTS = [['calm', '音楽・平時', 'Nhạc riêng: menu & hội thoại'], ['battle', '音楽・戦闘', 'Nhạc riêng: trận thường'], ['boss', '音楽・上弦', 'Nhạc riêng: Thượng Huyền / Muzan']];
 let clearT = 0;
 function renderClear() {
   clearT++;
-  drawBackground(ctx, G.S.bg, G); G.t++;
+  if (R3D.ok) { R3D.render(G, G.team.slice(0, 4).map((p, i) => ({ id: 'C' + i, key: p.key, ch: p.ch, look: p.look, x: 330 - i * 95 + (i % 2) * 25, y: GY, face: 1, scale: p.scale, pose: { t: G.t + i * 15, swing: -0.5 }, z: -0.2 - i * 0.2, yaw: 0.25, draw: () => 0 }))); ctx.clearRect(0, 0, W, H); }
+  else drawBackground(ctx, G.S.bg, G);
+  G.t++;
   ctx.fillStyle = 'rgba(0,0,0,.55)'; ctx.fillRect(0, 0, W, H); vignette(0.8);
   ctx.save(); ctx.globalAlpha = Math.min(1, clearT / 20);
   ink(W / 2 - 380, 170, 760, 160, 'rgba(8,6,12,.85)', 1, 6);
-  T('討伐完了', W / 2, 286, { size: 110, font: DISP, col: '#fff', align: 'center', glow: '#ff3050', glowB: 20 });
-  T('TIÊU DIỆT THÀNH CÔNG', W / 2, 362, { size: 22, col: COL.gold2, align: 'center', weight: 700 });
-  T(`第${G.S.id}話 ${G.S.arc} — ${G.S.arcVn}`, W / 2, 394, { size: 16, col: '#ddd', align: 'center', font: JPF });
+  T('討伐完了', W / 2, 280, { size: 100, font: DISP, col: '#fff', align: 'center', glow: '#ff3050', glowB: 20 });
+  T('TIÊU DIỆT THÀNH CÔNG', W / 2, 360, { size: 34, col: COL.gold2, align: 'center', weight: 800, stroke: 4 });
+  T(`Màn ${G.S.id} · ${G.S.arcVn}`, W / 2, 396, { size: 18, col: '#eee', align: 'center', weight: 700 });
+  if (G.comboMax) T(`Combo cao nhất: ${G.comboMax}`, W / 2, 422, { size: 14, col: COL.dim, align: 'center', weight: 600 });
   if (clearT > 20) { const s = 1 + Math.max(0, 1 - (clearT - 20) / 8) * 1.5; ctx.save(); ctx.translate(W / 2 + 330, 300); ctx.scale(s, s); seal(-48, -48, 96, '滅', { rot: 0.15 }); ctx.restore(); }
   hints(G.si + 1 < STAGES.length ? [['Enter', '次の話へ', 'Ải tiếp theo'], ['Esc', 'ステージ選択', 'Chọn ải']] : [['Esc', 'ステージ選択', 'Chọn ải']], W / 2, 470, 'center');
   ctx.restore();
@@ -847,8 +864,19 @@ function renderEnding() {
   const g = ctx.createLinearGradient(0, 0, 0, H); g.addColorStop(0, `rgb(${40 + d * 180},${60 + d * 150},${120 + d * 100})`); g.addColorStop(1, `rgb(255,${150 + d * 80},${100 + d * 60})`);
   ctx.fillStyle = g; ctx.fillRect(0, 0, W, H);
   ctx.save(); ctx.shadowColor = '#fff2b0'; ctx.shadowBlur = 60; ctx.fillStyle = '#fff6d0'; ctx.beginPath(); ctx.arc(W / 2, H - 100 - d * 200, 90, 0, TAU); ctx.fill(); ctx.restore();
-  ctx.fillStyle = '#2a3a2a'; ctx.fillRect(0, GY, W, H);
-  ['tanjiro', 'nezuko', 'zenitsu', 'inosuke', 'kanao'].forEach((k, i) => drawPerson(ctx, CHARS[k].look, CHARS[k], 380 + i * 130, GY, 1, { t: endT, swing: 0.9 }, 1, 1.3));
+  // distant hills + grass, lit by the rising sun
+  [['#6a5a78', 0.55, 90, 0.004], ['#3e4a52', 0.7, 60, 0.007]].forEach(([c, a, amp, f], k) => {
+    ctx.save(); ctx.globalAlpha = a; ctx.fillStyle = c; ctx.beginPath(); ctx.moveTo(0, H);
+    for (let x = 0; x <= W; x += 20) ctx.lineTo(x, GY - 40 - k * -20 - amp * (0.5 + 0.5 * Math.sin(x * f + k * 2)));
+    ctx.lineTo(W, H); ctx.fill(); ctx.restore();
+  });
+  { const gg = ctx.createLinearGradient(0, GY, 0, H); gg.addColorStop(0, '#3f5a3a'); gg.addColorStop(1, '#1c2a1c'); ctx.fillStyle = gg; ctx.fillRect(0, GY, W, H);
+    ctx.fillStyle = 'rgba(255,220,150,.18)'; ctx.fillRect(0, GY, W, 3); }
+  ['tanjiro', 'nezuko', 'zenitsu', 'inosuke', 'kanao'].forEach((k, i) => {
+    const im = typeof PORTRAIT3D !== 'undefined' && PORTRAIT3D.get(k, 'full');
+    if (im) ctx.drawImage(im, 380 + i * 130 - 80, GY - 196 + Math.sin(endT * 0.05 + i) * 2, 160, 200);
+    else drawPerson(ctx, CHARS[k].look, CHARS[k], 380 + i * 130, GY, 1, { t: endT, swing: 0.9 }, 1, 1.3);
+  });
   const lines = [['鬼のいない世界へ', 'Hướng tới một thế giới không còn quỷ'], ['ありがとう 竈門炭治郎', 'Cảm ơn, Kamado Tanjiro'], ['— 完 —', 'HẾT']];
   lines.forEach(([a, b], i) => { if (endT > 80 + i * 120) { ctx.save(); ctx.globalAlpha = Math.min(1, (endT - 80 - i * 120) / 40); bi(a, b, W / 2, 130 + i * 96, { size: 50, font: DISP, align: 'center', stroke: 6, vcol: '#fff', vsize: 18, gap: 34 }); ctx.restore(); } });
   if (endT > 400) hints([['Enter', 'タイトルへ', 'Về menu']], W / 2, H - 30, 'center');
@@ -894,7 +922,7 @@ function frame(now) {
         case 'settings': renderSettings(); break;
         case 'dialog':
           renderDialogScene();
-          if (pressed('Enter', 'KeyJ', 'Space') || Input.click) { const l = dlg.lines[dlg.i]; if (Math.floor(dlg.t * 0.8) < l[1].length) dlg.t = 999; else advanceDialog(); }
+          if (pressed('Enter', 'KeyJ', 'Space') || Input.click) { const l = dlg.lines[dlg.i]; if (Math.floor(dlg.t * 1.6) < l[2].length) dlg.t = 9999; else advanceDialog(); }
           if (dlg && pressed('Escape')) { const a = dlg.after; dlg = null; a(); }
           break;
         case 'battle': onBattleFrame(); break;

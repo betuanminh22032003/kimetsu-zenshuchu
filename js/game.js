@@ -121,13 +121,13 @@ function updateAlly(A) {
     A.cd = 660; A.castT = 40;
     const foes = aliveEnemies(); for (const b of foes) { b.confT = 300; G.cz = b.z || 0; particles('flower', b.x, b.y - b.hh * 0.7, 18, 4, { k: 'petal', g: -0.01 }); }
     G.cz = A.z; particles('flower', A.x, A.y - 90, 30, 6, { k: 'petal', g: -0.01 });
-    addText(A.x, A.y - 190, '惑血「視覚夢幻の香」', '#f0a8ff', 22);
+    addText(A.x, A.y - 190, 'Tamayo: hương ảo ảnh làm quỷ rối mắt', '#f0a8ff', 22);
     if (foes.length) banner('', 'Tamayo · 惑血 — lũ quỷ bị ảo giác, đánh trật hướng trong 5 giây!', 110);
     Audio.say('わくち、しかくむげんのこう', 1.05, 1.1, 1); Audio.sfx.breath();
   }
   if (--A.healCd <= 0) { // her medicine
     const hurt = G.team.filter(q => !q.down && q.hp < q.maxhp * 0.7);
-    if (hurt.length) { A.healCd = 900; A.castT = 30; for (const q of hurt) { q.hp = Math.min(q.maxhp, q.hp + q.maxhp * 0.15); } G.cz = P.z || 0; particles('flower', P.x, P.y - 80, 20, 4, { k: 'petal', g: -0.05 }); addText(P.x, P.y - 170, '珠世の薬 +15%', '#b8ffcf', 20); Audio.sfx.pickup(); }
+    if (hurt.length) { A.healCd = 900; A.castT = 30; for (const q of hurt) { q.hp = Math.min(q.maxhp, q.hp + q.maxhp * 0.15); } G.cz = P.z || 0; particles('flower', P.x, P.y - 80, 20, 4, { k: 'petal', g: -0.05 }); addText(P.x, P.y - 170, 'Thuốc của Tamayo: +15% sát thương', '#b8ffcf', 20); Audio.sfx.pickup(); }
     else A.healCd = 120;
   }
 }
@@ -213,10 +213,10 @@ function damageEnemy(b, grp, hx, hy) {
   const isNormal = grp.kind === 'normal' || !grp.form, boss = !b.def.minion && !b.def.training;
   // demons read a slash-only string: 6 plain slashes in a row and they start deflecting plain slashes
   if (boss && isNormal && b.guardT > 0 && !(b.stunT > 0)) {
-    b.guardT = Math.max(b.guardT, 40); G.cz = b.z || 0; particles('normal', hx, hy, 8, 6, { k: 'spark' }); addText(hx, hy - 20, '弾 · Đỡ', '#c8d8ff', 18); Audio.sfx.hit();
+    b.guardT = Math.max(b.guardT, 40); G.cz = b.z || 0; particles('normal', hx, hy, 8, 6, { k: 'spark' }); addText(hx, hy - 20, 'Bị đỡ!', '#c8d8ff', 18); Audio.sfx.hit();
     d *= 0.15; b.hp -= d; if (!finOk && b.hp < finFloor(b)) b.hp = Math.min(b.hp + d, Math.max(b.hp, finFloor(b))); G.combo = Math.max(0, (G.combo || 0) - 2); if (b.hp <= 0) checkBossDeath(b); G.cz = cz0; return;
   }
-  if (boss) { if (isNormal) { b.normalRun = (b.normalRun || 0) + 1; if (b.normalRun >= 6 && !(b.stunT > 0)) { b.guardT = 150; b.normalRun = 0; addText(b.x, b.y - b.hh - 30, '見切られた！ Bị đọc đòn!', '#ff9aa8', 20); b.cd = Math.min(b.cd, 12); } } else b.normalRun = 0; }
+  if (boss) { if (isNormal) { b.normalRun = (b.normalRun || 0) + 1; if (b.normalRun >= 6 && !(b.stunT > 0)) { b.guardT = 150; b.normalRun = 0; addText(b.x, b.y - b.hh - 30, 'Bị đọc đòn! Dùng thức!', '#ff9aa8', 20); b.cd = Math.min(b.cd, 12); } } else b.normalRun = 0; }
   // combo chain: every landed hit within 2s extends it; switching technique adds a bonus step
   const mv = grp.form || 'normal';
   G.combo = (G.comboT > 0 ? G.combo || 0 : 0) + (G.lastMove && G.lastMove !== mv ? 2 : 1); G.comboT = 120; G.lastMove = mv; G.comboMax = Math.max(G.comboMax || 0, G.combo);
@@ -232,7 +232,7 @@ function damageEnemy(b, grp, hx, hy) {
   if (rule && rule.dawn && G.dawnMax && !grp.dawnDone) { const sec = rule.dawn(b, grp, P); if (sec) { grp.dawnDone = 1; G.dawn += sec * 60; } }
   b.hp -= d; b.flash = 4; b.hurt = 10;
   if (!finOk && b.hp < finFloor(b)) { b.hp = Math.max(b.hp, Math.min(hp0, finFloor(b))); if (!b.finShown) { b.finShown = 1; banner('頸が斬れない…！', 'Không chém đứt được cổ…!', 110); } } b.noRegen = 300; // no regeneration for 5s after a hit
-  if (grp.poison) { b.poison = Math.min(40, b.poison + grp.poison); addText(hx, hy - 30, '毒 Độc', '#c080ff', 18); Audio.sfx.poison(); }
+  if (grp.poison) { b.poison = Math.min(40, b.poison + grp.poison); addText(hx, hy - 30, 'Độc!', '#c080ff', 18); Audio.sfx.poison(); }
   if (grp.burn) b.burn = 300;
   if (G.dawnMax) G.dawn += d * 0.6;
   if (G.S.training) { G.trainDmg = (G.trainT > 0 ? G.trainDmg : 0) + d; G.trainT = 150; G.trainHits = (G.trainT2 > 0 ? G.trainHits : 0) + 1; G.trainT2 = 150; }
@@ -249,7 +249,7 @@ function damageEnemy(b, grp, hx, hy) {
 const postMax = b => Math.max(120, b.maxhp * 0.11);
 function stagger(b) {
   b.post = 0; b.stunT = 180; b.guardT = 0; b.state = 'move'; b.mv = null; b.st = 0; b.cd = Math.max(b.cd, 60);
-  G.cz = b.z || 0; addText(b.x, b.y - b.hh - 40, '隙！ CHOÁNG!', '#ffe070', 30); particles('normal', b.x, b.y - b.hh, 24, 7, { k: 'spark' });
+  G.cz = b.z || 0; addText(b.x, b.y - b.hh - 40, 'CHOÁNG!', '#ffe070', 30); particles('normal', b.x, b.y - b.hh, 24, 7, { k: 'spark' });
   G.hitstop = Math.max(G.hitstop, 8); G.shake = Math.max(G.shake, 14); Audio.sfx.gong();
   G.haz = G.haz.filter(h => h.src !== b.x || !(h.delay > 0)); // a broken stance cancels the attack it was winding up
 }
@@ -316,17 +316,17 @@ function deflect(P, p) { // send an enemy projectile back at the nearest demon
   p.vx = dx / L * sp; p.vy = dy / L * sp; p.vz = dz / L * sp; p.reflected = true; p.homing = 0; p.fall = 0; p.bounce = 0; p.life = 140; p.sleep = 0;
   p.grp = newGrp(P, Math.max(22, (p.dmg || 10) * 2.2), { th: curStyle(P).theme, kind: 'deflect', f: { name: '弾き返し' } }, { heavy: true });
   G.cz = p.z || 0; particles('normal', p.x, p.y, 12, 6, { k: 'spark' }); Audio.sfx.hit();
-  if (!P.deflected) { P.deflected = 1; addText(P.x, P.y - 170, '弾き返し！ ĐÁNH BẬT!', '#fff2a0', 24); P.br = Math.min(P.maxbr, P.br + 8); G.hitstop = Math.max(G.hitstop, 4); }
+  if (!P.deflected) { P.deflected = 1; addText(P.x, P.y - 170, 'ĐÁNH BẬT!', '#fff2a0', 24); P.br = Math.min(P.maxbr, P.br + 8); G.hitstop = Math.max(G.hitstop, 4); }
 }
 function parried(P) { // 受け流し: deflect, steal posture from the nearest demon, next hit is a guaranteed crit
   P.parryT = 0; P.inv = Math.max(P.inv, 24); P.counter = 120; P.br = Math.min(P.maxbr, P.br + 12);
-  G.cz = P.z || 0; fxRing(P.x, P.y - 80, 70, curStyle(P).theme, 14); particles('normal', P.x + P.face * 30, P.y - 90, 18, 7, { k: 'spark' }); addText(P.x, P.y - 170, '受け流し！ ĐỠ!', '#ffffff', 26);
+  G.cz = P.z || 0; fxRing(P.x, P.y - 80, 70, curStyle(P).theme, 14); particles('normal', P.x + P.face * 30, P.y - 90, 18, 7, { k: 'spark' }); addText(P.x, P.y - 170, 'GẠT ĐÒN!', '#ffffff', 26);
   G.hitstop = Math.max(G.hitstop, 7); G.shake = Math.max(G.shake, 8); Audio.sfx.chain();
   const e = nearestEnemy(P); if (e && !e.def.minion && Math.abs(e.x - P.x) < 320) { e.post = (e.post || 0) + postMax(e) * 0.4; e.postT = 120; if (e.post >= postMax(e)) stagger(e); }
 }
 function perfectDodge(P) { // 見切り: slow motion, breath refill, next technique at half cost
   P.dodged = true; P.inv = Math.max(P.inv, 30); P.halfCost = 180; P.br = Math.min(P.maxbr, P.br + 25);
-  G.slow = 0.3; G.slowT = 55; G.cz = P.z || 0; addText(P.x, P.y - 170, '見切り！ NÉ HOÀN HẢO', '#9fe8ff', 24); Audio.sfx.wind();
+  G.slow = 0.3; G.slowT = 55; G.cz = P.z || 0; addText(P.x, P.y - 170, 'NÉ HOÀN HẢO!', '#9fe8ff', 24); Audio.sfx.wind();
   const e = nearestEnemy(P); if (e && !e.def.minion) { e.post = (e.post || 0) + postMax(e) * 0.15; e.postT = 120; }
 }
 function hurtPlayer(P, dmg, sx, opts) {
@@ -799,7 +799,7 @@ function beginNormal(P, combo) {
 function tryCast(P) {
   const st = curStyle(P), f = curForm(P);
   const cost = P.halfCost > 0 ? Math.ceil(f.cost / 2) : f.cost;
-  if (P.br < cost) { addText(P.x, P.y - 170, '呼吸が足りない！ Hết hơi!', '#9cf', 18); Audio.sfx.select(); return; }
+  if (P.br < cost) { addText(P.x, P.y - 170, 'Hết hơi! Giữ L để hồi', '#9cf', 18); Audio.sfx.select(); return; }
   P.br -= cost; if (P.halfCost > 0) P.halfCost = 0;
   if (f.hpCost) P.hp = Math.max(1, P.hp - f.hpCost);
   callout(P, f, st);

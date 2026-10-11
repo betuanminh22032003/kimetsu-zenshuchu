@@ -126,6 +126,7 @@
 <script src="js/draw.js"></script>
 <script src="js/chara.js"></script>
 <script src="js/model3d.js"></script>
+<script src="js/portrait3d.js"></script>
 <script>
 'use strict';
 const KIND = { slash: 'Nhát chém lớn', flip: 'Lộn vòng chém', dashSlash: 'Lướt chém', multi: 'Chuỗi chém', spin: 'Xoay chém', thrust: 'Đâm xa', multiThrust: 'Đâm liên hoàn', slam: 'Bổ từ trên', rise: 'Chém bay lên', wave: 'Đòn bay', dragon: 'Rồng lượn', whip: 'Quất xa', barrage: 'Rải đòn', rain: 'Giáng từ trời', throw: 'Ném', aoe: 'Nổ diện rộng', zigzag: 'Zigzag', buff: 'Cường hóa', combo13: 'Tuyệt kỹ' };
@@ -138,38 +139,11 @@ const KATA_VN = Object.assign({}, ...Object.entries(KATA).map(([n, [jp]]) => ({ 
 const esc = s => String(s == null ? '' : s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 const ACCENT = { tanjiro: '#1d6b4a', nezuko: '#e2628a', zenitsu: '#f4c430', inosuke: '#6b8aa0', kanao: '#c070d0', giyu: '#3a6ad0', rengoku: '#e2421c', shinobu: '#7a3cb0', tengen: '#d0b060', mitsuri: '#f48fb7', muichiro: '#4cc3b8', obanai: '#8a7aaa', sanemi: '#5a9a6a', gyomei: '#a08050' };
 
-// ---------- 3D portraits (rendered once from the game's own chibi models) ----------
+// ---------- 3D portraits (the game's own chibi models, see js/portrait3d.js) ----------
 const PICS = {};
-const Shot = (() => {
-  try {
-    if (!window.THREE || !CHIBI3D.make) return null;
-    const T3 = THREE, cv = document.createElement('canvas'); cv.width = 224; cv.height = 280;
-    const r = new T3.WebGLRenderer({ canvas: cv, alpha: true, antialias: true, preserveDrawingBuffer: true });
-    const sc = new T3.Scene(); sc.add(new T3.HemisphereLight(0xffffff, 0x5a4a60, 1.15));
-    const dl = new T3.DirectionalLight(0xffffff, 0.8); dl.position.set(2, 5, 6); sc.add(dl);
-    const cam = new T3.PerspectiveCamera(28, cv.width / cv.height, 0.1, 100);
-    return a => {
-      const M = CHIBI3D.make(a); if (!M) return null;
-      sc.add(M.root); CHIBI3D.pose(M, Object.assign({ x: 640, y: GY, z: 0, yaw: 0.35, scale: 1, pose: { t: 0, swing: 0.9 } }, a), 0.016);
-      const box = new T3.Box3().setFromObject(M.root), s = box.getSize(new T3.Vector3()), c = box.getCenter(new T3.Vector3());
-      const d = Math.max(s.y, s.x * 1.25) / (2 * Math.tan(14 * Math.PI / 180)) * 1.04;
-      cam.position.set(c.x, c.y + s.y * 0.03, c.z + d); cam.lookAt(c); r.render(sc, cam);
-      const url = cv.toDataURL('image/png'); sc.remove(M.root);
-      M.root.traverse(o => { if (o.geometry) o.geometry.dispose(); }); (M.mats || []).forEach(m => { if (m.map) m.map.dispose(); m.dispose(); });
-      return url;
-    };
-  } catch (e) { return null; }
-})();
 function picFor(id) {
-  if (id in PICS) return PICS[id];
-  let url = null;
-  try {
-    if (Shot) {
-      if (CHARS[id]) url = Shot({ key: id, look: CHARS[id].look, ch: CHARS[id] });
-      else { const d = BOSSES[id]; url = Shot({ key: id, lk: d.look, boss: 1, look: DEMON_LOOKS[d.look], custom: !DEMON_LOOKS[d.look] }); }
-    }
-  } catch (e) { url = null; }
-  return (PICS[id] = url);
+  if (!(id in PICS)) { const c = PORTRAIT3D.get(id, 'full'); PICS[id] = c ? c.toDataURL('image/png') : null; }
+  return PICS[id];
 }
 function fillPics() {
   const pending = [...document.querySelectorAll('.pic[data-k]:not([data-done])')];

@@ -83,8 +83,8 @@ function drawPalette() {
   const pw = cols * cw + (cols - 1) * gx + 40, ph = rows * (ch + 10) + 110;
   const px = (W - pw) / 2, py = Math.max(20, (H - 132 - ph) / 2);
   panel(px, py, pw, ph, { pattern: P_SEIGAIHA(), patAlpha: 0.05, accent: th.m });
-  T('型を選ぶ', px + 24, py + 42, { size: 30, font: DISP, col: '#fff' });
-  T('Chọn thức  ·  ' + (st.noZen ? '' : '全集中・') + styleLabel(st) + ' · ' + (STYLE_VN[st.theme] || ''), px + 150, py + 40, { size: 14, col: th.l, font: JPF });
+  const pw0 = T('Chọn thức', px + 24, py + 42, { size: 26, col: '#fff', weight: 800 });
+  T((STYLE_VN[st.theme] || '') + '  ·  ' + styleLabel(st), px + 36 + pw0, py + 40, { size: 14, col: th.l, weight: 600 });
   hints(P.ch.styles.length > 1 ? [['1…]', '選択', 'Bấm phím số'], ['R', '呼吸切替', 'Đổi hơi thở'], ['F', '離す', 'Thả F để đóng']] : [['1…]', '選択', 'Bấm phím số'], ['F', '離す', 'Thả F để đóng']], px + pw - 20, py + 40, 'right');
   forms.forEach((f, i) => {
     const x = px + 20 + (i % cols) * (cw + gx), y = py + 64 + Math.floor(i / cols) * (ch + 10);
@@ -94,10 +94,10 @@ function drawPalette() {
     ctx.strokeStyle = sel ? COL.gold2 : 'rgba(217,182,106,.3)'; ctx.lineWidth = sel ? 2 : 1; ctx.stroke();
     keycap(PALETTE_LABELS[i] || '', x + 8, y + 24, { size: 12 });
     seal(x + 8, y + 32, 34, sealText(f, st), { col: can ? COL.crimson : '#555' });
-    T((f.kata ? f.kata + ' ' : '') + (f.name || ''), x + 50, y + 26, { size: 18, font: DISP, col: can ? '#fff' : '#888' });
-    T(vnName(f), x + 50, y + 46, { size: 12, col: COL.gold2, weight: 600 });
+    T(vnName(f), x + 50, y + 26, { size: 16, col: can ? '#fff' : '#888', weight: 800 });
+    T((f.kata ? kataVN(f.kata) + ' · ' : '') + (f.kata ? f.kata + ' ' : '') + (f.name || ''), x + 50, y + 45, { size: 11, col: COL.gold2, font: JPF });
     const inf = formInfo(f, st);
-    T(inf.kindJp + ' ' + inf.kindVn + '  ·  ' + f.cost + ' hơi' + (inf.total ? '  ·  ~' + inf.total + ' dmg' : ''), x + 50, y + 64, { size: 11, col: COL.dim });
+    T(inf.kindVn + '  ·  ' + f.cost + ' hơi' + (inf.total ? '  ·  ~' + inf.total + ' sát thương' : ''), x + 50, y + 64, { size: 11, col: COL.dim, weight: 600 });
   });
 }
 
@@ -117,7 +117,7 @@ function drawTrainingHUD() {
   if (!G.S.training) return;
   const x = W - 250, y = 92;
   panel(x, y, 236, 70, { r: 8 });
-  T('稽古 · Luyện tập', x + 14, y + 24, { size: 15, font: JPF, col: COL.gold2 });
+  T('Luyện tập', x + 14, y + 24, { size: 15, col: COL.gold2, weight: 800 });
   T('Sát thương: ' + (G.trainT > 0 ? Math.round(G.trainDmg) : 0), x + 14, y + 44, { size: 13, col: '#fff', weight: 600 });
   T('Số hit: ' + (G.trainT2 > 0 ? G.trainHits : 0), x + 14, y + 61, { size: 13, col: '#fff', weight: 600 });
   T('hơi vô hạn', x + 222, y + 61, { size: 11, col: COL.dim, align: 'right' });
@@ -129,7 +129,7 @@ function charForms(ch) { const out = []; ch.styles.forEach((sk, si) => STYLES[sk
 function renderMoveList() {
   gt++;
   patternBg('#0d0b14', P_ASANOHA(), 0.03); vignette(0.6);
-  screenHeader('技一覧', 'Danh sách thức & cách dùng — theo Kimetsu no Yaiba Wiki', '技', 'A/D 人物 Nhân vật · W/S 型 Thức · Enter 稽古で試す Thử ngay · Esc 戻る');
+  screenHeader('技一覧', 'Danh sách chiêu thức', '技', 'A/D đổi nhân vật · W/S chọn thức · Enter thử ngay · Esc quay lại');
   const ch = CHARS[CHAR_KEYS[mlIdx]];
   const all = charForms(ch);
   mlForm = clamp(mlForm, 0, all.length - 1);
@@ -139,33 +139,35 @@ function renderMoveList() {
     if (clickIn(24, y, 262, 40) && mlIdx !== i) { mlIdx = i; mlForm = 0; }
     if (sel) ink(20, y + 2, 262, 38, 'rgba(179,18,46,.9)', 1, i);
     portrait(c.look, 46, y + 21, 15, { key: kk, theme: STYLES[c.styles[0]].theme, ring: 3, active: sel });
-    T(c.name, 72, y + 21, { size: 17, font: JPF, col: sel ? '#fff' : '#cfc6da', weight: 600 });
+    T(c.vn.split(' — ')[0], 72, y + 20, { size: 15, col: sel ? '#fff' : '#d8cfe2', weight: 800 });
     const cnt = c.styles.reduce((a, s) => a + STYLES[s].forms.length, 0);
-    T(c.vn.split(' — ')[0] + ' · ' + cnt + ' thức', 72, y + 35, { size: 10, col: sel ? '#ffe0b0' : COL.dim, weight: 600 });
+    T(cnt + ' thức · ' + c.name, 72, y + 35, { size: 10, col: sel ? '#ffe0b0' : COL.dim, weight: 600 });
   });
   const dx = 300, dy = 80, dw = W - dx - 18, dh = H - dy - 14;
   const th0 = THEMES[STYLES[ch.styles[0]].theme];
   panel(dx, dy, dw, dh, { pattern: P_SEIGAIHA(), patAlpha: 0.04, accent: th0.m });
   // left column: character + playstyle
   ctx.save(); ctx.globalAlpha = 0.3; const rg = ctx.createRadialGradient(dx + 120, dy + 470, 10, dx + 120, dy + 470, 200); rg.addColorStop(0, th0.m); rg.addColorStop(1, 'rgba(0,0,0,0)'); ctx.fillStyle = rg; ctx.fillRect(dx, dy + 250, 250, dh - 250); ctx.restore();
-  drawPerson(ctx, ch.look, ch, dx + 125, dy + dh - 30, 1, { t: gt, swing: -0.4 + Math.sin(gt * 0.04) * 0.1 }, 1, 1.35 * (ch.scale || 1));
-  T(ch.name, dx + 18, dy + 34, { size: 24, font: DISP, col: '#fff' });
-  T(ch.vn.split(' — ')[0] + (ch.vn.includes(' — ') ? ' · ' + ch.vn.split(' — ')[1] : ''), dx + 18, dy + 52, { size: 11, col: COL.gold2, weight: 600 });
+  { const im = typeof PORTRAIT3D !== 'undefined' && PORTRAIT3D.get(CHAR_KEYS[mlIdx], 'full');
+    if (im) ctx.drawImage(im, dx + 125 - 105, dy + dh - 30 - 262 + Math.sin(gt * 0.04) * 2, 210, 262);
+    else drawPerson(ctx, ch.look, ch, dx + 125, dy + dh - 30, 1, { t: gt, swing: -0.4 + Math.sin(gt * 0.04) * 0.1 }, 1, 1.35 * (ch.scale || 1)); }
+  const cnw = T(ch.vn.split(' — ')[0], dx + 18, dy + 34, { size: 22, col: '#fff', weight: 800 });
+  T(ch.name + (ch.vn.includes(' — ') ? '  ·  ' + ch.vn.split(' — ')[1] : ''), dx + 18, dy + 52, { size: 11, col: COL.gold2, weight: 600 });
   const ps = PLAYSTYLE[ch.key];
   if (ps) {
     seal(dx + 18, dy + 64, 30, '型');
-    T(ps[0] + ' · Lối chơi', dx + 56, dy + 84, { size: 14, font: JPF, col: '#fff' });
+    T('Lối chơi', dx + 56, dy + 84, { size: 14, col: '#fff', weight: 800 });
     let yy = dy + 112;
     wrap(ps[1], 228, 12, UIF).forEach(l => { T(l, dx + 18, yy, { size: 12, col: '#d8d0e4' }); yy += 16; });
     // canon strengths / weaknesses + stat bars
     yy += 6;
-    if (ch.pros) wrap('強 ' + ch.pros, 228, 11, UIF).forEach(l => { T(l, dx + 18, yy, { size: 11, col: '#9fe0a0', weight: 600 }); yy += 14; });
-    if (ch.cons) wrap('弱 ' + ch.cons, 228, 11, UIF).forEach(l => { T(l, dx + 18, yy, { size: 11, col: '#ff9a9a', weight: 600 }); yy += 14; });
+    if (ch.pros) wrap('Mạnh: ' + ch.pros, 228, 11, UIF).forEach(l => { T(l, dx + 18, yy, { size: 11, col: '#9fe0a0', weight: 600 }); yy += 14; });
+    if (ch.cons) wrap('Yếu: ' + ch.cons, 228, 11, UIF).forEach(l => { T(l, dx + 18, yy, { size: 11, col: '#ff9a9a', weight: 600 }); yy += 14; });
     yy += 4;
-    const bars = [['体', 'Máu', ch.hp / 380], ['攻', 'Công', ((ch.atk || 1) - 0.6) / 0.7], ['守', 'Thủ', (1.35 - (ch.def || 1)) / 0.55], ['速', 'Tốc', (ch.speed - 4.6) / 2.2], ['息', 'Hơi', (ch.br / 130) * 0.6 + ((ch.brRegen || 1) - 0.8) ]];
+    const bars = [['', 'Máu', ch.hp / 380], ['', 'Công', ((ch.atk || 1) - 0.6) / 0.7], ['', 'Thủ', (1.35 - (ch.def || 1)) / 0.55], ['', 'Tốc', (ch.speed - 4.6) / 2.2], ['', 'Hơi', (ch.br / 130) * 0.6 + ((ch.brRegen || 1) - 0.8) ]];
     bars.forEach(([jp, vn, v]) => {
       v = clamp(v, 0.05, 1);
-      T(jp + ' ' + vn, dx + 18, yy + 9, { size: 10, col: COL.dim, weight: 600 });
+      T(vn, dx + 18, yy + 9, { size: 10, col: COL.dim, weight: 600 });
       ctx.fillStyle = 'rgba(255,255,255,.08)'; ctx.fillRect(dx + 70, yy + 2, 160, 7);
       ctx.fillStyle = th0.m; ctx.fillRect(dx + 70, yy + 2, 160 * v, 7);
       yy += 12;
@@ -180,8 +182,8 @@ function renderMoveList() {
     const st = STYLES[sk], th = THEMES[st.theme], x = lx + si * colW;
     let y = dy + 16;
     ink(x, y, colW - 34, 34, shade(th.d, -30), 0.95, 2);
-    const sw = T(st.jp, x + 12, y + 24, { size: 20, font: DISP, col: th.l });
-    T((STYLE_VN[st.theme] || '') + ' · ' + st.forms.length + (st.theme === 'blood' ? ' thuật' : ' thức') + (two ? (si ? '  [R]' : '') : ''), x + 22 + sw, y + 22, { size: 11, col: '#fff', weight: 600 });
+    const sw = T(STYLE_VN[st.theme] || st.jp, x + 12, y + 23, { size: 16, col: th.l, weight: 800 });
+    T(st.forms.length + (st.theme === 'blood' ? ' thuật' : ' thức') + (two ? (si ? '  [R]' : '') : '') + '  ·  ' + st.jp, x + 22 + sw, y + 22, { size: 11, col: '#fff', weight: 600 });
     y += 44;
     const rowH = Math.min(30, (listH - 44) / st.forms.length);
     st.forms.forEach(f => {
@@ -189,8 +191,8 @@ function renderMoveList() {
       if (clickIn(x, y, colW - 10, rowH)) mlForm = myIdx;
       if (sel) { ctx.fillStyle = 'rgba(179,18,46,.75)'; roundRect(ctx, x + 2, y - 1, colW - 14, rowH - 1, 5); ctx.fill(); }
       seal(x + 6, y + (rowH - Math.min(22, rowH - 6)) / 2 - 1, Math.min(22, rowH - 6), sealText(f, st), { col: sel ? '#1a0a10' : shade(th.d, -10) });
-      T((f.kata ? f.kata + ' ' : '') + (f.name || ''), x + 34, y + rowH / 2 + 5, { size: 15, font: JPF, col: '#fff', weight: 600 });
-      T(vnName(f), x + colW - 18, y + rowH / 2 + 4, { size: 10, col: sel ? '#ffe0b0' : COL.dim, align: 'right' });
+      T((f.kata ? kataVN(f.kata) + ' · ' : '') + vnName(f), x + 34, y + rowH / 2 + 5, { size: 13, col: '#fff', weight: 700 });
+      T((f.kata ? f.kata + ' ' : '') + (f.name || ''), x + colW - 18, y + rowH / 2 + 4, { size: 11, col: sel ? '#ffe0b0' : COL.dim, align: 'right', font: JPF });
       y += rowH;
     });
   });
@@ -200,20 +202,20 @@ function renderMoveList() {
   ctx.fillStyle = 'rgba(0,0,0,.45)'; roundRect(ctx, bx, by, bw, 156, 10); ctx.fill();
   ctx.strokeStyle = th.m; ctx.lineWidth = 1.5; ctx.stroke();
   seal(bx + 12, by + 14, 58, sealText(f, st), { rot: -0.05 });
-  T((f.kata ? f.kata + '　' : '') + (f.name || ''), bx + 82, by + 38, { size: 26, font: DISP, col: '#fff', glow: th.m, glowB: 8 });
-  T(f.vn, bx + 84, by + 58, { size: 12, col: COL.gold2, weight: 600 });
-  T((st.noZen ? '' : '全集中・') + st.jp + ' · ' + (f.kana || ''), bx + 84, by + 74, { size: 11, col: COL.dim, font: JPF });
+  T((f.kata ? kataVN(f.kata) + ' · ' : '') + vnName(f), bx + 82, by + 36, { size: 22, col: '#fff', glow: th.m, glowB: 8, weight: 800 });
+  T(vnDesc(f), bx + 84, by + 56, { size: 12, col: COL.gold2, weight: 600 });
+  T((f.kata ? f.kata + ' ' : '') + (f.name || '') + '  ·  ' + st.jp + (f.kana ? ' · ' + f.kana : ''), bx + 84, by + 73, { size: 11, col: COL.dim, font: JPF });
   // stats
   const sx = bx + bw - 250;
-  const stats = [['種類', inf.kindVn, inf.kindJp], ['呼吸', f.cost + ' hơi thở', ''], ['威力', inf.total ? '~' + inf.total + ' (' + inf.hits + ' hit)' : '—', '']];
-  stats.forEach(([jp, v, j2], i) => { T(jp, sx, by + 26 + i * 20, { size: 13, font: JPF, col: COL.dim }); T(v + (j2 ? ' · ' + j2 : ''), sx + 44, by + 26 + i * 20, { size: 13, col: '#fff', weight: 600, font: j2 ? JPF : UIF }); });
+  const stats = [['Loại', inf.kindVn], ['Tốn', f.cost + ' hơi thở'], ['Sát thương', inf.total ? '~' + inf.total + ' (' + inf.hits + ' đòn)' : '—']];
+  stats.forEach(([k, v], i) => { T(k, sx, by + 26 + i * 20, { size: 12, col: COL.dim, weight: 600 }); T(v, sx + 80, by + 26 + i * 20, { size: 13, col: '#fff', weight: 700 }); });
   // chips
   let cx = bx + 84;
-  inf.chips.forEach(([k, v]) => { const w = measure(k + ' ' + v, 11, JPF) + 14; if (cx + w > sx - 10) return; ctx.fillStyle = 'rgba(217,182,106,.15)'; roundRect(ctx, cx, by + 82, w, 18, 9); ctx.fill(); ctx.strokeStyle = COL.gold; ctx.lineWidth = 1; ctx.stroke(); T(k + ' ' + v, cx + 7, by + 95, { size: 11, font: JPF, col: COL.gold2 }); cx += w + 6; });
-  T('使い方 · Cách dùng:', bx + 14, by + 122, { size: 12, col: th.l, font: JPF, weight: 600 });
-  T(inf.how, bx + 140, by + 122, { size: 12, col: '#eee' });
-  T('使い所 · Khi nào dùng:', bx + 14, by + 142, { size: 12, col: th.l, font: JPF, weight: 600 });
-  T(inf.when, bx + 160, by + 142, { size: 12, col: '#eee' });
+  inf.chips.forEach(([k, v]) => { const w = measure(v, 11, UIF, 700) + 16; if (cx + w > sx - 10) return; ctx.fillStyle = 'rgba(217,182,106,.15)'; roundRect(ctx, cx, by + 82, w, 18, 9); ctx.fill(); ctx.strokeStyle = COL.gold; ctx.lineWidth = 1; ctx.stroke(); T(v, cx + 8, by + 95, { size: 11, col: COL.gold2, weight: 700 }); cx += w + 6; });
+  T('Cách dùng:', bx + 14, by + 122, { size: 12, col: th.l, weight: 800 });
+  T(inf.how, bx + 100, by + 122, { size: 12, col: '#eee' });
+  T('Khi nào dùng:', bx + 14, by + 142, { size: 12, col: th.l, weight: 800 });
+  T(inf.when, bx + 112, by + 142, { size: 12, col: '#eee' });
   // input
   if (pressed('KeyD', 'ArrowRight')) { mlIdx = (mlIdx + 1) % CHAR_KEYS.length; mlForm = 0; Audio.sfx.select(); }
   if (pressed('KeyA', 'ArrowLeft')) { mlIdx = (mlIdx - 1 + CHAR_KEYS.length) % CHAR_KEYS.length; mlForm = 0; Audio.sfx.select(); }
@@ -271,8 +273,8 @@ const GUIDE_PAGES = [
     text: [
       ['F', 'Cách nhanh nhất: GIỮ F. Bảng tất cả thức hiện ra, thời gian dừng, mỗi thức có số. Bấm số → thả F → bấm K. Ví dụ Tanjiro bộ Hinokami: F + 7 = 日暈の龍, F + ] = 拾参ノ型.'],
       ['R', 'Tanjiro có 24 thức chia 2 bộ: 水の呼吸 (10) và ヒノカミ神楽 (14). Bấm R đổi bộ, Q/E/F chỉ chọn trong bộ đang dùng.'],
-      ['技一覧', 'Màn 技一覧 (menu chính) ghi từng thức: loại đòn, hơi, sát thương ước tính, hiệu ứng, CÁCH DÙNG và KHI NÀO DÙNG. Bấm Enter ở một thức để vào luyện tập thử ngay thức đó.'],
-      ['稽古', 'Chế độ 稽古 · Luyện tập: bù nhìn rơm không đánh trả, hơi thở vô hạn, có đủ 14 nhân vật (phím 1–0 cho 10 người đầu, Tab để xoay vòng tới cả 14). Có bảng đếm sát thương và số hit để so sánh các thức.'],
+      ['技一覧', 'Màn Danh sách chiêu thức (menu chính) ghi từng thức: loại đòn, hơi, sát thương ước tính, hiệu ứng, CÁCH DÙNG và KHI NÀO DÙNG. Bấm Enter ở một thức để vào luyện tập thử ngay thức đó.'],
+      ['稽古', 'Chế độ Luyện tập: bù nhìn rơm không đánh trả, hơi thở vô hạn, có đủ 14 nhân vật (phím 1–0 cho 10 người đầu, Tab để xoay vòng tới cả 14). Có bảng đếm sát thương và số hit để so sánh các thức.'],
       ['組合せ', 'Combo gợi ý: (1) đòn tầm xa (đâm / đòn bay) khi boss ở xa → (2) lướt chém áp sát → (3) chuỗi chém nhiều hit → (4) khi boss gồng chiêu lớn thì dùng thức bất tử hoặc 凪 / 幻日虹.'],
     ],
   },
@@ -299,8 +301,8 @@ const GUIDE_PAGES = [
   {
     jp: '各話の攻略', vn: 'Mẹo từng ải', seal: '攻',
     text: [
-      ['第一話〜五話', 'Hand Demon, Susamaru, Kyogai, Rui, Enmu: làm quen điều khiển. Rui: lồng tơ 刻糸牢 co lại, chạy RA khỏi vòng. Enmu: bị ru ngủ thì bấm J liên tục để tỉnh.'],
-      ['第六話 猗窩座', 'Không giết được Akaza. Cầm cự tới BÌNH MINH (thanh 夜明け); đánh trúng làm bình minh tới nhanh hơn.'],
+      ['第一話〜五話', 'Quỷ Tay, Susamaru, Kyogai, Rui, Enmu: làm quen điều khiển. Rui: lồng tơ 刻糸牢 co lại, chạy RA khỏi vòng. Enmu: bị ru ngủ thì bấm J liên tục để tỉnh.'],
+      ['第六話 猗窩座', 'Không giết được Akaza. Cầm cự tới BÌNH MINH (thanh "Tới bình minh" trên cùng); đánh trúng làm bình minh tới nhanh hơn.'],
       ['第七話 遊郭', 'Phải hạ CẢ Daki và Gyutaro trong 4 giây, nếu không chúng hồi sinh 50%. Hạ một con xuống thấp rồi dồn con kia. Trúng độc thì dùng 爆血 của Nezuko.'],
       ['第八・九話', 'Gyokko dịch chuyển, dùng đòn tầm xa. Hantengu: hạ máu xong thì con quỷ nhỏ 「恨」 chạy trốn, đuổi theo chém nó.'],
       ['第十〜十二話', 'Douma: Shinobu rải độc, độc làm hắn hồi máu chậm. Akaza lần 2 hồi sinh 1 lần. Kokushibo: đường trăng rất nhiều, dùng Shift / 凪.'],
@@ -308,6 +310,16 @@ const GUIDE_PAGES = [
     ],
   },
 ];
+const GUIDE_KEY_VN = {
+  '呼吸ゲージ': 'Thanh hơi thở', '回復': 'Hồi hơi', '流れ': 'Nhịp chơi', '奥義': 'Tuyệt kỹ', '無敵': 'Bất tử', '毒・慈': 'Độc · Nhân từ',
+  '連撃': 'Combo', '見切られた': 'Quỷ đọc đòn', '体勢': 'Thế đứng', '弾き': 'Chém bật', '見切り': 'Né hoàn hảo', 'ゲームパッド': 'Tay cầm',
+  'F': 'Giữ F', 'R': 'Phím R', '技一覧': 'Danh sách chiêu', '稽古': 'Luyện tập', '組合せ': 'Combo gợi ý',
+  '交代': 'Đổi người', '休憩': 'Nghỉ', '戦闘不能': 'Gục ngã', '相性': 'Phối hợp',
+  '予兆': 'Báo trước', '線': 'Nét đứt', '円': 'Vòng tròn', '地': 'Mặt đất', '跳': 'Dải đỏ', '回避': 'Né',
+  '第一話〜五話': 'Màn 1 – 5', '第六話 猗窩座': 'Màn 6 · Akaza', '第七話 遊郭': 'Màn 7 · Phố Đèn Đỏ', '第八・九話': 'Màn 8 – 9', '第十〜十二話': 'Màn 10 – 12', '最終話 無惨': 'Màn cuối · Muzan',
+};
+const GUIDE_TAB_VN = { '基本操作': 'Điều khiển', '呼吸と型': 'Hơi thở & thức', '連携': 'Phối hợp', '20以上の型を使う': 'Dùng 20+ thức', '仲間': 'Đội hình', '鬼の攻撃を読む': 'Đọc đòn quỷ', '各話の攻略': 'Mẹo từng màn' };
+GUIDE_PAGES.forEach(p => { p.tab = GUIDE_TAB_VN[p.jp] || p.vn; });
 function openGuide(from) { guideReturn = from || 'title'; guidePage = 0; mode = 'guide'; }
 function renderGuide() {
   gt++;
@@ -317,11 +329,11 @@ function renderGuide() {
   // tabs
   let tx = 30;
   GUIDE_PAGES.forEach((pg, i) => {
-    const w = measure(pg.jp, 14, JPF) + 26, sel = i === guidePage;
+    const w = measure(pg.tab, 13, UIF, 700) + 26, sel = i === guidePage;
     if (clickIn(tx, 80, w, 30)) guidePage = i;
     ctx.fillStyle = sel ? COL.crimson : 'rgba(255,255,255,.06)'; roundRect(ctx, tx, 80, w, 30, 15); ctx.fill();
     ctx.strokeStyle = sel ? COL.gold2 : 'rgba(217,182,106,.35)'; ctx.lineWidth = 1; ctx.stroke();
-    T(pg.jp, tx + w / 2, 100, { size: 14, font: JPF, col: '#fff', align: 'center' }); tx += w + 8;
+    T(pg.tab, tx + w / 2, 100, { size: 13, col: '#fff', align: 'center', weight: 700 }); tx += w + 8;
   });
   const pg = GUIDE_PAGES[guidePage];
   panel(30, 124, W - 60, H - 184, { pattern: P_ASANOHA(), patAlpha: 0.04 });
@@ -330,16 +342,17 @@ function renderGuide() {
   if (pg.rows) pg.rows.forEach(([k, jp, vn], i) => {
     const y = 250 + i * 36;
     if (i % 2 === 0) { ctx.fillStyle = 'rgba(255,255,255,.03)'; ctx.fillRect(60, y - 25, W - 120, 34); }
-    keycap(k, 76, y, { size: 14 }); T(jp, 270, y - 2, { size: 19, font: JPF, col: '#fff', weight: 600 }); T(vn, 420, y - 2, { size: 15, col: '#d8d0e0' });
+    keycap(k, 76, y, { size: 14 }); T(vn, 270, y - 2, { size: 15, col: '#efe8f6', weight: 600 }); T(jp, W - 76, y - 2, { size: 12, font: JPF, col: COL.dim, align: 'right' });
   });
   if (pg.text) {
     let y = 250;
     pg.text.forEach(([k, v]) => {
       seal(60, y - 22, 30, [...k][0], { col: COL.crimson });
-      T(k, 102, y - 2, { size: 16, font: JPF, col: COL.gold2, weight: 700 });
-      const lines = wrap(v, W - 300, 15, UIF);
-      lines.forEach((l, i) => T(l, 250, y - 2 + i * 21, { size: 15, col: '#e8e2f0' }));
-      y += Math.max(34, lines.length * 21 + 14);
+      { const lab = GUIDE_KEY_VN[k] || k; let fs = 15; while (fs > 11 && measure(lab, fs, UIF, 800) > 150) fs--; T(lab, 102, y - 4, { size: fs, col: COL.gold2, weight: 800 }); }
+      if (GUIDE_KEY_VN[k]) T(k, 102, y + 12, { size: 11, col: COL.dim, font: JPF });
+      const lines = wrap(v, W - 330, 15, UIF);
+      lines.forEach((l, i) => T(l, 268, y - 2 + i * 21, { size: 15, col: '#e8e2f0' }));
+      y += Math.max(GUIDE_KEY_VN[k] ? 44 : 34, lines.length * 21 + 16);
     });
   }
   hints([['A/D', 'ページ', 'Trang'], ['Esc', '戻る', 'Quay lại']], W / 2, H - 24, 'center');
