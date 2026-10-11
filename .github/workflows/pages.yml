@@ -34,9 +34,9 @@ jobs:
       - name: Collect site files
         run: |
           mkdir _site
-          cp -r index.html js assets .nojekyll _site/
+          cp -r index.html stats.html js assets .nojekyll _site/
           # cache-bust game scripts so players always get the latest build; vendor libs never change, so they stay cacheable
-          sed -i -E "/js\/vendor\//! s#src=\"(js|assets)/([^\"]+)\.js\"#src=\"\1/\2.js?v=${GITHUB_SHA::7}\"#g" _site/index.html
+          sed -i -E "/js\/vendor\//! s#src=\"(js|assets)/([^\"]+)\.js\"#src=\"\1/\2.js?v=${GITHUB_SHA::7}\"#g" _site/index.html _site/stats.html
           grep -n '<script' _site/index.html
       - uses: actions/upload-pages-artifact@v3
         with:

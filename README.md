@@ -2,6 +2,8 @@
 
 Mở `index.html` bằng Chrome/Edge (double-click là chạy, không cần cài gì).
 
+Chơi online: https://betuanminh22032003.github.io/kimetsu-zenshuchu/ · Chỉ số mọi nhân vật & quỷ: [`stats.html`](https://betuanminh22032003.github.io/kimetsu-zenshuchu/stats.html) (đọc thẳng từ `js/data.js`).
+
 Giao diện song ngữ 日本語 / Tiếng Việt. Font thư pháp (Yuji Syuku, Shippori Mincho, Be Vietnam Pro) tải từ Google Fonts khi có mạng; offline thì dùng font có sẵn của Windows.
 
 ## Đồ họa 3D — đấu trường 3D thật
