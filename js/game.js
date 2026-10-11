@@ -1019,7 +1019,7 @@ function updateBoss(b) {
 
 function bossCallout(b, a) {
   if (!a.n) return;
-  G.bossLine = { s: a.n, t: 0, b };
+  G.bossLine = { s: a.n, vn: ART_VN[a.n] || '', t: 0, b };
   const gap = Audio.voiceLv === 2 ? 150 : 360; // demons name their blood arts too, but not every single time
   if (G.t - G.lastSay > 70 && G.t - (G.lastBossSay || -999) > gap && Audio.say(a.n.replace(/・/g, '、'), SPEAKERS[b.key] ? SPEAKERS[b.key].voice : 0.8, 1.2, 1)) G.lastBossSay = G.t;
 }

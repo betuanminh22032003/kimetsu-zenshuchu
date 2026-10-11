@@ -12,8 +12,6 @@ if (document.fonts) ['Yuji Syuku', 'Shippori Mincho B1', 'Be Vietnam Pro'].forEa
 
 const COL = { ink: '#0d0b12', ink2: '#17131f', crimson: '#b3122e', crimson2: '#e0324e', gold: '#d9b66a', gold2: '#f3dca0', paper: '#efe4cc', dim: '#9d95ad', wis: '#a68bdc' };
 const STYLE_VN = { water: 'Hơi thở của Nước', sun: 'Hơi thở Mặt Trời', thunder: 'Hơi thở Sấm Sét', beast: 'Hơi thở Dã Thú', flame: 'Hơi thở Lửa', insect: 'Hơi thở Côn Trùng', love: 'Hơi thở Tình Yêu', mist: 'Hơi thở Sương Mù', sound: 'Hơi thở Âm Thanh', serpent: 'Hơi thở Rắn', wind: 'Hơi thở Gió', stone: 'Hơi thở Đá', flower: 'Hơi thở Hoa', blood: 'Huyết Quỷ Thuật' };
-const BOSS_VN = { temoni: 'Quỷ Tay', susamaru: 'Susamaru', kyogai: 'Kyogai', rui: 'Rui', enmu: 'Enmu', akaza: 'Akaza', akaza2: 'Akaza', daki: 'Daki', gyutaro: 'Gyutaro', gyokko: 'Gyokko', hantengu: 'Zohakuten (Hantengu)', doma: 'Douma', kokushibo: 'Kokushibo', muzan: 'Kibutsuji Muzan', mini: 'Quỷ', mini_doma: 'Búp bê băng', dummy: 'Bù nhìn rơm', yahaba: 'Yahaba', shitaoni: 'Quỷ Lưỡi', spider_mother: 'Mẹ Nhện', puppet: 'Con rối', spider_father: 'Cha Nhện', enmu_roof: 'Enmu', daki_solo: 'Daki', kingyo: 'Cá vàng', sekido: 'Sekido', karaku: 'Karaku', urogi: 'Urogi', aizetsu: 'Aizetsu', tamayo: 'Tamayo' };
-const TITLE_VN = { '異形の鬼': 'Quỷ dị hình', '十二鬼月を名乗る鬼': 'Tự xưng Thập Nhị Quỷ Nguyệt', '元・下弦の陸': 'Cựu Hạ Huyền Lục', '下弦の伍': 'Hạ Huyền Ngũ', '下弦の壱': 'Hạ Huyền Nhất', '上弦の参': 'Thượng Huyền Tam', '上弦の陸': 'Thượng Huyền Lục', '上弦の伍': 'Thượng Huyền Ngũ', '上弦の肆 半天狗': 'Thượng Huyền Tứ', '上弦の弐': 'Thượng Huyền Nhị', '上弦の壱': 'Thượng Huyền Nhất', '鬼の始祖': 'Thủy tổ loài quỷ', '稽古台': 'Bia tập', '鼓屋敷の鬼': 'Quỷ dinh thự trống', '累の「家族」': '"Gia đình" của Rui', '玉壺の壺': 'Cá trong bình của Gyokko', '上弦の肆 分裂体': 'Phân thân Thượng Huyền Tứ' };
 const BUFF_N = { sense: ['空間識覚', 'Cảm nhận'], evade: ['幻日虹', 'Ảo ảnh'], invis: ['朧', 'Ẩn thân'], guard: ['岩軀の膚', 'Giáp đá'], nagi: ['凪', 'Phong lặng'], slow: ['彼岸朱眼', 'Mắt chậm'] };
 
 let mode = 'title', menuIdx = 0, selIdx = 0, mlIdx = 0, setIdx = 0, gt = 0;
@@ -388,8 +386,10 @@ function renderBattleOverlay() {
     const b = G.bossLine.b, a = Math.min(1, (90 - G.bossLine.t) / 20, G.bossLine.t / 6);
     const bp = R3D.ok ? R3D.project(b.x, b.y - b.hh - 44, b.z) : [b.x, b.y - b.hh - 44];
     const x = clamp(bp[0], 240, W - 240), y = Math.max(150, bp[1]);
-    const w = measure(G.bossLine.s, 22, JPF) + 40;
-    ctx.save(); ctx.globalAlpha = a; ink(x - w / 2, y - 26, w, 36, 'rgba(60,0,10,.85)', 1, 3); T(G.bossLine.s, x, y, { size: 22, font: JPF, col: '#ffc4cc', align: 'center', stroke: 4, weight: 600 }); ctx.restore();
+    const vn = G.bossLine.vn, w = Math.max(measure(G.bossLine.s, 22, JPF), vn ? measure(vn, 13, UIF) : 0) + 40;
+    ctx.save(); ctx.globalAlpha = a; ink(x - w / 2, y - 26, w, vn ? 54 : 36, 'rgba(60,0,10,.85)', 1, 3); T(G.bossLine.s, x, y, { size: 22, font: JPF, col: '#ffc4cc', align: 'center', stroke: 4, weight: 600 });
+    if (vn) T(vn, x, y + 20, { size: 13, col: COL.gold2, align: 'center', stroke: 3, weight: 600 });
+    ctx.restore();
   }
   if (G.banner) {
     const b = G.banner, a = Math.min(1, b.t / 10, (b.dur - b.t) / 20);

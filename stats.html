@@ -3,32 +3,32 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>鬼滅の刃 — Chỉ số nhân vật</title>
-<meta name="description" content="Chỉ số, điểm mạnh / điểm yếu và toàn bộ thức của mọi nhân vật trong 鬼滅の刃 — 全集中の章.">
+<title>Chỉ số nhân vật — Thanh Gươm Diệt Quỷ</title>
+<meta name="description" content="Hình, chỉ số, điểm mạnh / điểm yếu và toàn bộ chiêu thức của mọi thợ săn quỷ và quỷ trong fan game Thanh Gươm Diệt Quỷ — 全集中の章.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Yuji+Syuku&family=Shippori+Mincho+B1:wght@500;700&family=Be+Vietnam+Pro:wght@400;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Yuji+Syuku&family=Shippori+Mincho+B1:wght@500;700&family=Be+Vietnam+Pro:wght@400;600;700;800&display=swap" rel="stylesheet">
 <style>
   :root {
     --ink: #0d0b12; --ink2: #17131f; --ink3: #211b2c; --line: rgba(217,182,106,.22);
     --crimson: #b3122e; --crimson2: #e0324e; --gold: #d9b66a; --gold2: #f3dca0;
-    --paper: #efe4cc; --text: #e8e1f0; --dim: #9d95ad; --good: #9fe0a0; --bad: #ff9a9a;
+    --text: #e8e1f0; --dim: #9d95ad; --good: #9fe0a0; --bad: #ff9a9a;
     --disp: 'Yuji Syuku', 'Shippori Mincho B1', serif; --jp: 'Shippori Mincho B1', serif; --ui: 'Be Vietnam Pro', system-ui, sans-serif;
   }
   * { box-sizing: border-box; }
   html { background: var(--ink); }
   body { margin: 0; background: radial-gradient(1200px 600px at 80% -10%, rgba(179,18,46,.18), transparent 60%), var(--ink); color: var(--text); font: 14px/1.5 var(--ui); min-height: 100vh; }
-  a { color: var(--gold2); }
   .wrap { max-width: 1240px; margin: 0 auto; padding: 28px 16px 60px; }
-  header { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 12px 24px; margin-bottom: 22px; }
-  .seal { display: inline-grid; place-items: center; width: 52px; height: 52px; background: var(--crimson); color: #fff; font: 30px var(--disp); border-radius: 6px; box-shadow: 0 0 0 2px rgba(255,255,255,.08) inset; flex: none; }
-  h1 { margin: 0; font: 34px/1.1 var(--disp); color: #fff; letter-spacing: .02em; }
+  header { display: flex; flex-wrap: wrap; align-items: center; gap: 12px 24px; margin-bottom: 18px; }
+  .seal { display: inline-grid; place-items: center; width: 52px; height: 52px; background: var(--crimson); color: #fff; font: 30px var(--disp); border-radius: 6px; flex: none; }
+  h1 { margin: 0; font: 800 30px/1.15 var(--ui); color: #fff; }
   .sub { color: var(--gold2); font-weight: 600; font-size: 13px; }
+  .jp { font-family: var(--jp); }
   .head-l { display: flex; gap: 14px; align-items: center; }
   .play { margin-left: auto; background: var(--crimson); color: #fff; text-decoration: none; padding: 10px 18px; border-radius: 8px; font-weight: 700; white-space: nowrap; }
   .play:hover { background: var(--crimson2); }
 
-  .bar { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; margin-bottom: 18px; position: sticky; top: 0; z-index: 5; background: rgba(13,11,18,.92); backdrop-filter: blur(6px); padding: 10px 0; border-bottom: 1px solid var(--line); }
+  .bar { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; margin-bottom: 14px; position: sticky; top: 0; z-index: 5; background: rgba(13,11,18,.92); backdrop-filter: blur(6px); padding: 10px 0; border-bottom: 1px solid var(--line); }
   .tabs { display: flex; gap: 4px; background: var(--ink2); padding: 4px; border-radius: 10px; border: 1px solid var(--line); }
   .tabs button, select, input { font: 600 13px var(--ui); color: var(--text); }
   .tabs button { background: none; border: 0; padding: 7px 14px; border-radius: 7px; cursor: pointer; }
@@ -36,57 +36,60 @@
   select, input { background: var(--ink2); border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px; }
   input { flex: 1 1 180px; min-width: 0; }
   .count { color: var(--dim); font-size: 12px; margin-left: auto; }
+  .legend { color: var(--dim); font-size: 12px; margin: 0 0 16px; }
 
-  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); gap: 14px; }
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(360px, 1fr)); gap: 14px; }
   .card { background: linear-gradient(180deg, var(--ink3), var(--ink2)); border: 1px solid var(--line); border-radius: 14px; padding: 16px; position: relative; overflow: hidden; }
   .card::before { content: ''; position: absolute; inset: 0 0 auto 0; height: 3px; background: var(--accent, var(--crimson)); }
-  .top { display: flex; gap: 12px; align-items: center; margin-bottom: 10px; }
-  .face { width: 48px; height: 48px; border-radius: 50%; flex: none; display: grid; place-items: center; font: 22px var(--disp); color: #fff; text-shadow: 0 1px 2px #000; border: 2px solid rgba(255,255,255,.18); }
-  .nm { font: 20px/1.15 var(--jp); font-weight: 700; color: #fff; }
-  .vn { color: var(--gold2); font-size: 12px; font-weight: 600; }
-  .tag { display: inline-block; font-size: 11px; font-weight: 700; padding: 2px 8px; border-radius: 99px; background: rgba(255,255,255,.07); color: var(--gold2); margin-top: 4px; }
-  .rank { margin-left: auto; font: 15px var(--disp); color: var(--gold); border: 1px solid var(--line); border-radius: 6px; padding: 3px 7px; white-space: nowrap; }
-
-  .stats { display: grid; grid-template-columns: 70px 1fr 54px; gap: 5px 8px; align-items: center; margin: 10px 0 12px; font-size: 12px; }
+  .top { display: flex; gap: 14px; align-items: stretch; }
+  .pic { width: 112px; height: 140px; flex: none; border-radius: 10px; background: radial-gradient(circle at 50% 35%, color-mix(in srgb, var(--accent) 45%, transparent), transparent 70%), rgba(255,255,255,.03); border: 1px solid var(--line); display: grid; place-items: center; overflow: hidden; }
+  .pic img { width: 100%; height: 100%; object-fit: contain; display: block; }
+  .pic .ph { font: 36px var(--disp); color: rgba(255,255,255,.25); }
+  .info { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+  .nm { font: 800 19px/1.2 var(--ui); color: #fff; }
+  .nmjp { font: 13px var(--jp); color: var(--dim); }
+  .role { color: var(--gold2); font-size: 12px; font-weight: 700; margin-top: 2px; }
+  .badge { align-self: flex-start; margin-top: 6px; font-size: 11px; font-weight: 700; color: var(--gold); border: 1px solid var(--line); border-radius: 6px; padding: 2px 8px; }
+  .stats { display: grid; grid-template-columns: 44px 1fr 52px; gap: 4px 8px; align-items: center; margin-top: auto; padding-top: 8px; font-size: 12px; }
   .stats .k { color: var(--dim); font-weight: 600; white-space: nowrap; }
-  .stats .k b { font-family: var(--jp); color: var(--text); margin-right: 3px; }
   .track, .fill { display: block; }
-  .track { height: 8px; background: rgba(255,255,255,.07); border-radius: 99px; overflow: hidden; }
+  .track { height: 7px; background: rgba(255,255,255,.07); border-radius: 99px; overflow: hidden; }
   .fill { height: 100%; border-radius: 99px; background: var(--accent, var(--crimson)); }
   .stats .v { text-align: right; font-variant-numeric: tabular-nums; font-weight: 700; }
-  .pc { font-size: 13px; margin: 4px 0; display: flex; gap: 8px; }
-  .pc b { font-family: var(--jp); flex: none; }
-  .pros b, .pros { color: var(--good); }
-  .cons b, .cons { color: var(--bad); }
-  .pc span { color: var(--text); }
-  .traits { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+
+  .pc { font-size: 13px; margin: 10px 0 0; line-height: 1.45; }
+  .pc b { margin-right: 4px; }
+  .pros b { color: var(--good); } .cons b { color: var(--bad); }
+  .cons { margin-top: 4px; }
+  .traits { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
   .trait { font-size: 11px; font-weight: 700; padding: 3px 8px; border-radius: 6px; background: rgba(179,18,46,.25); color: #ffd0d8; }
+  .stages { margin-top: 10px; font-size: 11px; color: var(--dim); }
+  .stages span { display: inline-block; background: rgba(255,255,255,.06); border-radius: 5px; padding: 1px 6px; margin: 2px 3px 0 0; color: var(--text); }
 
   details { margin-top: 12px; border-top: 1px solid var(--line); padding-top: 10px; }
   summary { cursor: pointer; font-weight: 700; color: var(--gold2); font-size: 13px; list-style: none; display: flex; align-items: center; gap: 6px; }
   summary::-webkit-details-marker { display: none; }
   summary::before { content: '▸'; transition: transform .15s; }
   details[open] summary::before { transform: rotate(90deg); }
-  .style-h { font: 15px var(--jp); font-weight: 700; color: #fff; margin: 12px 0 4px; }
-  .style-h small { font-family: var(--ui); color: var(--dim); font-weight: 600; font-size: 11px; margin-left: 6px; }
+  .style-h { font-weight: 800; color: #fff; margin: 12px 0 4px; font-size: 14px; }
+  .style-h small { font-family: var(--jp); color: var(--dim); font-weight: 500; font-size: 12px; margin-left: 6px; }
   table { width: 100%; border-collapse: collapse; font-size: 12px; }
-  td, th { padding: 5px 4px; border-bottom: 1px solid rgba(255,255,255,.05); vertical-align: top; text-align: left; }
+  td, th { padding: 6px 4px; border-bottom: 1px solid rgba(255,255,255,.05); vertical-align: top; text-align: left; }
   th { color: var(--dim); font-weight: 600; font-size: 11px; }
-  td.n { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
-  th.n { text-align: right; }
-  .fn { font-family: var(--jp); color: #fff; font-weight: 700; }
-  .fk { color: var(--dim); font-size: 11px; }
-  .fv { color: var(--dim); font-size: 11px; display: block; }
-  .stages { margin-top: 10px; font-size: 11px; color: var(--dim); }
-  .stages span { display: inline-block; background: rgba(255,255,255,.06); border-radius: 5px; padding: 1px 6px; margin: 2px 3px 0 0; color: var(--text); }
+  td.n, th.n { text-align: right; }
+  td.n { font-variant-numeric: tabular-nums; white-space: nowrap; font-weight: 700; }
+  .fvn { color: #fff; font-weight: 700; display: block; }
+  .fjp { font-family: var(--jp); color: var(--dim); font-size: 11px; }
+  .fk { color: var(--gold); font-size: 11px; font-weight: 600; }
+  .sm { color: var(--dim); font-size: 11px; font-weight: 500; }
   .note { color: var(--dim); font-size: 12px; margin: 26px 0 0; text-align: center; }
-  .legend { color: var(--dim); font-size: 12px; margin: -6px 0 16px; }
 
   @media (max-width: 420px) {
     .grid { grid-template-columns: 1fr; }
-    h1 { font-size: 26px; }
+    h1 { font-size: 24px; }
     .play { margin-left: 0; }
-    .stats { grid-template-columns: 62px 1fr 48px; }
+    .pic { width: 92px; height: 120px; }
+    .card { padding: 14px; }
   }
 </style>
 </head>
@@ -96,8 +99,8 @@
     <div class="head-l">
       <span class="seal">鬼</span>
       <div>
-        <h1>人物図鑑 · Chỉ số nhân vật</h1>
-        <div class="sub">鬼滅の刃 — 全集中の章 · cập nhật tự động từ dữ liệu game</div>
+        <h1>Chỉ số nhân vật</h1>
+        <div class="sub">Thanh Gươm Diệt Quỷ — Chương Toàn Tập Trung · <span class="jp">人物図鑑</span></div>
       </div>
     </div>
     <a class="play" href="./">▶ Chơi game</a>
@@ -105,48 +108,105 @@
 
   <div class="bar">
     <div class="tabs" role="tablist">
-      <button role="tab" data-tab="slayers" aria-selected="true">鬼殺隊 Thợ săn quỷ</button>
-      <button role="tab" data-tab="demons" aria-selected="false">鬼 Quỷ</button>
+      <button role="tab" data-tab="slayers" aria-selected="true">Thợ săn quỷ</button>
+      <button role="tab" data-tab="demons" aria-selected="false">Quỷ</button>
     </div>
     <select id="sort" aria-label="Sắp xếp"></select>
-    <input id="q" type="search" placeholder="Tìm tên / thức…" aria-label="Tìm">
+    <input id="q" type="search" placeholder="Tìm tên nhân vật / chiêu…" aria-label="Tìm">
     <span class="count" id="count"></span>
   </div>
   <p class="legend" id="legend"></p>
   <div class="grid" id="grid"></div>
-  <p class="note">Số liệu đọc trực tiếp từ <code>js/data.js</code> của game — đổi chỉ số trong game là trang này tự cập nhật.</p>
+  <p class="note">Hình là mô hình 3D trong game. Số liệu đọc trực tiếp từ dữ liệu game nên luôn khớp với bản đang chơi.</p>
 </div>
 
+<script src="js/vendor/three.min.js"></script>
+<script src="assets/manifest.js"></script>
 <script src="js/data.js"></script>
+<script src="js/draw.js"></script>
+<script src="js/chara.js"></script>
+<script src="js/model3d.js"></script>
 <script>
 'use strict';
 const KIND = { slash: 'Nhát chém lớn', flip: 'Lộn vòng chém', dashSlash: 'Lướt chém', multi: 'Chuỗi chém', spin: 'Xoay chém', thrust: 'Đâm xa', multiThrust: 'Đâm liên hoàn', slam: 'Bổ từ trên', rise: 'Chém bay lên', wave: 'Đòn bay', dragon: 'Rồng lượn', whip: 'Quất xa', barrage: 'Rải đòn', rain: 'Giáng từ trời', throw: 'Ném', aoe: 'Nổ diện rộng', zigzag: 'Zigzag', buff: 'Cường hóa', combo13: 'Tuyệt kỹ' };
 const ATK = { melee: 'Cận chiến', proj: 'Đạn bay', lines: 'Đường chém', shock: 'Sóng đất', circle: 'Vùng nổ', rain: 'Mưa từ trời', summon: 'Triệu hồi', dash: 'Lao tới', sleep: 'Ru ngủ', arms: 'Xúc tu', sweep: 'Quét ngang', cage: 'Lồng tơ', compass: 'Kích hoạt', storm: 'Bão đòn', tilt: 'Xoay phòng' };
-const STYLE_VN = { water: 'Nước', sun: 'Mặt Trời', thunder: 'Sấm Sét', beast: 'Dã Thú', flame: 'Lửa', insect: 'Côn Trùng', love: 'Tình Yêu', mist: 'Sương Mù', sound: 'Âm Thanh', serpent: 'Rắn', wind: 'Gió', stone: 'Đá', flower: 'Hoa', blood: 'Huyết Quỷ Thuật' };
-const BUFF = { evade: 'Bất tử (ảo ảnh)', sense: '40% chí mạng x1.8', invis: 'Ẩn thân, đòn kế x2', guard: 'Giảm 70% sát thương', nagi: 'Chém tan mọi đòn quanh mình', slow: 'Quỷ chậm còn 35%' };
+const STYLE_VN = { water: 'Hơi thở của Nước', sun: 'Hinokami Kagura (Hơi thở Mặt Trời)', thunder: 'Hơi thở Sấm Sét', beast: 'Hơi thở Dã Thú', flame: 'Hơi thở Lửa', insect: 'Hơi thở Côn Trùng', love: 'Hơi thở Tình Yêu', mist: 'Hơi thở Sương Mù', sound: 'Hơi thở Âm Thanh', serpent: 'Hơi thở Rắn', wind: 'Hơi thở Gió', stone: 'Hơi thở Đá', flower: 'Hơi thở Hoa', blood: 'Huyết Quỷ Thuật' };
+const BUFF = { evade: 'Bất tử (ảo ảnh)', sense: '40% chí mạng ×1.8', invis: 'Ẩn thân, đòn kế ×2', guard: 'Giảm 70% sát thương', nagi: 'Chém tan mọi đòn quanh mình', slow: 'Quỷ chậm còn 35%' };
+const NUM = ['', '1', '2', '3', '4', '5', '6', '7', '8', '9', '10', '11'];
+const KATA_VN = Object.assign({}, ...Object.entries(KATA).map(([n, [jp]]) => ({ [jp]: 'Thức ' + NUM[n] })), ...Object.entries(KIBA).map(([n, [jp]]) => ({ [jp]: 'Nanh ' + NUM[n] })),
+  { '拾参ノ型': 'Thức 13', '終ノ型': 'Thức cuối', '蝶ノ舞': 'Điệu múa Bướm', '蜂牙ノ舞': 'Điệu múa Ong', '虻咬ノ舞': 'Điệu múa Ruồi trâu', '蜻蛉ノ舞': 'Điệu múa Chuồn chuồn', '蜈蚣ノ舞': 'Điệu múa Rết' });
 const esc = s => String(s == null ? '' : s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
-const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+const ACCENT = { tanjiro: '#1d6b4a', nezuko: '#e2628a', zenitsu: '#f4c430', inosuke: '#6b8aa0', kanao: '#c070d0', giyu: '#3a6ad0', rengoku: '#e2421c', shinobu: '#7a3cb0', tengen: '#d0b060', mitsuri: '#f48fb7', muichiro: '#4cc3b8', obanai: '#8a7aaa', sanemi: '#5a9a6a', gyomei: '#a08050' };
 
-// which stages each key appears in
+// ---------- 3D portraits (rendered once from the game's own chibi models) ----------
+const PICS = {};
+const Shot = (() => {
+  try {
+    if (!window.THREE || !CHIBI3D.make) return null;
+    const T3 = THREE, cv = document.createElement('canvas'); cv.width = 224; cv.height = 280;
+    const r = new T3.WebGLRenderer({ canvas: cv, alpha: true, antialias: true, preserveDrawingBuffer: true });
+    const sc = new T3.Scene(); sc.add(new T3.HemisphereLight(0xffffff, 0x5a4a60, 1.15));
+    const dl = new T3.DirectionalLight(0xffffff, 0.8); dl.position.set(2, 5, 6); sc.add(dl);
+    const cam = new T3.PerspectiveCamera(28, cv.width / cv.height, 0.1, 100);
+    return a => {
+      const M = CHIBI3D.make(a); if (!M) return null;
+      sc.add(M.root); CHIBI3D.pose(M, Object.assign({ x: 640, y: GY, z: 0, yaw: 0.35, scale: 1, pose: { t: 0, swing: 0.9 } }, a), 0.016);
+      const box = new T3.Box3().setFromObject(M.root), s = box.getSize(new T3.Vector3()), c = box.getCenter(new T3.Vector3());
+      const d = Math.max(s.y, s.x * 1.25) / (2 * Math.tan(14 * Math.PI / 180)) * 1.04;
+      cam.position.set(c.x, c.y + s.y * 0.03, c.z + d); cam.lookAt(c); r.render(sc, cam);
+      const url = cv.toDataURL('image/png'); sc.remove(M.root);
+      M.root.traverse(o => { if (o.geometry) o.geometry.dispose(); }); (M.mats || []).forEach(m => { if (m.map) m.map.dispose(); m.dispose(); });
+      return url;
+    };
+  } catch (e) { return null; }
+})();
+function picFor(id) {
+  if (id in PICS) return PICS[id];
+  let url = null;
+  try {
+    if (Shot) {
+      if (CHARS[id]) url = Shot({ key: id, look: CHARS[id].look, ch: CHARS[id] });
+      else { const d = BOSSES[id]; url = Shot({ key: id, lk: d.look, boss: 1, look: DEMON_LOOKS[d.look], custom: !DEMON_LOOKS[d.look] }); }
+    }
+  } catch (e) { url = null; }
+  return (PICS[id] = url);
+}
+function fillPics() {
+  const pending = [...document.querySelectorAll('.pic[data-k]:not([data-done])')];
+  const step = () => {
+    const t0 = performance.now();
+    while (pending.length && performance.now() - t0 < 30) {
+      const el = pending.shift(); el.dataset.done = 1;
+      const url = picFor(el.dataset.k);
+      if (url) el.innerHTML = `<img src="${url}" alt="${esc(el.dataset.alt)}">`;
+    }
+    if (pending.length) requestAnimationFrame(step);
+  };
+  requestAnimationFrame(step);
+}
+
+// ---------- data ----------
 const stageOf = {};
 STAGES.forEach(s => {
   (s.team || []).forEach(k => (stageOf[k] = stageOf[k] || []).push(s));
   const bs = [s.boss, s.boss2].concat(...(s.phases || []).map(p => p.bosses || []));
   [...new Set(bs.filter(Boolean))].forEach(k => (stageOf[k] = stageOf[k] || []).push(s));
 });
+const stageChips = key => (stageOf[key] || []).map(s => `<span>Màn ${s.id}: ${esc(s.arcVn.split(' — ').pop())}</span>`).join('');
 
 const slayers = Object.entries(CHARS).map(([key, c]) => {
   const forms = c.styles.flatMap(sk => STYLES[sk].forms);
   const maxDmg = Math.max(0, ...forms.map(f => f.dmg ? Math.round(f.dmg * (f.kind === 'combo13' ? 12 : (f.hits || f.n || 1)) * (c.atk || 1)) : 0));
   return { key, c, forms, maxDmg, atk: c.atk || 1, def: c.def || 1, brr: c.brRegen || 1 };
 });
+// one entry per distinct demon (akaza2 / enmu_roof / daki_solo are stage variants of the same demon)
 const demons = Object.entries(BOSSES).filter(([, d]) => !d.training).map(([key, d]) => {
   const atks = (d.atks || []).concat(d.p2 || []);
   return { key, d, atks, maxHit: Math.max(0, ...atks.map(a => a.dmg || 0)), regenS: (d.regen || 0) * 60 * (d.dawn ? 1 : 0.3) };
 });
 
 const SORTS = {
-  slayers: [['order', 'Thứ tự trong game'], ['hp', 'Máu'], ['atk', 'Công'], ['def', 'Thủ'], ['speed', 'Tốc độ'], ['br', 'Hơi thở'], ['forms', 'Số thức'], ['maxDmg', 'Chiêu mạnh nhất']],
+  slayers: [['order', 'Thứ tự trong game'], ['hp', 'Máu'], ['atk', 'Công'], ['def', 'Thủ'], ['speed', 'Tốc độ'], ['br', 'Hơi thở'], ['forms', 'Số chiêu'], ['maxDmg', 'Chiêu mạnh nhất']],
   demons: [['order', 'Thứ tự trong game'], ['hp', 'Máu'], ['maxHit', 'Đòn mạnh nhất'], ['speed', 'Tốc độ'], ['regen', 'Hồi máu'], ['atks', 'Số chiêu']],
 };
 const sortVal = {
@@ -157,72 +217,73 @@ const sortVal = {
 let tab = 'slayers';
 try { tab = localStorage.getItem('stats.tab') || 'slayers'; } catch (e) {}
 const $ = id => document.getElementById(id);
-
-function statRow(jp, vn, frac, val, accent) {
-  return `<span class="k"><b>${jp}</b>${vn}</span><span class="track"><span class="fill" style="width:${Math.round(clamp(frac, 0.04, 1) * 100)}%"></span></span><span class="v">${val}</span>`;
-}
-function styleColor(c) { return c.look && (c.look.h2 && c.look.h2 !== '#111' && c.look.h2 !== '#fff' ? c.look.h2 : c.look.hair) || '#b3122e'; }
+const statRow = (label, frac, val) => `<span class="k">${label}</span><span class="track"><span class="fill" style="width:${Math.round(clamp(frac, 0.04, 1) * 100)}%"></span></span><span class="v">${val}</span>`;
+const pic = (key, alt) => `<div class="pic" data-k="${key}" data-alt="${esc(alt)}"><span class="ph">${esc(alt[0])}</span></div>`;
 
 function slayerCard(x) {
-  const c = x.c, acc = { tanjiro: '#1d6b4a', nezuko: '#e2628a', zenitsu: '#f4c430', inosuke: '#6b8aa0', kanao: '#c070d0', giyu: '#3a6ad0', rengoku: '#e2421c', shinobu: '#7a3cb0', tengen: '#d0b060', mitsuri: '#f48fb7', muichiro: '#4cc3b8', obanai: '#8a7aaa', sanemi: '#5a9a6a', gyomei: '#a08050' }[x.key] || styleColor(c);
-  const name = c.vn.split(' — '), traits = [];
+  const c = x.c, [vnName, role] = c.vn.split(' — '), traits = [];
   if (c.hpRegen) traits.push(`Tự hồi ${(c.hpRegen * 60).toFixed(1)} máu/giây`);
-  if (c.poisonRes) traits.push(`Kháng độc (độc còn ${Math.round(c.poisonRes * 100)}%)`);
+  if (c.poisonRes) traits.push(`Kháng độc (độc chỉ còn ${Math.round(c.poisonRes * 100)}%)`);
   if (c.styles.length > 1) traits.push(`${c.styles.length} bộ hơi thở`);
-  if (c.dual) traits.push('Song kiếm'); if (c.iai) traits.push('Rút kiếm (iai)'); if (c.kick) traits.push('Đánh bằng chân');
+  if (c.dual) traits.push('Song kiếm'); if (c.iai) traits.push('Rút kiếm nhanh'); if (c.kick) traits.push('Đánh bằng chân');
   const styles = c.styles.map(sk => {
     const st = STYLES[sk];
-    return `<div class="style-h">${esc(st.jp)}<small>Hơi thở ${esc(STYLE_VN[st.theme] || '')} · ${st.forms.length} ${st.theme === 'blood' ? 'thuật' : 'thức'}</small></div>
-    <table><thead><tr><th>Thức</th><th class="n">Hơi</th><th class="n">Sát thương</th></tr></thead><tbody>${st.forms.map(f => {
+    return `<div class="style-h">${esc(STYLE_VN[sk === 'water11' ? 'water' : sk] || STYLE_VN[st.theme] || '')}<small>${esc(st.jp)}</small></div>
+    <table><thead><tr><th>Chiêu</th><th class="n">Hơi</th><th class="n">Sát thương</th></tr></thead><tbody>${st.forms.map(f => {
       const hits = f.kind === 'combo13' ? 12 : (f.hits || f.n || 1);
-      const dmg = f.dmg ? `${Math.round(f.dmg * x.atk * hits)}${hits > 1 ? ` <span class="fk">(${hits} hit)</span>` : ''}` : `<span class="fk">${esc(BUFF[f.buff] || '—')}</span>`;
-      return `<tr><td><span class="fn">${esc((f.kata ? f.kata + ' ' : '') + (f.name || ''))}</span> <span class="fk">${esc(KIND[f.kind] || '')}</span><span class="fv">${esc(f.vn)}</span></td><td class="n">${f.cost}</td><td class="n">${dmg}</td></tr>`;
+      const [vn, desc] = f.vn.split(' — ');
+      const dmg = f.dmg ? `${Math.round(f.dmg * x.atk * hits)}${hits > 1 ? `<br><span class="sm">${hits} đòn</span>` : ''}` : `<span class="sm">${esc(BUFF[f.buff] || '—')}</span>`;
+      return `<tr><td><span class="fvn">${f.kata ? `<span class="fk">${esc(KATA_VN[f.kata] || f.kata)}</span> · ` : ''}${esc(vn)}</span>${desc ? `<span class="sm">${esc(desc)} · ${esc(KIND[f.kind] || '')}</span><br>` : `<span class="sm">${esc(KIND[f.kind] || '')}</span><br>`}<span class="fjp">${esc((f.kata ? f.kata + ' ' : '') + (f.name || ''))}</span></td><td class="n">${f.cost}</td><td class="n">${dmg}</td></tr>`;
     }).join('')}</tbody></table>`;
   }).join('');
-  const st = (stageOf[x.key] || []).map(s => `<span>${s.id}. ${esc(s.arcVn.split(' — ').pop())}</span>`).join('');
-  return `<article class="card" style="--accent:${acc}">
-    <div class="top"><div class="face" style="background:radial-gradient(circle at 35% 30%, ${c.look.hairTip || c.look.hair}, ${c.look.hair})">${esc(c.name.slice(-2, -1) || c.name[0])}</div>
-      <div><div class="nm">${esc(c.name)}</div><div class="vn">${esc(name[0])}${name[1] ? ' · ' + esc(name[1]) : ''}</div></div>
-      ${name[1] ? '<span class="rank">柱</span>' : ''}</div>
-    <div class="stats">
-      ${statRow('体', 'Máu', c.hp / 380, c.hp)}
-      ${statRow('攻', 'Công', (x.atk - 0.6) / 0.7, Math.round(x.atk * 100) + '%')}
-      ${statRow('守', 'Thủ', (1.35 - x.def) / 0.55, Math.round((2 - x.def) * 100) + '%')}
-      ${statRow('速', 'Tốc', (c.speed - 4.6) / 2.2, c.speed.toFixed(1))}
-      ${statRow('息', 'Hơi', (c.br / 130) * 0.6 + (x.brr - 0.8), c.br + (x.brr !== 1 ? ` <span class="fk">×${x.brr}</span>` : ''))}
-    </div>
-    ${c.pros ? `<div class="pc pros"><b>強</b><span>${esc(c.pros)}</span></div>` : ''}
-    ${c.cons ? `<div class="pc cons"><b>弱</b><span>${esc(c.cons)}</span></div>` : ''}
+  const st = stageChips(x.key);
+  return `<article class="card" style="--accent:${ACCENT[x.key] || '#b3122e'}">
+    <div class="top">${pic(x.key, vnName)}
+      <div class="info"><div class="nm">${esc(vnName)}</div><div class="nmjp">${esc(c.name)}</div>
+        ${role ? `<div class="role">${esc(role)} · Trụ cột</div>` : '<div class="role">Thợ săn quỷ</div>'}
+        <div class="stats">
+          ${statRow('Máu', c.hp / 380, c.hp)}
+          ${statRow('Công', (x.atk - 0.6) / 0.7, Math.round(x.atk * 100) + '%')}
+          ${statRow('Thủ', (1.35 - x.def) / 0.55, Math.round((2 - x.def) * 100) + '%')}
+          ${statRow('Tốc', (c.speed - 4.6) / 2.2, c.speed.toFixed(1))}
+          ${statRow('Hơi', (c.br / 130) * 0.6 + (x.brr - 0.8), c.br + (x.brr !== 1 ? ` <span class="sm">×${x.brr}</span>` : ''))}
+        </div></div></div>
+    ${c.pros ? `<div class="pc pros"><b>Mạnh:</b>${esc(c.pros)}</div>` : ''}
+    ${c.cons ? `<div class="pc cons"><b>Yếu:</b>${esc(c.cons)}</div>` : ''}
     ${traits.length ? `<div class="traits">${traits.map(t => `<span class="trait">${esc(t)}</span>`).join('')}</div>` : ''}
-    ${st ? `<div class="stages">Xuất hiện: ${st}</div>` : ''}
-    <details><summary>${x.forms.length} thức · chiêu mạnh nhất ~${x.maxDmg} sát thương</summary>${styles}</details>
+    ${st ? `<div class="stages">Xuất hiện ở: ${st}</div>` : ''}
+    <details><summary>Xem ${x.forms.length} chiêu · mạnh nhất ~${x.maxDmg} sát thương</summary>${styles}</details>
   </article>`;
 }
 
 function demonCard(x) {
-  const d = x.d, rows = (list, p2) => list.map(a => `<tr><td><span class="fn">${esc(a.n || '—')}</span> <span class="fk">${esc(ATK[a.type] || a.type)}${p2 ? ' · giai đoạn 2' : ''}</span></td><td class="n">${a.dmg ? a.dmg + (a.count > 1 ? ` <span class="fk">×${a.count}</span>` : '') : '—'}</td><td class="n">${(a.cd / 60).toFixed(1)}s</td></tr>`).join('');
+  const d = x.d, vnName = BOSS_VN[x.key] || d.name, title = TITLE_VN[d.title] || d.title || (d.minion ? 'Quỷ con' : '');
+  const rows = (list, p2) => list.map(a => {
+    const vn = ART_VN[a.n] || '';
+    const [vh, vdesc] = vn.split(' — ');
+    return `<tr><td><span class="fvn">${esc(vh || (a.n ? a.n : ATK[a.type] || a.type))}</span><span class="sm">${esc(vdesc ? vdesc + ' · ' : '')}${esc(ATK[a.type] || a.type)}${p2 ? ' · khi dưới 50% máu' : ''}</span>${a.n ? `<br><span class="fjp">${esc(a.n)}</span>` : ''}</td><td class="n">${a.dmg ? a.dmg + (a.count > 1 ? `<br><span class="sm">×${a.count}</span>` : '') : '—'}</td><td class="n">${(a.cd / 60).toFixed(1)}s</td></tr>`;
+  }).join('');
   const traits = [];
-  if (d.dawn) traits.push(d.flee ? 'Cầm cự tới bình minh — hắn bỏ chạy' : 'Cầm cự tới bình minh');
-  if (d.neckRegen) traits.push('Tái sinh 1 lần sau khi chém cổ');
-  if (d.twin) traits.push('Phải chém cổ cả hai cùng lúc');
-  if (d.trueBody) traits.push('Bản thể nhỏ 「恨」 ẩn nấp');
-  if (d.teleport) traits.push('Dịch chuyển');
+  if (d.dawn) traits.push(d.flee ? 'Cầm cự tới bình minh — hắn bỏ chạy' : 'Cầm cự tới bình minh để thắng');
+  if (d.neckRegen) traits.push('Tái sinh 1 lần sau khi bị chém cổ');
+  if (d.twin) traits.push('Phải chém cổ cả hai anh em cùng lúc');
+  if (d.trueBody) traits.push('Bản thể nhỏ ẩn nấp — phải chém nó');
+  if (d.teleport) traits.push('Dịch chuyển tức thời');
   if (d.frost) traits.push('Băng giá');
-  if (d.minion) traits.push('Quỷ con');
-  const st = (stageOf[x.key] || []).map(s => `<span>${s.id}. ${esc(s.arcVn.split(' — ').pop())}</span>`).join('');
+  const st = stageChips(x.key);
   return `<article class="card" style="--accent:${d.minion ? '#6a5a7a' : '#b3122e'}">
-    <div class="top"><div class="face" style="background:radial-gradient(circle at 35% 30%, #5a1020, #1a0a10)">${esc(d.name[0])}</div>
-      <div><div class="nm">${esc(d.name)}</div><div class="vn">${esc(d.title || '')}</div></div>
-      ${d.rank ? `<span class="rank">${esc(d.rank)}</span>` : ''}</div>
-    <div class="stats">
-      ${statRow('体', 'Máu', d.hp / 9000, d.hp)}
-      ${statRow('撃', 'Đòn', x.maxHit / 50, x.maxHit)}
-      ${statRow('速', 'Tốc', d.speed / 4, d.speed.toFixed(1))}
-      ${statRow('再', 'Hồi', x.regenS / 15, x.regenS.toFixed(1) + '/s')}
-    </div>
+    <div class="top">${pic(x.key, vnName)}
+      <div class="info"><div class="nm">${esc(vnName)}</div><div class="nmjp">${esc(d.name)}${d.title ? ' · ' + esc(d.title) : ''}</div>
+        ${title ? `<div class="role">${esc(title)}</div>` : ''}
+        <div class="stats">
+          ${statRow('Máu', d.hp / 9000, d.hp)}
+          ${statRow('Đòn', x.maxHit / 50, x.maxHit)}
+          ${statRow('Tốc', d.speed / 4, d.speed.toFixed(1))}
+          ${statRow('Hồi', x.regenS / 15, x.regenS.toFixed(1) + '/s')}
+        </div></div></div>
     ${traits.length ? `<div class="traits">${traits.map(t => `<span class="trait">${esc(t)}</span>`).join('')}</div>` : ''}
-    ${st ? `<div class="stages">Xuất hiện: ${st}</div>` : ''}
-    <details><summary>${x.atks.length} chiêu</summary><table><thead><tr><th>Chiêu</th><th class="n">Sát thương</th><th class="n">Hồi chiêu</th></tr></thead><tbody>${rows(d.atks || [])}${rows(d.p2 || [], 1)}</tbody></table></details>
+    ${st ? `<div class="stages">Xuất hiện ở: ${st}</div>` : ''}
+    ${x.atks.length ? `<details><summary>Xem ${x.atks.length} chiêu</summary><table><thead><tr><th>Chiêu</th><th class="n">Sát thương</th><th class="n">Hồi chiêu</th></tr></thead><tbody>${rows(d.atks || [])}${rows(d.p2 || [], 1)}</tbody></table></details>` : ''}
   </article>`;
 }
 
@@ -232,13 +293,16 @@ function render() {
   if (sortSel.dataset.tab !== tab) { sortSel.innerHTML = SORTS[tab].map(([v, l]) => `<option value="${v}">Sắp xếp: ${l}</option>`).join(''); sortSel.dataset.tab = tab; }
   const q = $('q').value.trim().toLowerCase(), sv = sortVal[tab][sortSel.value];
   let list = tab === 'slayers' ? slayers : demons;
-  if (q) list = list.filter(x => JSON.stringify(tab === 'slayers' ? [x.c.name, x.c.vn, x.c.kana, x.forms.map(f => [f.name, f.vn])] : [x.d.name, x.d.kana, x.d.title, x.key, x.atks.map(a => a.n)]).toLowerCase().includes(q));
+  if (q) list = list.filter(x => JSON.stringify(tab === 'slayers'
+    ? [x.c.name, x.c.vn, x.c.kana, x.forms.map(f => [f.name, f.vn])]
+    : [x.d.name, x.d.kana, x.d.title, BOSS_VN[x.key], TITLE_VN[x.d.title], x.atks.map(a => [a.n, ART_VN[a.n]])]).toLowerCase().includes(q));
   if (sv) list = list.slice().sort((a, b) => sv(b) - sv(a));
   $('grid').innerHTML = list.map(tab === 'slayers' ? slayerCard : demonCard).join('') || '<p class="note">Không tìm thấy.</p>';
   $('count').textContent = list.length + (tab === 'slayers' ? ' thợ săn quỷ' : ' con quỷ');
   $('legend').textContent = tab === 'slayers'
-    ? 'Công: sát thương gây ra (100% = chuẩn). Thủ: càng cao càng chịu đòn tốt (sát thương nhận vào = 200% − Thủ). Hơi: thanh hơi thở, ×n = tốc độ hồi hơi. Sát thương thức đã nhân hệ số Công.'
-    : 'Đòn: sát thương đòn mạnh nhất (mỗi hit). Hồi: máu hồi mỗi giây khi không bị đánh (ngừng hồi 5 giây sau mỗi đòn trúng).';
+    ? 'Công: sát thương gây ra (100% là chuẩn). Thủ: càng cao càng chịu đòn tốt. Hơi: thanh hơi thở để ra chiêu (×n là tốc độ hồi hơi). Sát thương chiêu đã tính hệ số Công.'
+    : 'Đòn: sát thương mỗi đòn mạnh nhất. Hồi: máu hồi mỗi giây khi không bị đánh (dừng hồi 5 giây sau mỗi đòn trúng).';
+  fillPics();
 }
 document.querySelectorAll('.tabs button').forEach(b => b.onclick = () => { tab = b.dataset.tab; try { localStorage.setItem('stats.tab', tab); } catch (e) {} render(); });
 $('sort').onchange = render; $('q').oninput = render;

@@ -490,6 +490,36 @@ const BOSSES = {
     atks: [{ n: '', type: 'proj', tele: 30, dmg: 10, cd: 90, count: 3, speed: 10, size: 12, color: '#bdf', shape: 'icicle' }] },
 };
 
+// Vietnamese names / titles for demons
+const BOSS_VN = { temoni: 'Quỷ Tay', susamaru: 'Susamaru', kyogai: 'Kyogai', rui: 'Rui', enmu: 'Enmu', akaza: 'Akaza', akaza2: 'Akaza', daki: 'Daki', gyutaro: 'Gyutaro', gyokko: 'Gyokko', hantengu: 'Zohakuten (Hantengu)', doma: 'Douma', kokushibo: 'Kokushibo', muzan: 'Kibutsuji Muzan', mini: 'Quỷ', mini_doma: 'Búp bê băng', dummy: 'Bù nhìn rơm', yahaba: 'Yahaba', shitaoni: 'Quỷ Lưỡi', spider_mother: 'Mẹ Nhện', puppet: 'Con rối', spider_father: 'Cha Nhện', enmu_roof: 'Enmu', daki_solo: 'Daki', kingyo: 'Cá vàng', sekido: 'Sekido', karaku: 'Karaku', urogi: 'Urogi', aizetsu: 'Aizetsu', tamayo: 'Tamayo' };
+const TITLE_VN = { '異形の鬼': 'Quỷ dị hình', '十二鬼月を名乗る鬼': 'Tự xưng Thập Nhị Quỷ Nguyệt', '元・下弦の陸': 'Cựu Hạ Huyền Lục', '下弦の伍': 'Hạ Huyền Ngũ', '下弦の壱': 'Hạ Huyền Nhất', '上弦の参': 'Thượng Huyền Tam', '上弦の陸': 'Thượng Huyền Lục', '上弦の伍': 'Thượng Huyền Ngũ', '上弦の肆 半天狗': 'Thượng Huyền Tứ', '上弦の弐': 'Thượng Huyền Nhị', '上弦の壱': 'Thượng Huyền Nhất', '鬼の始祖': 'Thủy tổ loài quỷ', '稽古台': 'Bia tập', '鼓屋敷の鬼': 'Quỷ dinh thự trống', '累の「家族」': '"Gia đình" của Rui', '玉壺の壺': 'Cá trong bình của Gyokko', '上弦の肆 分裂体': 'Phân thân Thượng Huyền Tứ' };
+// Vietnamese for every demon art name (shown under the Japanese in battle and on stats.html)
+const ART_VN = {
+  '遊びましょう！': 'Chơi nào! — ném cầu nảy', '六本腕の手毬': 'Sáu tay ném cầu',
+  '血鬼術': 'Huyết quỷ thuật — tiếng trống chém', '尚速鼓打ち': 'Gõ trống thần tốc',
+  '血鬼術 刻糸牢': 'Khắc Ti Lao — lồng tơ', '殺目篭': 'Sát Mục Lung — lồng tơ siết chặt',
+  '血鬼術 強制昏倒催眠の囁き': 'Lời thì thầm thôi miên cưỡng chế — ru ngủ', '眠れ': 'Ngủ đi',
+  '破壊殺・空式': 'Phá Hoại Sát · Không Thức — đấm xuyên không khí', '破壊殺・乱式': 'Phá Hoại Sát · Loạn Thức — loạt đấm',
+  '破壊殺・脚式 冠先割': 'Cước Thức · Quan Tiên Cát — đá hất', '術式展開 破壊殺・羅針': 'Triển khai thuật thức · La Châm — la bàn đấu khí',
+  '破壊殺・脚式 流閃群光': 'Cước Thức · Lưu Thiểm Quần Quang — đá liên hoàn', '破壊殺・滅式': 'Phá Hoại Sát · Diệt Thức — đòn hủy diệt',
+  '破壊殺・鬼芯八重芯': 'Quỷ Tâm Bát Trùng Tâm — tám cú đấm', '破壊殺・砕式 万葉閃柳': 'Toái Thức · Vạn Diệp Thiểm Liễu — đấm vỡ đất',
+  '破壊殺・脚式 飛遊星千輪': 'Cước Thức · Phi Du Tinh Thiên Luân — cú đá bay', '破壊殺・終式 青銀乱残光': 'Chung Thức · Thanh Ngân Loạn Tàn Quang — bão đấm',
+  '血鬼術 八重帯斬り': 'Bát Trùng Đới Trảm — tám dải đai chém', '八重帯斬り': 'Bát Trùng Đới Trảm — tám dải đai chém',
+  '血鬼術 飛び血鎌': 'Phi Huyết Liêm — liềm máu bay (độc)', '円斬旋回・飛び血鎌': 'Viên Trảm Toàn Hồi — liềm máu xoay tròn (độc)',
+  '血鬼術 千本針 魚殺': 'Thiên Bản Châm · Ngư Sát — ngàn kim cá', '血鬼術 一万滑空粘魚': 'Nhất Vạn Hoạt Không Niêm Ngư — vạn cá bay',
+  '血鬼術 水獄鉢': 'Thủy Ngục Bát — bình nước giam', '血鬼術 陣殺魚鱗': 'Trận Sát Ngư Lân — vảy cá lao tới',
+  '血鬼術 石竜子': 'Thạch Long Tử — rồng gỗ', '狂鳴雷殺': 'Cuồng Minh Lôi Sát — sấm sét', '狂圧鳴波': 'Cuồng Áp Minh Ba — sóng âm', '無間業樹': 'Vô Gian Nghiệp Thụ — rừng rồng gỗ',
+  '血鬼術 蓮葉氷': 'Liên Diệp Băng — sen băng', '血鬼術 枯園垂り': 'Khô Viên Thùy — quạt băng chém', '血鬼術 散り蓮華': 'Tán Liên Hoa — hoa sen băng nổ',
+  '血鬼術 冬ざれ氷柱': 'Đông Tàn Băng Trụ — cột băng rơi', '血鬼術 寒烈の白姫': 'Hàn Liệt Bạch Cơ — công chúa băng', '血鬼術 結晶ノ御子': 'Kết Tinh Ngự Tử — búp bê băng',
+  '月の呼吸 壱ノ型 闇月・宵の宮': 'Hơi thở Trăng thức 1 · Ám Nguyệt · Tiêu Cung', '月の呼吸 弐ノ型 珠華ノ弄月': 'Hơi thở Trăng thức 2 · Châu Hoa Lộng Nguyệt',
+  '月の呼吸 参ノ型 厭忌月・銷り': 'Hơi thở Trăng thức 3 · Yếm Kị Nguyệt', '月の呼吸 伍ノ型 月魄災渦': 'Hơi thở Trăng thức 5 · Nguyệt Phách Tai Oa — xoáy trăng',
+  '月の呼吸 陸ノ型 常夜孤月・無間': 'Hơi thở Trăng thức 6 · Thường Dạ Cô Nguyệt · Vô Gian', '月の呼吸 漆ノ型 厄鏡・月映え': 'Hơi thở Trăng thức 7 · Ách Kính · Nguyệt Ánh',
+  '月の呼吸 捌ノ型 月龍輪尾': 'Hơi thở Trăng thức 8 · Nguyệt Long Luân Vĩ — rồng trăng quét', '月の呼吸 拾ノ型 穿面斬・蘿月': 'Hơi thở Trăng thức 10 · Xuyên Diện Trảm · La Nguyệt',
+  '月の呼吸 拾肆ノ型 兇変・天満繊月': 'Hơi thở Trăng thức 14 · Hung Biến · Thiên Mãn Tiêm Nguyệt', '月の呼吸 拾陸ノ型 月虹・片割れ月': 'Hơi thở Trăng thức 16 · Nguyệt Hồng — trăng khuyết giáng xuống',
+  '黒血枳棘': 'Hắc Huyết Chỉ Cức — gai máu đen', '血鬼術 紅潔の矢': 'Hồng Khiết Thỉ — mũi tên điều hướng', '操り糸': 'Tơ điều khiển con rối',
+  '俺の家族に近づくな': 'Đừng lại gần gia đình ta!', '錫杖・雷': 'Tích Trượng · Lôi — gậy sấm', '八つ手の団扇': 'Quạt lá bát thủ — gió thổi bay', '超音波': 'Siêu âm — tiếng thét', '激涙刺突': 'Kích Lệ Thích Đột — ngọn giáo',
+};
+
 // ---------------- STAGES ----------------
 // dlg: [speaker key | boss key, jp, vn]
 const STAGES = [
