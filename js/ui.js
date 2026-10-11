@@ -471,7 +471,9 @@ function drawCutin(c) {
   ctx.strokeStyle = 'rgba(255,255,255,.4)'; ctx.lineWidth = 2;
   for (let i = 0; i < 40; i++) { const y = 110 + ((i * 53 + c.t * 37) % 300); const x = (i * 97) % W; ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo(x + 260, y - 8); ctx.stroke(); }
   const ci = ASSETS.cutin[c.P.key];
+  const cf = !ci && typeof PORTRAIT3D !== 'undefined' ? PORTRAIT3D.get(c.P.key, 'face') : null;
   if (ci) { const k = 300 / ci.height; ctx.drawImage(ci, W / 2 - ci.width * k / 2 + u * 40, 105, ci.width * k, 300); }
+  else if (cf) { const k = 330 / cf.height; ctx.drawImage(cf, W / 2 - cf.width * k / 2 + u * 50, 92, cf.width * k, 330); }
   else { ctx.translate(560 + u * 60, 360); ctx.scale(16, 16); withLineScale(ctx, 0.28, () => drawHead(ctx, c.P.look, -10, -4, { t: 0, shout: 1 }, 1)); }
   ctx.restore();
   ctx.strokeStyle = COL.gold; ctx.lineWidth = 3; ctx.beginPath(); ctx.moveTo(0, 150); ctx.lineTo(W, 110); ctx.moveTo(0, 400); ctx.lineTo(W, 360); ctx.stroke();
@@ -488,7 +490,7 @@ function drawCutin(c) {
   ctx.restore();
   ctx.globalAlpha = Math.min(1, u * 3);
   vtext(c.P.ch.name, W - 60, 150, 34, '#fff');
-  T(c.P.ch.vn.split(' — ')[0], W - 60, 118, { size: 15, col: COL.gold2, align: 'center', weight: 700, stroke: 3 });
+  T(c.P.ch.vn.split(' — ')[0], W - 90, 112, { size: 15, col: COL.gold2, align: 'right', weight: 700, stroke: 3 });
   ctx.restore();
 }
 function drawHUD() {
