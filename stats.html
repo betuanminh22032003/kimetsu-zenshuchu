@@ -180,9 +180,9 @@ function fillPics() {
       const url = picFor(el.dataset.k);
       if (url) el.innerHTML = `<img src="${url}" alt="${esc(el.dataset.alt)}">`;
     }
-    if (pending.length) requestAnimationFrame(step);
+    if (pending.length) setTimeout(step, 16);
   };
-  requestAnimationFrame(step);
+  setTimeout(step, 0); // not rAF: keeps working when the page was opened in a background tab
 }
 
 // ---------- data ----------
