@@ -707,9 +707,9 @@ function renderTitle() {
   T('THANH GƯƠM DIỆT QUỶ', 650, 110, { size: 32, col: '#fff', weight: 700, align: 'center', stroke: 5 });
   T('Chương Toàn Tập Trung  ·  Fan game', 650, 140, { size: 15, col: COL.gold2, align: 'center', stroke: 3, weight: 600 });
   T('13 ải theo anime · trận cuối 鬼舞辻無惨', 650, 163, { size: 13, col: '#d8cce8', align: 'center', stroke: 3, font: UIF });
-  const items = [['物語', 'Vào truyện', '物'], ['稽古', 'Luyện tập — thử mọi chiêu', '稽'], ['技一覧', 'Danh sách thức & cách dùng', '技'], ['遊び方', 'Hướng dẫn chơi', '遊'], ['設定', 'Cài đặt', '設']];
+  const items = [['物語', 'Vào truyện', '物'], ['稽古', 'Luyện tập — thử mọi chiêu', '稽'], ['技一覧', 'Danh sách thức & cách dùng', '技'], ['図鑑', 'Chỉ số nhân vật & quỷ', '図'], ['遊び方', 'Hướng dẫn chơi', '遊'], ['設定', 'Cài đặt', '設']];
   items.forEach(([jp, vn, s], i) => {
-    const x = 470, y = 236 + i * 72, w = 380, h = 64, sel = i === menuIdx;
+    const x = 470, y = 230 + i * 66, w = 380, h = 62, sel = i === menuIdx;
     if (clickIn(x, y, w, h)) { if (menuIdx === i) Input.pressed.Enter = true; menuIdx = i; }
     if (sel) { ink(x - 20, y + 2, w + 30, h - 4, 'rgba(179,18,46,.92)', 1, i + 2); drawKatana(x - 58, y + h / 2, 0.9, Math.sin(gt * 0.1) * 0.03); }
     else panel(x, y + 6, w, h - 12, { r: 6 });
@@ -718,9 +718,9 @@ function renderTitle() {
     T(vn, x + 70, y + 54, { size: 13, col: sel ? '#ffe8b0' : COL.dim, weight: 600 });
   });
   hints([['W/S', '選択', 'Chọn'], ['Enter', '決定', 'Xác nhận']], 650, H - 24, 'center');
-  if (pressed('KeyW', 'ArrowUp')) { menuIdx = (menuIdx + 4) % 5; Audio.sfx.select(); }
-  if (pressed('KeyS', 'ArrowDown')) { menuIdx = (menuIdx + 1) % 5; Audio.sfx.select(); }
-  if (pressed('Enter', 'KeyJ', 'Space')) { Audio.init(); Audio.startMusic('calm'); Audio.sfx.gong(); const m = ['select', 'training', 'movelist', 'guide', 'settings'][menuIdx]; if (m === 'training') startTraining('tanjiro'); else if (m === 'guide') openGuide('title'); else mode = m; }
+  if (pressed('KeyW', 'ArrowUp')) { menuIdx = (menuIdx + items.length - 1) % items.length; Audio.sfx.select(); }
+  if (pressed('KeyS', 'ArrowDown')) { menuIdx = (menuIdx + 1) % items.length; Audio.sfx.select(); }
+  if (pressed('Enter', 'KeyJ', 'Space')) { Audio.init(); Audio.startMusic('calm'); Audio.sfx.gong(); const m = ['select', 'training', 'movelist', 'stats', 'guide', 'settings'][menuIdx]; if (m === 'stats') { const w = window.open('stats.html', '_blank'); if (w) w.opener = null; else location.href = 'stats.html'; } else if (m === 'training') startTraining('tanjiro'); else if (m === 'guide') openGuide('title'); else mode = m; }
 }
 function renderSelect() {
   gt++;
